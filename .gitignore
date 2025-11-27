@@ -1,1 +1,22 @@
-firebase_key.json
+# --- Lixo do Python (Compilados) ---
+__pycache__/
+*.pyc
+
+# --- Ambiente Virtual (NÃO ENVIE ISSO) ---
+# O Render vai instalar as coisas sozinho usando o requirements.txt
+venv/
+env/
+.env
+
+# --- Arquivos de Sistema Operacional ---
+.DS_Store
+Thumbs.db
+
+# --- IDEs (VS Code, PyCharm) ---
+.vscode/
+.idea/
+
+# --- ATENÇÃO AO FIREBASE ---
+# Se seu repositório for PÚBLICO, descomente a linha abaixo para não vazar sua senha!
+# Se for PRIVADO (Recomendado), mantenha comentado para o Render poder ler o arquivo.
+# firebase_key.jsonfirebase_key.json
