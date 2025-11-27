@@ -20,3 +20,4 @@ Thumbs.db
 # Se seu repositório for PÚBLICO, descomente a linha abaixo para não vazar sua senha!
 # Se for PRIVADO (Recomendado), mantenha comentado para o Render poder ler o arquivo.
 # firebase_key.jsonfirebase_key.json
+firebase_key.json
