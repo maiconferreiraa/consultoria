@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-12 col-md-8 col-lg-6">
+        
+        <div class="card shadow-lg border-0">
+            <div class="card-header border-bottom border-warning d-flex align-items-center">
+                <i class="bi bi-pencil-square fs-4 text-warning me-2"></i>
+                <h5 class="mb-0 fw-bold">Editar Dados do Projeto</h5>
+            </div>
+            
+            <div class="card-body p-4 p-md-5">
+                <form method="POST">
+                    
+                    <div class="mb-4">
+                        <label class="form-label text-uppercase small fw-bold text-muted">Nome do Cliente</label>
+                        <input type="text" name="cliente" value="{{ project.client_name }}" class="form-control form-control-lg border-secondary" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-uppercase small fw-bold text-muted">Telefone</label>
+                        <input type="text" name="telefone" value="{{ project.client_phone }}" class="form-control form-control-lg border-secondary">
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="form-label text-uppercase small fw-bold text-muted">Endereço</label>
+                        <input type="text" name="endereco" value="{{ project.client_address }}" class="form-control form-control-lg border-secondary" required>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-warning btn-lg text-dark fw-bold">
+                            <i class="bi bi-save"></i> Salvar Alterações
+                        </button>
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-light btn-lg">
+                            Cancelar
+                        </a>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+        
+        <div class="text-center mt-4">
+            <small class="text-muted">ID do Projeto: {{ project.id }}</small>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

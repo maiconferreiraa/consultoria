@@ -1,0 +1,4 @@
+flask
+firebase-admin
+weasyprint==59.0
+pydyf==0.6.0

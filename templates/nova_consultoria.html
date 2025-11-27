@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="col-12 col-md-8 col-lg-6">
+        
+        <div class="text-center mb-4">
+            <h2 class="fw-bold"><i class="bi bi-person-plus-fill text-success"></i> Novo Cliente</h2>
+            <p class="text-muted">Preencha os dados iniciais para começar o projeto.</p>
+        </div>
+
+        <div class="card shadow-lg border-0">
+            <div class="card-body p-4 p-md-5">
+                <form method="POST">
+                    
+                    <div class="mb-4">
+                        <label class="form-label text-uppercase small fw-bold text-muted">Nome do Cliente / Empresa</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-dark border-secondary text-secondary"><i class="bi bi-person"></i></span>
+                            <input type="text" name="cliente" class="form-control form-control-lg" placeholder="Ex: João Silva" required autofocus>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-uppercase small fw-bold text-muted">Telefone / WhatsApp</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-dark border-secondary text-secondary"><i class="bi bi-whatsapp"></i></span>
+                            <input type="text" name="telefone" class="form-control form-control-lg" placeholder="(XX) 99999-9999">
+                        </div>
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="form-label text-uppercase small fw-bold text-muted">Endereço da Obra</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-dark border-secondary text-secondary"><i class="bi bi-geo-alt"></i></span>
+                            <input type="text" name="endereco" class="form-control form-control-lg" placeholder="Rua, Número, Bairro" required>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-3">
+                        <button type="submit" class="btn btn-success btn-lg fw-bold shadow-sm">
+                            <i class="bi bi-check-lg"></i> Criar Projeto
+                        </button>
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary btn-lg">
+                            Cancelar
+                        </a>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

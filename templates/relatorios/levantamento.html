@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page { size: A4; margin: 2cm; }
+        body { font-family: sans-serif; color: #333; }
+        .header { border-bottom: 2px solid #28a745; padding-bottom: 10px; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border-bottom: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .total-row { font-weight: bold; background-color: #e9ecef; }
+        .locais { font-size: 10px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2 style="color: #28a745; margin: 0;">LEVANTAMENTO DE MATERIAIS</h2>
+        <p style="margin: 5px 0;">Resumo Quantitativo para Compras/Estoque</p>
+    </div>
+    
+    <p>
+        <strong>Cliente:</strong> {{ project.client.name }}<br>
+        <strong>Data:</strong> {{ data_hoje }}
+    </p>
+
+    <table>
+        <thead>
+            <tr>
+                <th width="60%">Item / Dispositivo</th>
+                <th width="20%">Aplicação (Locais)</th>
+                <th width="20%" style="text-align: center;">Qtd Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for key, item in resumo.items() %}
+            <tr>
+                <td>
+                    <strong>{{ item.nome }}</strong>
+                </td>
+                <td>
+                    <div class="locais">
+                        {{ item.locais|join(', ') }}
+                    </div>
+                </td>
+                <td style="text-align: center; font-size: 14px; font-weight: bold;">
+                    {{ item.total }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <br><br>
+    <div style="border: 1px dashed #ccc; padding: 10px; margin-top: 30px;">
+        <small>Espaço para anotações de estoque / check-in:</small>
+        <br><br><br><br>
+    </div>
+</body>
+</html>

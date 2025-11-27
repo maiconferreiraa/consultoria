@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page { size: A4; margin: 2.5cm; }
+        body { font-family: 'Helvetica', sans-serif; color: #333; line-height: 1.5; }
+        
+        .capa { text-align: center; position: relative; height: 900px; }
+        .logo-box { margin-top: 200px; margin-bottom: 50px; }
+        .titulo-capa { font-size: 36px; color: #1e1e1e; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
+        .subtitulo-capa { font-size: 18px; color: #0d6efd; margin-top: 10px; }
+        .info-cliente { margin-top: 150px; border-top: 1px solid #ccc; padding-top: 20px; width: 60%; margin-left: 20%; }
+        
+        .page-break { page-break-before: always; }
+        h1 { color: #0d6efd; border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 24px; margin-top: 0; }
+        h2 { background-color: #f8f9fa; color: #333; padding: 8px 15px; border-left: 5px solid #0d6efd; font-size: 16px; margin-top: 30px; border-radius: 0 5px 5px 0; }
+        
+        .intro-text { font-size: 12px; color: #555; text-align: justify; margin-bottom: 30px; }
+        
+        /* CAIXA DA NARRATIVA INTELIGENTE */
+        .narrativa-box {
+            background-color: #f1f8ff;
+            border: 1px solid #cce5ff;
+            color: #004085;
+            padding: 10px 15px;
+            font-size: 11px;
+            font-style: italic;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+
+        .item-box { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px dashed #eee; page-break-inside: avoid; }
+        .item-header { display: flex; justify-content: space-between; align-items: baseline; }
+        .item-name { font-weight: bold; font-size: 13px; color: #1e1e1e; }
+        .item-qty { font-size: 11px; font-weight: bold; background-color: #0d6efd; color: white; padding: 2px 8px; border-radius: 10px; }
+        .item-desc { font-size: 11px; color: #666; margin-top: 5px; text-align: justify; }
+        
+        .footer { position: fixed; bottom: 0; width: 100%; text-align: center; font-size: 9px; color: #aaa; border-top: 1px solid #eee; padding-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="capa">
+        <div class="logo-box">
+            <div class="titulo-capa">Home Automation<br>Technology</div>
+            <div class="subtitulo-capa">Memorial Descritivo & Proposta Técnica</div>
+        </div>
+        
+        <div class="info-cliente">
+            <p><strong>PREPARADO PARA:</strong><br>
+            {{ project.client.name }}</p>
+            <p>{{ project.client.address }}</p>
+            <p style="color: #888; font-size: 12px;">Data de Emissão: {{ data_hoje }}</p>
+        </div>
+    </div>
+
+    <div class="page-break">
+        <h1>O Conceito Smart Home</h1>
+        <div class="intro-text">
+            <p>
+                Este projeto foi desenvolvido visando transformar sua residência em um ambiente inteligente, seguro e confortável. 
+                Abaixo detalhamos as soluções de tecnologia selecionadas para cada ambiente.
+            </p>
+            <p><strong>Principais Benefícios do seu Projeto:</strong></p>
+            <ul>
+                <li><strong>Comando de Voz:</strong> Controle total da iluminação e equipamentos via assistentes virtuais (Alexa / Google).</li>
+                <li><strong>Cenas Inteligentes:</strong> Crie momentos como "Modo Cinema" (luzes baixas) ou "Modo Saída" (apaga tudo) com um único toque.</li>
+                <li><strong>Acesso Remoto:</strong> Visualize o status da sua casa e comande dispositivos de qualquer lugar do mundo via Aplicativo.</li>
+                <li><strong>Design Premium:</strong> Interruptores com acabamento em <strong>acrílico temperado</strong> que agregam sofisticação ao design de interiores.</li>
+            </ul>
+        </div>
+
+        <h1>Especificações por Ambiente</h1>
+
+        {% for ambiente, itens in itens_por_ambiente.items() %}
+            <h2>📍 {{ ambiente }}</h2>
+            
+            <div class="narrativa-box">
+                {{ narrativas[ambiente] }}
+            </div>
+
+            {% for item in itens %}
+            <div class="item-box">
+                <div class="item-header">
+                    <span class="item-name">🔹 {{ item.catalog_item.name }}</span>
+                    <span class="item-qty">{{ item.quantity }} un.</span>
+                </div>
+                <div class="item-desc">
+                    {{ item.catalog_item.description_commercial }}
+                    {% if item.obs %}
+                    <br><em>Nota Específica: {{ item.obs }}</em>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            
+        {% endfor %}
+    </div>
+
+    <div class="footer">
+        Home Automation Technology - Soluções em Automação Residencial | Documento confidencial.
+    </div>
+</body>
+</html>

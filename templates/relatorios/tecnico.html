@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page { size: A4; margin: 2cm; }
+        body { font-family: sans-serif; line-height: 1.4; color: #333; }
+        /* Cabeçalho com o novo nome */
+        .header { border-bottom: 2px solid #0056b3; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .company-name { font-size: 18px; font-weight: bold; color: #0056b3; text-transform: uppercase; }
+        
+        .alert-box { background-color: #fff3cd; border: 1px solid #ffeeba; padding: 10px; margin-bottom: 20px; font-size: 12px; }
+        h2 { background-color: #0056b3; color: white; padding: 5px 10px; font-size: 16px; margin-top: 30px; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        th, td { border-bottom: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: top; }
+        th { background-color: #f2f2f2; }
+        .tech-req { font-weight: bold; color: #c9302c; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="company-name">Home Automation Technology</div>
+        <div style="text-align: right; font-size: 10px;">
+            ROTEIRO TÉCNICO DE INFRAESTRUTURA<br>
+            Gerado em: {{ data_hoje }}
+        </div>
+    </div>
+    
+    <div class="alert-box">
+        <strong>CLIENTE:</strong> {{ project.client.name }} <br>
+        <strong>CONTATO:</strong> {{ project.client.phone }} <br>
+        <strong>ENDEREÇO:</strong> {{ project.client.address }} <br><br>
+        <strong>NOTA AO ELETRICISTA:</strong> Os requisitos abaixo são obrigatórios para o funcionamento da automação.
+    </div>
+
+    {% for ambiente, itens in itens_por_ambiente.items() %}
+        <h2>📍 {{ ambiente }}</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th width="20%">Dispositivo</th><th width="5%">Qtd</th><th width="75%">Requisito Obrigatório (Infraestrutura)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in itens %}
+                <tr>
+                    <td>{{ item.catalog_item.name }}</td>
+                    <td align="center">{{ item.quantity }}</td>
+                    <td>
+                        <div class="tech-req">⚠ {{ item.catalog_item.tech_requirement }}</div>
+                        {% if item.obs %} <small>Obs: {{ item.obs }}</small> {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endfor %}
+    
+    <br><br>
+    <p style="font-size: 10px; text-align: center; border-top: 1px solid #ccc; padding-top: 10px;">
+        Documento gerado pelo sistema Home Automation Technology
+    </p>
+</body>
+</html>
