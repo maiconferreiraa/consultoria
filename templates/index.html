@@ -1,51 +1,129 @@
 {% extends "base.html" %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="h4 mb-0">Projetos Recentes</h2>
-    <a href="{{ url_for('novo_projeto') }}" class="btn btn-success btn-lg shadow-sm">
-        <i class="bi bi-plus-lg"></i> Novo <span class="d-none d-md-inline">Cliente</span>
-    </a>
+
+<div class="row mb-4 align-items-center">
+    <div class="col-12 col-md-8">
+        <h2 class="fw-bold mb-0 text-white">
+            <i class="bi bi-folder2-open"></i> Meus Projetos
+        </h2>
+        <small class="text-muted">Gerencie suas consultorias de automação</small>
+    </div>
+    <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
+        <a href="{{ url_for('novo_projeto') }}" class="btn btn-primary btn-lg w-100 shadow">
+            <i class="bi bi-plus-lg"></i> Novo Projeto
+        </a>
+    </div>
 </div>
 
-<div class="row g-3">
+<div class="card mb-4 border-warning" style="background-color: #2c2c2c;">
+    <div class="card-body">
+        <label class="form-label text-warning fw-bold small text-uppercase">
+            <i class="bi bi-funnel-fill"></i> Filtrar Projetos
+        </label>
+        <div class="input-group input-group-lg">
+            <span class="input-group-text bg-dark border-secondary text-warning">
+                <i class="bi bi-search"></i>
+            </span>
+            <input type="text" id="filtroProjetos" class="form-control bg-dark text-white border-secondary" placeholder="Digite o nome do cliente..." autocomplete="off">
+        </div>
+    </div>
+</div>
+
+<div class="row" id="listaProjetos">
     {% for project in projects %}
-    <div class="col-12 col-md-6 col-lg-4">
-        <div class="card h-100">
-            <div class="card-body d-flex flex-column">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <h5 class="card-title fw-bold">{{ project.client.name }}</h5>
-                    <span class="badge bg-dark-subtle text-emphasis-dark border border-secondary">#{{ project.id[-4:] }}</span>
-                </div>
+    <div class="col-12 col-md-6 col-lg-4 mb-4 item-projeto">
+        <div class="card h-100 border-secondary shadow-sm bg-dark">
+            <div class="card-header d-flex justify-content-between align-items-center bg-transparent border-secondary">
+                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill">Consultoria</span>
                 
-                <div class="mb-3 flex-grow-1">
-                    <p class="card-text mb-1 text-muted small"><i class="bi bi-geo-alt-fill"></i> {{ project.client.address }}</p>
-                    <p class="card-text text-muted small"><i class="bi bi-whatsapp"></i> {{ project.client.phone or 'Não informado' }}</p>
+                <div class="dropdown">
+                    <button class="btn btn-link text-muted p-0" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark">
+                        <li><a class="dropdown-item" href="{{ url_for('editar_projeto', project_id=project.id) }}"><i class="bi bi-pencil"></i> Editar Cliente</a></li>
+                        <li><hr class="dropdown-divider border-secondary"></li>
+                        <li><a class="dropdown-item text-danger" href="{{ url_for('apagar_projeto', project_id=project.id) }}" onclick="return confirm('Tem certeza?')"><i class="bi bi-trash"></i> Excluir</a></li>
+                    </ul>
                 </div>
-                
-                <div class="d-grid gap-2">
-                    <a href="{{ url_for('gerenciar_projeto', project_id=project.id) }}" class="btn btn-primary">
-                        <i class="bi bi-folder2-open"></i> Abrir Projeto
+            </div>
+            
+            <div class="card-body">
+                <h5 class="card-title fw-bold text-white mb-1 nome-cliente">{{ project.client.name }}</h5>
+                <p class="card-text text-muted small mb-3">
+                    <i class="bi bi-geo-alt-fill me-1"></i> {{ project.client.address }}
+                </p>
+                <div class="d-grid">
+                    <a href="{{ url_for('gerenciar_projeto', project_id=project.id) }}" class="btn btn-outline-light hover-effect">
+                        <i class="bi bi-arrow-right-circle"></i> Abrir Projeto
                     </a>
-                    
-                    <div class="btn-group">
-                        <a href="{{ url_for('editar_projeto', project_id=project.id) }}" class="btn btn-outline-warning">
-                            <i class="bi bi-pencil"></i>
-                        </a>
-                        <a href="{{ url_for('apagar_projeto', project_id=project.id) }}" 
-                           class="btn btn-outline-danger"
-                           onclick="return confirm('Apagar este projeto?')">
-                            <i class="bi bi-trash"></i>
-                        </a>
-                    </div>
                 </div>
+            </div>
+            
+            <div class="card-footer bg-transparent border-secondary py-2">
+                <small class="text-muted" style="font-size: 0.75rem;">
+                    <i class="bi bi-clock"></i> Criado em: {{ project.created_at.strftime('%d/%m/%Y') }}
+                </small>
             </div>
         </div>
     </div>
     {% else %}
     <div class="col-12 text-center py-5">
-        <div class="text-muted mb-3"><i class="bi bi-inbox fs-1" style="opacity: 0.3;"></i></div>
-        <p class="text-muted">Nenhum projeto encontrado.</p>
+        <div class="text-muted mb-3"><i class="bi bi-inbox display-1"></i></div>
+        <h4>Nenhum projeto cadastrado.</h4>
     </div>
     {% endfor %}
 </div>
+
+<div id="msgNenhumResultado" class="alert alert-warning text-center mt-3 d-none">
+    <i class="bi bi-emoji-frown"></i> Nenhum cliente encontrado com esse nome.
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const input = document.getElementById('filtroProjetos');
+        const items = document.querySelectorAll('.item-projeto');
+        const msg = document.getElementById('msgNenhumResultado');
+
+        if(input){
+            input.addEventListener('keyup', function() {
+                const termo = this.value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ""); // Remove acentos
+                let visibleCount = 0;
+
+                items.forEach(function(item) {
+                    // Pega o nome do cliente dentro do card
+                    const nomeEl = item.querySelector('.nome-cliente');
+                    if(nomeEl) {
+                        const nome = nomeEl.textContent.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+                        
+                        if (nome.includes(termo)) {
+                            item.classList.remove('d-none'); // Mostra
+                            visibleCount++;
+                        } else {
+                            item.classList.add('d-none'); // Esconde (classe do Bootstrap)
+                        }
+                    }
+                });
+
+                // Mostra mensagem se não achou nada
+                if (visibleCount === 0 && items.length > 0) {
+                    msg.classList.remove('d-none');
+                } else {
+                    msg.classList.add('d-none');
+                }
+            });
+        }
+    });
+</script>
+
+<style>
+    .hover-effect:hover {
+        background-color: #fff;
+        color: #000;
+        transform: translateY(-2px);
+        transition: all 0.2s;
+    }
+</style>
+
 {% endblock %}

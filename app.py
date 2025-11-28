@@ -4,16 +4,21 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from weasyprint import HTML
 from datetime import datetime
-import re # Necessário para a inteligência de texto
+import re
 
 app = Flask(__name__)
 
-# --- CONFIGURAÇÃO DO FIREBASE ---
-cred = credentials.Certificate("firebase_key.json")
+# --- CONFIGURAÇÃO ---
+# Certifique-se de que o arquivo firebase_key.json está na mesma pasta
+if os.path.exists("firebase_key.json"):
+    cred = credentials.Certificate("firebase_key.json")
+else:
+    # Fallback para o Render (caso use Secret Files)
+    cred = credentials.Certificate("/etc/secrets/firebase_key.json")
+
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-# --- HELPER ---
 class DictObj:
     def __init__(self, data, id=None):
         self.id = id
@@ -21,11 +26,22 @@ class DictObj:
             for key, value in data.items():
                 setattr(self, key, value)
 
-# --- LISTA MESTRE DE ITENS ---
+# --- 1. LISTA MESTRE DE AMBIENTES (PADRÃO) ---
+def get_master_rooms():
+    """Lista padrão de cômodos para iniciar o sistema"""
+    return [
+        {"name": "Sala de Estar"}, {"name": "Sala de Jantar"}, {"name": "Cozinha"},
+        {"name": "Área Gourmet"}, {"name": "Quarto Master (Suíte)"}, {"name": "Quarto Hóspedes"},
+        {"name": "Quarto Filhos"}, {"name": "Banheiro Social"}, {"name": "Banheiro Suíte"},
+        {"name": "Lavabo"}, {"name": "Escritório / Home Office"}, {"name": "Home Cinema"},
+        {"name": "Corredor / Circulação"}, {"name": "Hall de Entrada"}, {"name": "Garagem"},
+        {"name": "Lavanderia / Área de Serviço"}, {"name": "Área Externa / Piscina"}, {"name": "Jardim"}
+    ]
+
+# --- 2. LISTA MESTRE DE DISPOSITIVOS (SUA LISTA PERSONALIZADA) ---
 def get_master_list():
     """Retorna o catálogo unificado: Zigbee + Tomadas + Integrações de Luxo"""
     
-    # --- TEXTOS PADRÃO ---
     desc_zigbee = "Interruptor inteligente 4x2. Acabamento Acrílico (Touch). Comando de Voz e App."
     desc_zigbee_4x4 = "Painel Inteligente 4x4. Acabamento Acrílico (Touch). Comando de Voz e App."
     desc_way = "Paralelo Inteligente (Virtual). Acabamento Acrílico. Sincronização via Cena."
@@ -34,7 +50,6 @@ def get_master_list():
     desc_tomada_white = "Tomada Branca Padrão. Acabamento Acrílico."
     desc_infra = "Módulo de infraestrutura. Acabamento Acrílico."
 
-    # --- TEXTOS IMPACTANTES (INTEGRAÇÃO) ---
     desc_ar = "Climatização Inteligente. Controle total da temperatura pelo App ou Voz. Garanta o conforto térmico ideal antes mesmo de chegar em casa, com máxima eficiência energética e agendamentos automáticos."
     desc_tv = "Entretenimento Centralizado. Adeus aos múltiplos controles remotos. Comande sua TV, troque canais e acesse streamings via comando de voz ou através de uma interface única no celular."
     desc_som = "Experiência Sonora Imersiva. Som ambiente de alta fidelidade controlado por zonas. Crie playlists para festas ou relaxamento e integre a música ao cenário de iluminação."
@@ -43,9 +58,6 @@ def get_master_list():
     desc_jacuzzi = "Spa & Relaxamento. Prepare seu momento de descanso remotamente. Ative a hidromassagem e ajuste a temperatura ideal para que sua Jacuzzi esteja perfeita à sua espera ao chegar."
 
     return [
-        # ==================================================
-        # 1. INTEGRAÇÃO & LUXO
-        # ==================================================
         {"name": "Automação de Ar Condicionado", "category": "Integração", "description_commercial": desc_ar, "tech_requirement": "Ponto de energia para Módulo IR ou Wi-Fi Integrado."},
         {"name": "Automação de TV / Vídeo", "category": "Integração", "description_commercial": desc_tv, "tech_requirement": "Ponto de energia para Central de Automação/IR Próximo à TV."},
         {"name": "Sonorização Ambiente (Zoneamento)", "category": "Integração", "description_commercial": desc_som, "tech_requirement": "Previsão de caixas no forro e cabeamento até o Amplificador."},
@@ -53,33 +65,21 @@ def get_master_list():
         {"name": "Automação de Piscina (Bomba/Luz)", "category": "Integração", "description_commercial": desc_piscina, "tech_requirement": "Módulo Relé na casa de máquinas (Wi-Fi/Zigbee) + Contatora se necessário."},
         {"name": "Automação de Jacuzzi/Spa", "category": "Integração", "description_commercial": desc_jacuzzi, "tech_requirement": "Módulo de Alta Potência ou Contatora na alimentação da Jacuzzi."},
 
-        # ==================================================
-        # 2. ZIGBEE SIMPLES 4X2
-        # ==================================================
         {"name": "Zigbee 1 Tecla (4x2)", "category": "Iluminação", "description_commercial": desc_zigbee, "tech_requirement": "Caixa 4x2. F+N+1 Retorno."},
         {"name": "Zigbee 2 Teclas (4x2)", "category": "Iluminação", "description_commercial": desc_zigbee, "tech_requirement": "Caixa 4x2. F+N+2 Retornos."},
         {"name": "Zigbee 3 Teclas (4x2)", "category": "Iluminação", "description_commercial": desc_zigbee, "tech_requirement": "Caixa 4x2. F+N+3 Retornos."},
         {"name": "Zigbee 4 Teclas (4x2)", "category": "Iluminação", "description_commercial": desc_zigbee, "tech_requirement": "Caixa 4x2. F+N+4 Retornos. (Alta Densidade)."},
 
-        # ==================================================
-        # 3. ZIGBEE THREE-WAY 4X2
-        # ==================================================
         {"name": "Zigbee Three-Way 1 Tecla (4x2)", "category": "Iluminação", "description_commercial": desc_way, "tech_requirement": "Caixa 4x2. F+N."},
         {"name": "Zigbee Three-Way 2 Teclas (4x2)", "category": "Iluminação", "description_commercial": desc_way, "tech_requirement": "Caixa 4x2. F+N."},
         {"name": "Zigbee Three-Way 3 Teclas (4x2)", "category": "Iluminação", "description_commercial": desc_way, "tech_requirement": "Caixa 4x2. F+N."},
         {"name": "Zigbee Three-Way 4 Teclas (4x2)", "category": "Iluminação", "description_commercial": desc_way, "tech_requirement": "Caixa 4x2. F+N."},
 
-        # ==================================================
-        # 4. ZIGBEE FOUR-WAY 4X2
-        # ==================================================
         {"name": "Zigbee Four-Way 1 Tecla (4x2)", "category": "Iluminação", "description_commercial": desc_4way, "tech_requirement": "Caixa 4x2. F+N."},
         {"name": "Zigbee Four-Way 2 Teclas (4x2)", "category": "Iluminação", "description_commercial": desc_4way, "tech_requirement": "Caixa 4x2. F+N."},
         {"name": "Zigbee Four-Way 3 Teclas (4x2)", "category": "Iluminação", "description_commercial": desc_4way, "tech_requirement": "Caixa 4x2. F+N."},
         {"name": "Zigbee Four-Way 4 Teclas (4x2)", "category": "Iluminação", "description_commercial": desc_4way, "tech_requirement": "Caixa 4x2. F+N."},
 
-        # ==================================================
-        # 5. ZIGBEE SIMPLES 4X4
-        # ==================================================
         {"name": "Zigbee 1 Tecla (4x4)", "category": "Iluminação", "description_commercial": desc_zigbee_4x4, "tech_requirement": "Caixa 4x4. F+N+1 Retorno."},
         {"name": "Zigbee 2 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_zigbee_4x4, "tech_requirement": "Caixa 4x4. F+N+2 Retornos."},
         {"name": "Zigbee 3 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_zigbee_4x4, "tech_requirement": "Caixa 4x4. F+N+3 Retornos."},
@@ -88,9 +88,6 @@ def get_master_list():
         {"name": "Zigbee 6 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_zigbee_4x4, "tech_requirement": "Caixa 4x4. F+N+6 Retornos."},
         {"name": "Zigbee 8 Teclas (4x4)", "category": "Iluminação", "description_commercial": "Painel Master 4x4 8 Zonas. Acrílico.", "tech_requirement": "Caixa 4x4. F+N+8 Retornos."},
 
-        # ==================================================
-        # 6. ZIGBEE THREE-WAY 4X4
-        # ==================================================
         {"name": "Zigbee Three-Way 1 Tecla (4x4)", "category": "Iluminação", "description_commercial": desc_way, "tech_requirement": "Caixa 4x4. F+N."},
         {"name": "Zigbee Three-Way 2 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_way, "tech_requirement": "Caixa 4x4. F+N."},
         {"name": "Zigbee Three-Way 3 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_way, "tech_requirement": "Caixa 4x4. F+N."},
@@ -99,9 +96,6 @@ def get_master_list():
         {"name": "Zigbee Three-Way 6 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_way, "tech_requirement": "Caixa 4x4. F+N."},
         {"name": "Zigbee Three-Way 8 Teclas (4x4)", "category": "Iluminação", "description_commercial": "Painel de Cenas Master (Virtual).", "tech_requirement": "Caixa 4x4. F+N."},
 
-        # ==================================================
-        # 7. ZIGBEE FOUR-WAY 4X4
-        # ==================================================
         {"name": "Zigbee Four-Way 1 Tecla (4x4)", "category": "Iluminação", "description_commercial": desc_4way, "tech_requirement": "Caixa 4x4. F+N."},
         {"name": "Zigbee Four-Way 2 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_4way, "tech_requirement": "Caixa 4x4. F+N."},
         {"name": "Zigbee Four-Way 3 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_4way, "tech_requirement": "Caixa 4x4. F+N."},
@@ -110,38 +104,23 @@ def get_master_list():
         {"name": "Zigbee Four-Way 6 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_4way, "tech_requirement": "Caixa 4x4. F+N."},
         {"name": "Zigbee Four-Way 8 Teclas (4x4)", "category": "Iluminação", "description_commercial": "Painel de Cenas Master (Virtual).", "tech_requirement": "Caixa 4x4. F+N."},
 
-        # ==================================================
-        # 8. TOMADAS 20A VERMELHAS (4x2)
-        # ==================================================
         {"name": "Tomada 20A Vermelha - 1 Módulo (4x2)", "category": "Energia", "description_commercial": desc_tomada_red, "tech_requirement": "Caixa 4x2. Fio 4mm. Circuito Específico."},
         {"name": "Tomada 20A Vermelha - 2 Módulos (4x2)", "category": "Energia", "description_commercial": "Dupla 20A Vermelha.", "tech_requirement": "Caixa 4x2. Fio 4mm."},
         {"name": "Tomada 20A Vermelha - 3 Módulos (4x2)", "category": "Energia", "description_commercial": "Tripla 20A Vermelha.", "tech_requirement": "Caixa 4x2."},
         {"name": "Conjunto: 1 Tom 20A Vermelha + 1 Tom 10A (4x2)", "category": "Energia", "description_commercial": "Misto: 1 Vermelha (20A) + 1 Branca (10A).", "tech_requirement": "Caixa 4x2."},
 
-        # ==================================================
-        # 9. TOMADAS 20A BRANCAS (4x2)
-        # ==================================================
         {"name": "Tomada 20A Branca - 1 Módulo (4x2)", "category": "Energia", "description_commercial": "20A Branca Pino Grosso.", "tech_requirement": "Caixa 4x2. Fio 4mm."},
         {"name": "Tomada 20A Branca - 2 Módulos (4x2)", "category": "Energia", "description_commercial": "Dupla 20A Branca.", "tech_requirement": "Caixa 4x2. Fio 4mm."},
         {"name": "Tomada 20A Branca - 3 Módulos (4x2)", "category": "Energia", "description_commercial": "Tripla 20A Branca.", "tech_requirement": "Caixa 4x2."},
 
-        # ==================================================
-        # 10. TOMADAS 10A BRANCAS (4x2)
-        # ==================================================
         {"name": "Tomada 10A Branca - 1 Módulo (4x2)", "category": "Energia", "description_commercial": desc_tomada_white, "tech_requirement": "Caixa 4x2. Fio 2.5mm."},
         {"name": "Tomada 10A Branca - 2 Módulos (4x2)", "category": "Energia", "description_commercial": "Dupla 10A Branca.", "tech_requirement": "Caixa 4x2."},
         {"name": "Tomada 10A Branca - 3 Módulos (4x2)", "category": "Energia", "description_commercial": "Tripla 10A Branca.", "tech_requirement": "Caixa 4x2."},
 
-        # ==================================================
-        # 11. TOMADAS 4X4
-        # ==================================================
         {"name": "Tomadas 4x4 - 4 Módulos (10A)", "category": "Energia", "description_commercial": "Painel 4 Tomadas 10A.", "tech_requirement": "Caixa 4x4."},
         {"name": "Tomadas 4x4 - 6 Módulos (10A)", "category": "Energia", "description_commercial": "Painel 6 Tomadas 10A.", "tech_requirement": "Caixa 4x4."},
         {"name": "Tomadas 4x4 - 4 Módulos (20A)", "category": "Energia", "description_commercial": "Painel 4 Tomadas 20A.", "tech_requirement": "Caixa 4x4."},
         
-        # ==================================================
-        # 12. MISTOS E INFRA
-        # ==================================================
         {"name": "Misto 4x2: 1 Tom + 1 Tecla", "category": "Misto", "description_commercial": "Híbrido Acrílico.", "tech_requirement": "Caixa 4x2. Separar Circuitos."},
         {"name": "Misto 4x2: 1 Tom + 2 Teclas", "category": "Misto", "description_commercial": "Híbrido Acrílico.", "tech_requirement": "Caixa 4x2. Separar Circuitos."},
         {"name": "Misto 4x4: 1 Tom / 1 Tecla", "category": "Misto", "description_commercial": "Painel Misto 4x4.", "tech_requirement": "Caixa 4x4."},
@@ -154,7 +133,9 @@ def get_master_list():
         {"name": "Saída de Fio (Furo)", "category": "Infra", "description_commercial": "Saída direta.", "tech_requirement": "Conector Wago."},
     ]
 
+# --- POPULA O BANCO SE ESTIVER VAZIO ---
 def seed_database():
+    # 1. Catálogo de Dispositivos
     docs = db.collection('catalogo').limit(1).stream()
     if not any(docs):
         print("Populando catálogo...")
@@ -164,10 +145,20 @@ def seed_database():
             doc_ref = db.collection('catalogo').document()
             batch.set(doc_ref, item)
         batch.commit()
+    
+    # 2. Lista de Ambientes (NOVO)
+    rooms = db.collection('ambientes').limit(1).stream()
+    if not any(rooms):
+        print("Populando ambientes...")
+        padrao = get_master_rooms()
+        batch_r = db.batch()
+        for r in padrao:
+            doc_ref = db.collection('ambientes').document()
+            batch_r.set(doc_ref, r)
+        batch_r.commit()
 
-# --- INTELIGÊNCIA DE NARRATIVA ---
+# --- INTELIGÊNCIA DE NARRATIVA (CORRIGIDA) ---
 def gerar_narrativa_ambiente(itens):
-    """Cria um texto descritivo elegante baseado nos itens."""
     circuitos_luz = 0
     tomadas_comuns = 0
     tomadas_especificas = 0
@@ -178,59 +169,78 @@ def gerar_narrativa_ambiente(itens):
         nome = item.catalog_item.name.lower()
         qtd = int(item.quantity)
         
-        # Lógica de Teclas
+        # Iluminação
         if "zigbee" in nome and "tecla" in nome:
             tem_automacao = True
             match = re.search(r'(\d+)\s*tecla', nome)
-            if match:
-                circuitos_luz += int(match.group(1)) * qtd
-            else:
-                circuitos_luz += 1 * qtd
+            if match: circuitos_luz += int(match.group(1)) * qtd
+            else: circuitos_luz += 1 * qtd
         
-        # Lógica de Tomadas
+        # Tomadas
         if "tomada" in nome:
-            if "vermelha" in nome or "20a" in nome:
-                tomadas_especificas += qtd
-            else:
-                tomadas_comuns += qtd
-                
-        # Lógica de Integração
+            if "vermelha" in nome or "20a" in nome: tomadas_especificas += qtd
+            else: tomadas_comuns += qtd
+        
+        # Integrações (Palavras-chave corrigidas)
         if "ar condicionado" in nome: integracoes.append("climatização")
-        if "tv" in nome or "home cinema" in nome: integracoes.append("audiovisual")
-        if "som" in nome: integracoes.append("sonorização ambiente")
-        if "cortina" in nome: integracoes.append("cortinas motorizadas")
+        if "tv" in nome or "home cinema" in nome or "video" in nome: integracoes.append("audiovisual")
+        # Fix Sonorização (Som, Audio, Sonoriza)
+        if "som" in nome or "sonoriza" in nome or "audio" in nome: integracoes.append("sonorização ambiente")
+        if "cortina" in nome or "persiana" in nome: integracoes.append("cortinas motorizadas")
         if "piscina" in nome: integracoes.append("área de lazer (piscina)")
-        if "jacuzzi" in nome: integracoes.append("spa/jacuzzi")
+        if "jacuzzi" in nome or "spa" in nome: integracoes.append("spa/jacuzzi")
     
     frases = []
     if circuitos_luz > 0:
         texto_luz = f"Neste ambiente, o sistema gerencia **{circuitos_luz} circuitos de iluminação**."
-        if tem_automacao:
-            texto_luz += " Todos habilitados para comando de voz, aplicativo e criação de cenas personalizadas."
+        if tem_automacao: texto_luz += " Todos habilitados para comando de voz e cenas."
         frases.append(texto_luz)
     
     if tomadas_comuns > 0 or tomadas_especificas > 0:
         partes = []
         if tomadas_comuns > 0: partes.append(f"{tomadas_comuns} pontos de uso geral")
-        if tomadas_especificas > 0: partes.append(f"{tomadas_especificas} pontos específicos (20A/220V)")
-        frases.append(f"Infraestrutura elétrica com {', '.join(partes)}.")
+        if tomadas_especificas > 0: partes.append(f"{tomadas_especificas} pontos específicos (20A)")
+        frases.append(f"Infraestrutura elétrica dimensionada com {', '.join(partes)}.")
 
     if integracoes:
         integracoes = list(set(integracoes))
         frases.append(f"Destaque para a **automação completa de {', '.join(integracoes)}**, integrando conforto em uma única interface.")
+    
+    if not frases:
+        return ""
         
     return " ".join(frases)
 
-# --- ROTAS DE GERENCIAMENTO ---
+# --- ROTAS DE GERENCIAMENTO DE AMBIENTES (NOVAS) ---
+
+@app.route('/adicionar_ambiente', methods=['POST'])
+def adicionar_ambiente():
+    project_id = request.form.get('project_id_redirect')
+    db.collection('ambientes').add({"name": request.form['name']})
+    if project_id: return redirect(url_for('gerenciar_projeto', project_id=project_id))
+    return redirect(url_for('index'))
+
+@app.route('/editar_ambiente', methods=['POST'])
+def editar_ambiente():
+    project_id = request.form.get('project_id_redirect')
+    room_id = request.form.get('room_id')
+    db.collection('ambientes').document(room_id).update({"name": request.form['name']})
+    if project_id: return redirect(url_for('gerenciar_projeto', project_id=project_id))
+    return redirect(url_for('index'))
+
+@app.route('/excluir_ambiente/<room_id>')
+def excluir_ambiente(room_id):
+    db.collection('ambientes').document(room_id).delete()
+    return redirect(request.referrer or url_for('index'))
+
+# --- ROTAS DE GERENCIAMENTO DE CATÁLOGO ---
 
 @app.route('/adicionar_item_catalogo', methods=['POST'])
 def adicionar_item_catalogo():
     project_id = request.form.get('project_id_redirect')
     novo_item = {
-        "name": request.form['name'],
-        "category": request.form['category'],
-        "description_commercial": request.form['description_commercial'],
-        "tech_requirement": request.form['tech_requirement']
+        "name": request.form['name'], "category": request.form['category'],
+        "description_commercial": request.form['description_commercial'], "tech_requirement": request.form['tech_requirement']
     }
     db.collection('catalogo').add(novo_item)
     if project_id: return redirect(url_for('gerenciar_projeto', project_id=project_id))
@@ -241,10 +251,8 @@ def editar_item_catalogo():
     project_id = request.form.get('project_id_redirect')
     item_id = request.form.get('item_id')
     dados = {
-        "name": request.form['name'],
-        "category": request.form['category'],
-        "description_commercial": request.form['description_commercial'],
-        "tech_requirement": request.form['tech_requirement']
+        "name": request.form['name'], "category": request.form['category'],
+        "description_commercial": request.form['description_commercial'], "tech_requirement": request.form['tech_requirement']
     }
     db.collection('catalogo').document(item_id).update(dados)
     if project_id: return redirect(url_for('gerenciar_projeto', project_id=project_id))
@@ -257,6 +265,7 @@ def excluir_item_catalogo(item_id):
 
 @app.route('/admin/atualizar_catalogo')
 def forcar_atualizacao():
+    # Atualiza Dispositivos
     docs = db.collection('catalogo').stream()
     for doc in docs: doc.reference.delete()
     items = get_master_list()
@@ -265,7 +274,7 @@ def forcar_atualizacao():
         doc_ref = db.collection('catalogo').document()
         batch.set(doc_ref, item)
     batch.commit()
-    return "<h1 style='color:green'>Catálogo Atualizado com Sucesso!</h1>"
+    return "<h1 style='color:green'>Catálogo Atualizado! (Ambientes mantidos)</h1>"
 
 # --- ROTAS PRINCIPAIS ---
 
@@ -322,17 +331,21 @@ def gerenciar_projeto(project_id):
     project_obj = DictObj(proj_data, id=proj_doc.id)
     project_obj.client = client_obj
     
+    # 1. Catálogo de Dispositivos
     cat_ref = db.collection('catalogo').order_by('name').stream()
     catalogo = [DictObj(doc.to_dict(), id=doc.id) for doc in cat_ref]
     
+    # 2. Lista de Ambientes (NOVO)
+    room_ref = db.collection('ambientes').order_by('name').stream()
+    ambientes = [DictObj(doc.to_dict(), id=doc.id) for doc in room_ref]
+    
+    # 3. Itens do Projeto
     items_ref = db.collection('projects').document(project_id).collection('items').stream()
     project_items = []
     for doc in items_ref:
         i_data = doc.to_dict()
         cat_item_obj = DictObj({
-            "name": i_data.get('item_name'),
-            "tech_requirement": i_data.get('tech_requirement'),
-            "description_commercial": i_data.get('description_commercial')
+            "name": i_data.get('item_name'), "tech_requirement": i_data.get('tech_requirement'), "description_commercial": i_data.get('description_commercial')
         })
         item_obj = DictObj(i_data, id=doc.id)
         item_obj.catalog_item = cat_item_obj
@@ -346,7 +359,7 @@ def gerenciar_projeto(project_id):
             cat_id = request.form['catalog_item_id']
             cat_doc = db.collection('catalogo').document(cat_id).get().to_dict()
             item_data = {
-                "room_name": request.form['room_name'],
+                "room_name": request.form['room_name'], # Vem do Select
                 "quantity": int(request.form['quantity']),
                 "obs": request.form['obs'],
                 "catalog_item_id": cat_id,
@@ -357,7 +370,33 @@ def gerenciar_projeto(project_id):
             db.collection('projects').document(project_id).collection('items').add(item_data)
         return redirect(url_for('gerenciar_projeto', project_id=project_id))
 
-    return render_template('gerenciar_projeto.html', project=project_obj, catalogo=catalogo)
+    # Passa 'ambientes' para o HTML
+    return render_template('gerenciar_projeto.html', project=project_obj, catalogo=catalogo, ambientes=ambientes)
+
+# --- ROTA: EDITAR ITEM DO PROJETO (ATUALIZADA E COMPLETA) ---
+@app.route('/editar_item_projeto', methods=['POST'])
+def editar_item_projeto():
+    project_id = request.form['project_id']
+    item_id = request.form['item_id']
+    cat_id = request.form['catalog_item_id'] # Novo ID de dispositivo selecionado
+    
+    # Busca dados atualizados do item no catálogo
+    cat_doc = db.collection('catalogo').document(cat_id).get().to_dict()
+    
+    # Atualiza TUDO no item do projeto
+    db.collection('projects').document(project_id).collection('items').document(item_id).update({
+        "room_name": request.form['room_name'],
+        "quantity": int(request.form['quantity']),
+        "obs": request.form['obs'],
+        "catalog_item_id": cat_id,
+        "item_name": cat_doc['name'],
+        "tech_requirement": cat_doc['tech_requirement'],
+        "description_commercial": cat_doc['description_commercial']
+    })
+    
+    return redirect(url_for('gerenciar_projeto', project_id=project_id))
+
+# --- PDFS (SEM LOGO) ---
 
 @app.route('/projeto/<project_id>/pdf/<tipo>')
 def gerar_pdf(project_id, tipo):
@@ -366,8 +405,8 @@ def gerar_pdf(project_id, tipo):
     client_obj = DictObj({"name": proj_data.get('client_name'), "address": proj_data.get('client_address'), "phone": proj_data.get('client_phone')})
     project = DictObj(proj_data, id=proj_doc.id)
     project.client = client_obj
-    items_ref = db.collection('projects').document(project_id).collection('items').stream()
     
+    items_ref = db.collection('projects').document(project_id).collection('items').stream()
     itens_por_ambiente = {}
     for doc in items_ref:
         data = doc.to_dict()
@@ -378,7 +417,6 @@ def gerar_pdf(project_id, tipo):
         if room not in itens_por_ambiente: itens_por_ambiente[room] = []
         itens_por_ambiente[room].append(item_obj)
     
-    # GERA NARRATIVAS
     narrativas = {}
     for ambiente, itens in itens_por_ambiente.items():
         narrativas[ambiente] = gerar_narrativa_ambiente(itens)

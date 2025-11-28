@@ -77,9 +77,11 @@
         {% for ambiente, itens in itens_por_ambiente.items() %}
             <h2>📍 {{ ambiente }}</h2>
             
+            {% if narrativas[ambiente] and narrativas[ambiente] != "" %}
             <div class="narrativa-box">
                 {{ narrativas[ambiente] }}
             </div>
+            {% endif %}
 
             {% for item in itens %}
             <div class="item-box">
