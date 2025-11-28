@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Home Automation</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #121212;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .login-container {
+            max-width: 400px;
+            padding: 30px;
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        }
+        .form-control {
+            background-color: #2d2d2d;
+            border-color: #444;
+            color: #e0e0e0;
+        }
+        .form-control:focus {
+            background-color: #333;
+            border-color: #0d6efd;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-container w-100">
+    <div class="text-center mb-4">
+        <i class="bi bi-house-gear-fill display-4 text-primary"></i>
+        <h3 class="text-white mt-2">Acesso Restrito ao Sistema</h3>
+    </div>
+
+    <!-- Mensagens de Erro -->
+    <div id="firebase-error" class="alert alert-danger d-none" role="alert"></div>
+
+    <!-- Formulário de Credenciais -->
+    <form id="credential-form" onsubmit="return false;">
+        <div class="mb-3">
+            <label for="email" class="form-label text-muted">E-mail</label>
+            <input type="email" id="email" class="form-control" required placeholder="seu.email@exemplo.com">
+        </div>
+        <div class="mb-3">
+            <label for="password" class="form-label text-muted">Senha</label>
+            <input type="password" id="password" class="form-control" required placeholder="Sua senha">
+        </div>
+        
+        <div class="d-grid gap-2 mt-4">
+            <!-- Botão de Login mantido -->
+            <button type="button" onclick="handleLogin()" class="btn btn-primary btn-lg shadow-sm">
+                <i class="bi bi-box-arrow-in-right me-2"></i> Entrar
+            </button>
+            <!-- O botão de "Criar Nova Conta" foi removido -->
+        </div>
+    </form>
+</div>
+
+<!-- SDK Firebase (Client-side) -->
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+
+<script>
+    // ⚠️ SUBSTITUA COM SUAS PRÓPRIAS CONFIGURAÇÕES DO FIREBASE ⚠️
+    // Use as chaves fornecidas anteriormente:
+    const firebaseConfig = {
+        apiKey: "AIzaSyDdu8g0Xy9k9xAQjyj87UcWSijkCdxjdtw",
+        authDomain: "consultoria-f898f.firebaseapp.com",
+        projectId: "consultoria-f898f",
+        storageBucket: "consultoria-f898f.firebasestorage.app",
+        messagingSenderId: "644125875966",
+        appId: "1:644125875966:web:658b1b0c1ab182d6068faf"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const errorDisplay = document.getElementById('firebase-error');
+    
+    function displayError(message) {
+        // Mapeia os erros comuns do Firebase para português
+        if (message.includes('auth/wrong-password')) {
+            message = 'Senha incorreta.';
+        } else if (message.includes('auth/user-not-found')) {
+            message = 'Nenhuma conta encontrada com este e-mail.';
+        } else if (message.includes('auth/email-already-in-use')) {
+            message = 'Este e-mail já está em uso por outra conta.';
+        } else if (message.includes('auth/weak-password')) {
+            message = 'A senha deve ter pelo menos 6 caracteres.';
+        } else if (message.includes('auth/invalid-email')) {
+            message = 'O formato do e-mail é inválido.';
+        } else if (message.includes('auth/configuration-not-found')) {
+            message = 'Erro de configuração do Firebase. Verifique suas chaves.'
+        }
+        
+        errorDisplay.textContent = "Erro: " + message;
+        errorDisplay.classList.remove('d-none');
+    }
+
+    async function sendTokenToFlask(user) {
+        try {
+            const idToken = await user.getIdToken();
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/login' + window.location.search; 
+
+            const tokenInput = document.createElement('input');
+            tokenInput.type = 'hidden';
+            tokenInput.name = 'id_token';
+            tokenInput.value = idToken;
+
+            form.appendChild(tokenInput);
+            document.body.appendChild(form);
+            
+            form.submit();
+        } catch (error) {
+            console.error("Erro ao enviar token para o Flask:", error);
+            displayError("Erro de comunicação com o servidor.");
+        }
+    }
+
+    // ----------------------------------------------------
+    // FUNÇÃO PRINCIPAL DE LOGIN
+    // ----------------------------------------------------
+
+    async function handleLogin() {
+        errorDisplay.classList.add('d-none');
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        if (!email || !password) return;
+
+        try {
+            // Chama a função de login do Firebase com e-mail e senha
+            const userCredential = await auth.signInWithEmailAndPassword(email, password);
+            // Se logado, envia o token para o Flask
+            sendTokenToFlask(userCredential.user); 
+        } catch (error) {
+            displayError(error.message);
+        }
+    }
+    
+    // NOTA: A função handleRegister foi removida para impedir o auto-registro.
+</script>
+
+</body>
+</html>

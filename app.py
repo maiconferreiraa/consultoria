@@ -1,14 +1,19 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, make_response
+from flask import Flask, render_template, request, redirect, url_for, make_response, session
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import credentials, firestore, auth as firebase_auth
 from weasyprint import HTML
 from datetime import datetime
+from functools import wraps
 import re
 
+# --- CONFIGURAÇÃO INICIAL E SECRET KEY ---
 app = Flask(__name__)
+# CHAVE SECRETA É OBRIGATÓRIA PARA USAR SESSÕES (necessário para o login)
+app.secret_key = os.environ.get('SECRET_KEY', 'SUA_CHAVE_SECRETA_MUITO_LONGA_E_COMPLEXA')
+USER_SESSION_KEY = 'user_id'
 
-# --- CONFIGURAÇÃO ---
+
 # Certifique-se de que o arquivo firebase_key.json está na mesma pasta
 if os.path.exists("firebase_key.json"):
     cred = credentials.Certificate("firebase_key.json")
@@ -26,9 +31,59 @@ class DictObj:
             for key, value in data.items():
                 setattr(self, key, value)
 
-# --- 1. LISTA MESTRE DE AMBIENTES (PADRÃO) ---
+# --- DECORADOR DE SEGURANÇA ---
+
+def get_current_user_id():
+    """Retorna o UID do usuário atualmente logado."""
+    return session.get(USER_SESSION_KEY)
+
+def login_required(f):
+    """Protege as rotas, verifica a sessão e redireciona para o login."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if USER_SESSION_KEY not in session:
+            # Redireciona para a tela de login se não houver ID na sessão
+            return redirect(url_for('login', next=request.url))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# --- CONTEXT PROCESSOR: Injeta configurações do usuário em todos os templates ---
+@app.context_processor
+def inject_user_settings():
+    """Busca o título personalizado do usuário ou usa o padrão."""
+    user_id = get_current_user_id()
+    
+    # Título padrão
+    app_title_custom = "Home Automation Technology"
+    
+    if user_id:
+        # Tenta buscar a configuração do Firestore
+        settings_doc = db.collection('user_settings').document(user_id).get()
+        if settings_doc.exists:
+            custom_title = settings_doc.to_dict().get('app_title')
+            if custom_title:
+                app_title_custom = custom_title
+                
+    # Retorna as variáveis que estarão disponíveis em todos os templates
+    return dict(app_title_custom=app_title_custom)
+
+# --- ROTAS DE CONFIGURAÇÃO (Título Personalizado) ---
+@app.route('/editar_titulo', methods=['POST'])
+@login_required
+def editar_titulo():
+    user_id = get_current_user_id()
+    new_title = request.form.get('app_title_new')
+    
+    if new_title:
+        # Salva o novo título na coleção user_settings
+        db.collection('user_settings').document(user_id).set({'app_title': new_title}, merge=True)
+        
+    # Redireciona para a página anterior (ou index se não houver)
+    return redirect(request.referrer or url_for('index'))
+
+
+# --- LISTAS MESTRES (MANTIDAS IGUAIS) ---
 def get_master_rooms():
-    """Lista padrão de cômodos para iniciar o sistema"""
     return [
         {"name": "Sala de Estar"}, {"name": "Sala de Jantar"}, {"name": "Cozinha"},
         {"name": "Área Gourmet"}, {"name": "Quarto Master (Suíte)"}, {"name": "Quarto Hóspedes"},
@@ -38,10 +93,7 @@ def get_master_rooms():
         {"name": "Lavanderia / Área de Serviço"}, {"name": "Área Externa / Piscina"}, {"name": "Jardim"}
     ]
 
-# --- 2. LISTA MESTRE DE DISPOSITIVOS (SUA LISTA PERSONALIZADA) ---
 def get_master_list():
-    """Retorna o catálogo unificado: Zigbee + Tomadas + Integrações de Luxo"""
-    
     desc_zigbee = "Interruptor inteligente 4x2. Acabamento Acrílico (Touch). Comando de Voz e App."
     desc_zigbee_4x4 = "Painel Inteligente 4x4. Acabamento Acrílico (Touch). Comando de Voz e App."
     desc_tomada_red = "Tomada 20A Vermelha (Pino Grosso) 220V. Acabamento Acrílico."
@@ -68,7 +120,6 @@ def get_master_list():
         {"name": "Zigbee 3 Teclas (4x2)", "category": "Iluminação", "description_commercial": desc_zigbee, "tech_requirement": "Caixa 4x2. F+N+3 Retornos."},
         {"name": "Zigbee 4 Teclas (4x2)", "category": "Iluminação", "description_commercial": desc_zigbee, "tech_requirement": "Caixa 4x2. F+N+4 Retornos. (Alta Densidade)."},
 
-    
         {"name": "Zigbee 1 Tecla (4x4)", "category": "Iluminação", "description_commercial": desc_zigbee_4x4, "tech_requirement": "Caixa 4x4. F+N+1 Retorno."},
         {"name": "Zigbee 2 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_zigbee_4x4, "tech_requirement": "Caixa 4x4. F+N+2 Retornos."},
         {"name": "Zigbee 3 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_zigbee_4x4, "tech_requirement": "Caixa 4x4. F+N+3 Retornos."},
@@ -103,12 +154,12 @@ def get_master_list():
         {"name": "Ponto Internet RJ45 (4x2)", "category": "Dados", "description_commercial": "Rede CAT6.", "tech_requirement": "Cabo CAT6."},
         {"name": "Tampa Cega 4x2", "category": "Infra", "description_commercial": desc_infra, "tech_requirement": "Caixa 4x2."},
         {"name": "Tampa Cega 4x4", "category": "Infra", "description_commercial": desc_infra, "tech_requirement": "Caixa 4x4."},
-        {"name": "Saída de Fio (Furo)", "category": "Infra", "description_commercial": "Saída direta.", "tech_requirement": "Conector Wago."},
+        {"name": "Saída de Fio (Furo)", "category": "Infra", "description_commercial": "Conector Wago."},
     ]
 
-# --- POPULA O BANCO SE ESTIVER VAZIO ---
+# --- POPULAÇÃO INICIAL (SEED) ---
 def seed_database():
-    # 1. Catálogo de Dispositivos
+    # 1. Catálogo de Dispositivos (Global)
     docs = db.collection('catalogo').limit(1).stream()
     if not any(docs):
         print("Populando catálogo...")
@@ -119,7 +170,7 @@ def seed_database():
             batch.set(doc_ref, item)
         batch.commit()
     
-    # 2. Lista de Ambientes (NOVO)
+    # 2. Lista de Ambientes (Global)
     rooms = db.collection('ambientes').limit(1).stream()
     if not any(rooms):
         print("Populando ambientes...")
@@ -130,7 +181,7 @@ def seed_database():
             batch_r.set(doc_ref, r)
         batch_r.commit()
 
-# --- INTELIGÊNCIA DE NARRATIVA (CORRIGIDA) ---
+# --- INTELIGÊNCIA DE NARRATIVA ---
 def gerar_narrativa_ambiente(itens):
     circuitos_luz = 0
     tomadas_comuns = 0
@@ -142,22 +193,18 @@ def gerar_narrativa_ambiente(itens):
         nome = item.catalog_item.name.lower()
         qtd = int(item.quantity)
         
-        # Iluminação
         if "zigbee" in nome and "tecla" in nome:
             tem_automacao = True
             match = re.search(r'(\d+)\s*tecla', nome)
             if match: circuitos_luz += int(match.group(1)) * qtd
             else: circuitos_luz += 1 * qtd
         
-        # Tomadas
         if "tomada" in nome:
             if "vermelha" in nome or "20a" in nome: tomadas_especificas += qtd
             else: tomadas_comuns += qtd
         
-        # Integrações (Palavras-chave corrigidas)
         if "ar condicionado" in nome: integracoes.append("climatização")
         if "tv" in nome or "home cinema" in nome or "video" in nome: integracoes.append("audiovisual")
-        # Fix Sonorização (Som, Audio, Sonoriza)
         if "som" in nome or "sonoriza" in nome or "audio" in nome: integracoes.append("sonorização ambiente")
         if "cortina" in nome or "persiana" in nome: integracoes.append("cortinas motorizadas")
         if "piscina" in nome: integracoes.append("área de lazer (piscina)")
@@ -184,16 +231,71 @@ def gerar_narrativa_ambiente(itens):
         
     return " ".join(frases)
 
-# --- ROTAS DE GERENCIAMENTO DE AMBIENTES (NOVAS) ---
+# --- ROTAS DE AUTENTICAÇÃO ---
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        id_token = request.form.get('id_token')
+        if not id_token:
+            return "Erro: Token de autenticação faltando.", 400
+
+        try:
+            # 1. Verifica e decodifica o token (Segurança)
+            decoded_token = firebase_auth.verify_id_token(id_token)
+            uid = decoded_token['uid']
+            
+            # 2. Guarda o UID na sessão do Flask
+            session[USER_SESSION_KEY] = uid
+            
+            # 3. CORREÇÃO: Força o redirecionamento para o index (Dashboard)
+            return redirect(url_for('index'))
+
+        except Exception as e:
+            # Em caso de token expirado ou inválido
+            return f"Erro de autenticação: {e}", 401
+
+    if USER_SESSION_KEY in session:
+        # Se o usuário já está logado, manda direto para o index
+        return redirect(url_for('index'))
+        
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.pop(USER_SESSION_KEY, None)
+    return redirect(url_for('login'))
+
+
+# --- ROTAS DE GERENCIAMENTO (PROTEGIDAS E FILTRADAS) ---
+
+@app.route('/')
+@login_required 
+def index():
+    user_id = get_current_user_id()
+    
+    # FILTRO: Apenas projetos deste usuário, ordenado por data
+    projects_ref = db.collection('projects').where('user_id', '==', user_id).order_by('created_at', direction=firestore.Query.DESCENDING).stream()
+    projects = []
+    for doc in projects_ref:
+        data = doc.to_dict()
+        client_obj = DictObj({"name": data.get('client_name'), "address": data.get('client_address'), "phone": data.get('client_phone')})
+        proj_obj = DictObj(data, id=doc.id)
+        proj_obj.client = client_obj
+        projects.append(proj_obj)
+        
+    return render_template('index.html', projects=projects, now=datetime.now())
 
 @app.route('/adicionar_ambiente', methods=['POST'])
+@login_required 
 def adicionar_ambiente():
     project_id = request.form.get('project_id_redirect')
-    db.collection('ambientes').add({"name": request.form['name']})
+    db.collection('ambientes').add({"name": request.form['name'], "user_id": get_current_user_id()})
     if project_id: return redirect(url_for('gerenciar_projeto', project_id=project_id))
     return redirect(url_for('index'))
 
 @app.route('/editar_ambiente', methods=['POST'])
+@login_required 
 def editar_ambiente():
     project_id = request.form.get('project_id_redirect')
     room_id = request.form.get('room_id')
@@ -202,24 +304,26 @@ def editar_ambiente():
     return redirect(url_for('index'))
 
 @app.route('/excluir_ambiente/<room_id>')
+@login_required 
 def excluir_ambiente(room_id):
     db.collection('ambientes').document(room_id).delete()
     return redirect(request.referrer or url_for('index'))
 
-# --- ROTAS DE GERENCIAMENTO DE CATÁLOGO ---
-
 @app.route('/adicionar_item_catalogo', methods=['POST'])
+@login_required 
 def adicionar_item_catalogo():
     project_id = request.form.get('project_id_redirect')
     novo_item = {
         "name": request.form['name'], "category": request.form['category'],
-        "description_commercial": request.form['description_commercial'], "tech_requirement": request.form['tech_requirement']
+        "description_commercial": request.form['description_commercial'], "tech_requirement": request.form['tech_requirement'],
+        "user_id": get_current_user_id()
     }
     db.collection('catalogo').add(novo_item)
     if project_id: return redirect(url_for('gerenciar_projeto', project_id=project_id))
     return redirect(url_for('index'))
 
 @app.route('/editar_item_catalogo', methods=['POST'])
+@login_required 
 def editar_item_catalogo():
     project_id = request.form.get('project_id_redirect')
     item_id = request.form.get('item_id')
@@ -232,53 +336,36 @@ def editar_item_catalogo():
     return redirect(url_for('index'))
 
 @app.route('/excluir_item_catalogo/<item_id>')
+@login_required 
 def excluir_item_catalogo(item_id):
     db.collection('catalogo').document(item_id).delete()
     return redirect(request.referrer or url_for('index'))
 
-@app.route('/admin/atualizar_catalogo')
-def forcar_atualizacao():
-    # Atualiza Dispositivos
-    docs = db.collection('catalogo').stream()
-    for doc in docs: doc.reference.delete()
-    items = get_master_list()
-    batch = db.batch()
-    for item in items:
-        doc_ref = db.collection('catalogo').document()
-        batch.set(doc_ref, item)
-    batch.commit()
-    return "<h1 style='color:green'>Catálogo Atualizado! (Ambientes mantidos)</h1>"
-
-# --- ROTAS PRINCIPAIS ---
-
-@app.route('/')
-def index():
-    projects_ref = db.collection('projects').order_by('created_at', direction=firestore.Query.DESCENDING).stream()
-    projects = []
-    for doc in projects_ref:
-        data = doc.to_dict()
-        client_obj = DictObj({"name": data.get('client_name'), "address": data.get('client_address'), "phone": data.get('client_phone')})
-        proj_obj = DictObj(data, id=doc.id)
-        proj_obj.client = client_obj
-        projects.append(proj_obj)
-    return render_template('index.html', projects=projects)
-
 @app.route('/novo_projeto', methods=['GET', 'POST'])
+@login_required 
 def novo_projeto():
     if request.method == 'POST':
         project_data = {
             "client_name": request.form['cliente'],
             "client_address": request.form['endereco'],
             "client_phone": request.form['telefone'],
-            "created_at": datetime.now()
+            "created_at": datetime.now(),
+            "user_id": get_current_user_id()
         }
         _, project_ref = db.collection('projects').add(project_data)
         return redirect(url_for('gerenciar_projeto', project_id=project_ref.id))
-    return render_template('nova_consultoria.html')
+    return render_template('nova_consultoria.html', now=datetime.now())
 
 @app.route('/editar_projeto/<project_id>', methods=['GET', 'POST'])
+@login_required 
 def editar_projeto(project_id):
     project_ref = db.collection('projects').document(project_id)
+    proj_doc = project_ref.get()
+    
+    # SEGURANÇA: Verifica se o projeto existe e pertence ao usuário
+    if not proj_doc.exists or proj_doc.to_dict().get('user_id') != get_current_user_id():
+        return redirect(url_for('index'))
+
     if request.method == 'POST':
         project_ref.update({
             "client_name": request.form['cliente'],
@@ -286,31 +373,55 @@ def editar_projeto(project_id):
             "client_phone": request.form['telefone']
         })
         return redirect(url_for('index'))
-    proj_doc = project_ref.get()
+    
     data = proj_doc.to_dict()
     project = DictObj({"client_name": data.get('client_name'), "client_address": data.get('client_address'), "client_phone": data.get('client_phone')}, id=proj_doc.id)
-    return render_template('editar_projeto.html', project=project)
+    return render_template('editar_projeto.html', project=project, now=datetime.now())
 
 @app.route('/apagar_projeto/<project_id>')
+@login_required 
 def apagar_projeto(project_id):
-    db.collection('projects').document(project_id).delete()
+    proj_doc = db.collection('projects').document(project_id).get()
+    
+    if proj_doc.exists and proj_doc.to_dict().get('user_id') == get_current_user_id():
+        db.collection('projects').document(project_id).delete()
+    
     return redirect(url_for('index'))
 
 @app.route('/projeto/<project_id>', methods=['GET', 'POST'])
+@login_required 
 def gerenciar_projeto(project_id):
+    user_id = get_current_user_id()
     proj_doc = db.collection('projects').document(project_id).get()
+    
+    # SEGURANÇA: Redireciona se o projeto não existir ou não pertencer ao usuário
+    if not proj_doc.exists or proj_doc.to_dict().get('user_id') != user_id:
+        return redirect(url_for('index'))
+
     proj_data = proj_doc.to_dict()
     client_obj = DictObj({"name": proj_data.get('client_name'), "address": proj_data.get('client_address'), "phone": proj_data.get('client_phone')})
     project_obj = DictObj(proj_data, id=proj_doc.id)
     project_obj.client = client_obj
     
-    # 1. Catálogo de Dispositivos
-    cat_ref = db.collection('catalogo').order_by('name').stream()
-    catalogo = [DictObj(doc.to_dict(), id=doc.id) for doc in cat_ref]
+    # --- 1. Catálogo de Dispositivos: DUAS CONSULTAS (resolve o problema dos itens mestres vazios) ---
+    global_cat_ref = db.collection('catalogo').order_by('name').stream()
+    global_catalogo = [DictObj(doc.to_dict(), id=doc.id) for doc in global_cat_ref]
     
-    # 2. Lista de Ambientes (NOVO)
-    room_ref = db.collection('ambientes').order_by('name').stream()
-    ambientes = [DictObj(doc.to_dict(), id=doc.id) for doc in room_ref]
+    user_cat_ref = db.collection('catalogo').where('user_id', '==', user_id).order_by('name').stream()
+    user_catalogo = [DictObj(doc.to_dict(), id=doc.id) for doc in user_cat_ref]
+
+    # Mescla as duas listas
+    catalogo = global_catalogo + user_catalogo
+    
+    # --- 2. Lista de Ambientes: DUAS CONSULTAS (resolve o problema dos ambientes mestres vazios) ---
+    global_room_ref = db.collection('ambientes').order_by('name').stream()
+    global_ambientes = [DictObj(doc.to_dict(), id=doc.id) for doc in global_room_ref]
+    
+    user_room_ref = db.collection('ambientes').where('user_id', '==', user_id).order_by('name').stream()
+    user_ambientes = [DictObj(doc.to_dict(), id=doc.id) for doc in user_room_ref]
+    
+    # Mescla as duas listas.
+    ambientes = global_ambientes + user_ambientes
     
     # 3. Itens do Projeto
     items_ref = db.collection('projects').document(project_id).collection('items').stream()
@@ -332,7 +443,7 @@ def gerenciar_projeto(project_id):
             cat_id = request.form['catalog_item_id']
             cat_doc = db.collection('catalogo').document(cat_id).get().to_dict()
             item_data = {
-                "room_name": request.form['room_name'], # Vem do Select
+                "room_name": request.form['room_name'],
                 "quantity": int(request.form['quantity']),
                 "obs": request.form['obs'],
                 "catalog_item_id": cat_id,
@@ -343,20 +454,18 @@ def gerenciar_projeto(project_id):
             db.collection('projects').document(project_id).collection('items').add(item_data)
         return redirect(url_for('gerenciar_projeto', project_id=project_id))
 
-    # Passa 'ambientes' para o HTML
-    return render_template('gerenciar_projeto.html', project=project_obj, catalogo=catalogo, ambientes=ambientes)
+    return render_template('gerenciar_projeto.html', project=project_obj, catalogo=catalogo, ambientes=ambientes, now=datetime.now())
 
-# --- ROTA: EDITAR ITEM DO PROJETO (ATUALIZADA E COMPLETA) ---
+# --- ROTA: EDITAR ITEM DO PROJETO ---
 @app.route('/editar_item_projeto', methods=['POST'])
+@login_required 
 def editar_item_projeto():
     project_id = request.form['project_id']
     item_id = request.form['item_id']
-    cat_id = request.form['catalog_item_id'] # Novo ID de dispositivo selecionado
+    cat_id = request.form['catalog_item_id']
     
-    # Busca dados atualizados do item no catálogo
     cat_doc = db.collection('catalogo').document(cat_id).get().to_dict()
     
-    # Atualiza TUDO no item do projeto
     db.collection('projects').document(project_id).collection('items').document(item_id).update({
         "room_name": request.form['room_name'],
         "quantity": int(request.form['quantity']),
@@ -369,11 +478,17 @@ def editar_item_projeto():
     
     return redirect(url_for('gerenciar_projeto', project_id=project_id))
 
-# --- PDFS (SEM LOGO) ---
+# --- PDFS (AGORA PROTEGIDOS) ---
 
 @app.route('/projeto/<project_id>/pdf/<tipo>')
+@login_required 
 def gerar_pdf(project_id, tipo):
+    user_id = get_current_user_id()
     proj_doc = db.collection('projects').document(project_id).get()
+    
+    if not proj_doc.exists or proj_doc.to_dict().get('user_id') != user_id:
+        return redirect(url_for('index'))
+
     proj_data = proj_doc.to_dict()
     client_obj = DictObj({"name": proj_data.get('client_name'), "address": proj_data.get('client_address'), "phone": proj_data.get('client_phone')})
     project = DictObj(proj_data, id=proj_doc.id)
@@ -403,8 +518,14 @@ def gerar_pdf(project_id, tipo):
     return response
 
 @app.route('/projeto/<project_id>/pdf/levantamento')
+@login_required 
 def gerar_levantamento(project_id):
+    user_id = get_current_user_id()
     proj_doc = db.collection('projects').document(project_id).get()
+
+    if not proj_doc.exists or proj_doc.to_dict().get('user_id') != user_id:
+        return redirect(url_for('index'))
+
     proj_data = proj_doc.to_dict()
     client_obj = DictObj({"name": proj_data.get('client_name'), "address": proj_data.get('client_address'), "phone": proj_data.get('client_phone')})
     project = DictObj(proj_data, id=proj_doc.id)

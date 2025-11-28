@@ -1,64 +1,105 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html>
 <head>
-    <meta charset="UTF-8">
+    <title>Relatório Técnico - {{ app_title_custom }}</title>
     <style>
-        @page { size: A4; margin: 2cm; }
-        body { font-family: sans-serif; line-height: 1.4; color: #333; }
-        /* Cabeçalho com o novo nome */
-        .header { border-bottom: 2px solid #0056b3; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .company-name { font-size: 18px; font-weight: bold; color: #0056b3; text-transform: uppercase; }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 10pt; color: #333; }
+        .container { width: 90%; margin: 20px auto; }
+        .header { text-align: center; border-bottom: 2px solid #0056b3; padding-bottom: 10px; margin-bottom: 20px; }
+        .header h1 { color: #0056b3; font-size: 16pt; margin: 0; }
+        .header h2 { font-size: 12pt; margin: 5px 0 0; color: #555; }
+        .section-title { font-size: 14pt; color: #0056b3; border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-top: 25px; margin-bottom: 15px; }
         
-        .alert-box { background-color: #fff3cd; border: 1px solid #ffeeba; padding: 10px; margin-bottom: 20px; font-size: 12px; }
-        h2 { background-color: #0056b3; color: white; padding: 5px 10px; font-size: 16px; margin-top: 30px; }
-        table { width: 100%; border-collapse: collapse; font-size: 11px; }
-        th, td { border-bottom: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: top; }
-        th { background-color: #f2f2f2; }
-        .tech-req { font-weight: bold; color: #c9302c; }
+        /* BOX DE ATENÇÃO PARA O ELETRICISTA (VERMELHO) */
+        .eletrician-alert { 
+            border: 2px solid red; 
+            background-color: #ffeaea; 
+            color: #cc0000; 
+            padding: 10px; 
+            margin-bottom: 20px; 
+            font-weight: bold;
+            text-align: center;
+        }
+        .eletrician-alert strong { color: #880000; }
+        
+        .client-info table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .client-info th, .client-info td { padding: 5px 0; text-align: left; }
+        .client-info th { width: 20%; color: #555; font-weight: normal; }
+        .client-info td { font-weight: bold; }
+        .ambiente { margin-bottom: 25px; border: 1px solid #eee; padding: 15px; border-radius: 5px; }
+        .ambiente h3 { font-size: 12pt; color: #333; margin-top: 0; border-bottom: 1px dotted #ccc; padding-bottom: 5px; }
+        .item-list table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .item-list th, .item-list td { border: 1px solid #eee; padding: 8px; text-align: left; vertical-align: top; }
+        .item-list th { background-color: #f5f5f5; color: #333; font-weight: bold; }
+        .footer { border-top: 1px solid #ccc; padding-top: 10px; margin-top: 30px; text-align: center; font-size: 8pt; color: #777; }
+        .narrativa p { font-style: italic; color: #444; margin-top: 5px; line-height: 1.4; }
+        .total-item { font-weight: bold; }
+        /* Destaque para as colunas de Requisitos e Observações */
+        .tech-highlight { color: #0056b3; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="company-name">Home Automation Technology</div>
-        <div style="text-align: right; font-size: 10px;">
-            ROTEIRO TÉCNICO DE INFRAESTRUTURA<br>
-            Gerado em: {{ data_hoje }}
+    <div class="container">
+        <div class="header">
+            <!-- TÍTULO DINÂMICO AQUI -->
+            <h1>{{ app_title_custom }}</h1>
+            <h2>Relatório Técnico de Infraestrutura e Dispositivos</h2>
+            <p>Data: {{ data_hoje }}</p>
+        </div>
+
+        <div class="eletrician-alert">
+            ATENÇÃO AO ELETRICISTA: Este documento detalha os pontos e requisitos de infraestrutura. 
+            Verifique as colunas **"Requisito de Infraestrutura"** e **"Observação"** em cada ambiente para especificações críticas (ex: fiação, caixas 4x4, circuitos 20A, etc.).
+        </div>
+
+        <div class="client-info">
+            <div class="section-title">Dados do Projeto</div>
+            <table>
+                <tr><th>Cliente:</th><td>{{ project.client.name }}</td><th>Endereço:</th><td>{{ project.client.address }}</td></tr>
+                <tr><th>Telefone:</th><td>{{ project.client.phone }}</td><th>ID do Projeto:</th><td>{{ project.id }}</td></tr>
+            </table>
+        </div>
+
+        <div class="section-title">Detalhamento por Ambiente</div>
+
+        {% for ambiente, itens in itens_por_ambiente.items() %}
+        <div class="ambiente">
+            <h3>{{ ambiente }}</h3>
+
+            <div class="narrativa">
+                <p><strong>Resumo Técnico:</strong> {{ narrativas[ambiente] | safe }}</p>
+            </div>
+
+            <div class="item-list">
+                <h4>Requisitos Técnicos por Ponto:</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">Qtd</th>
+                            <th style="width: 30%;">Item</th>
+                            <th style="width: 40%;">Requisito de Infraestrutura</th>
+                            <th style="width: 25%;">Observação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in itens %}
+                        <tr>
+                            <td class="total-item">{{ item.quantity }}</td>
+                            <td>{{ item.catalog_item.name }}</td>
+                            <!-- Destaque para as informações críticas -->
+                            <td class="tech-highlight">{{ item.catalog_item.tech_requirement }}</td>
+                            <td class="tech-highlight">{{ item.obs | default('N/A') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="footer">
+            Este documento é de uso interno e técnico, não deve ser distribuído ao cliente final.
         </div>
     </div>
-    
-    <div class="alert-box">
-        <strong>CLIENTE:</strong> {{ project.client.name }} <br>
-        <strong>CONTATO:</strong> {{ project.client.phone }} <br>
-        <strong>ENDEREÇO:</strong> {{ project.client.address }} <br><br>
-        <strong>NOTA AO ELETRICISTA:</strong> Os requisitos abaixo são obrigatórios para o funcionamento da automação.
-    </div>
-
-    {% for ambiente, itens in itens_por_ambiente.items() %}
-        <h2>📍 {{ ambiente }}</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th width="20%">Dispositivo</th><th width="5%">Qtd</th><th width="75%">Requisito Obrigatório (Infraestrutura)</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in itens %}
-                <tr>
-                    <td>{{ item.catalog_item.name }}</td>
-                    <td align="center">{{ item.quantity }}</td>
-                    <td>
-                        <div class="tech-req">⚠ {{ item.catalog_item.tech_requirement }}</div>
-                        {% if item.obs %} <small>Obs: {{ item.obs }}</small> {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% endfor %}
-    
-    <br><br>
-    <p style="font-size: 10px; text-align: center; border-top: 1px solid #ccc; padding-top: 10px;">
-        Documento gerado pelo sistema Home Automation Technology
-    </p>
 </body>
 </html>

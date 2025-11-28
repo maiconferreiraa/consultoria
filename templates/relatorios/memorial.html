@@ -1,108 +1,95 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html>
 <head>
-    <meta charset="UTF-8">
+    <title>Memorial Descritivo - {{ app_title_custom }}</title>
     <style>
-        @page { size: A4; margin: 2.5cm; }
-        body { font-family: 'Helvetica', sans-serif; color: #333; line-height: 1.5; }
+        /* Estilos de impressão e PDF */
+        body { font-family: 'Times New Roman', Times, serif; margin: 0; padding: 0; font-size: 11pt; color: #000; }
+        .container { width: 85%; margin: 30px auto; line-height: 1.6; }
+        .header { text-align: center; border-bottom: 3px solid #000; padding-bottom: 15px; margin-bottom: 30px; }
         
-        .capa { text-align: center; position: relative; height: 900px; }
-        .logo-box { margin-top: 200px; margin-bottom: 50px; }
-        .titulo-capa { font-size: 36px; color: #1e1e1e; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
-        .subtitulo-capa { font-size: 18px; color: #0d6efd; margin-top: 10px; }
-        .info-cliente { margin-top: 150px; border-top: 1px solid #ccc; padding-top: 20px; width: 60%; margin-left: 20%; }
+        /* Título Principal (Nome da Empresa) */
+        .header h1 { font-size: 18pt; margin: 0; color: #000; } 
+        .header h2 { font-size: 14pt; margin: 5px 0 0; color: #333; }
         
-        .page-break { page-break-before: always; }
-        h1 { color: #0d6efd; border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 24px; margin-top: 0; }
-        h2 { background-color: #f8f9fa; color: #333; padding: 8px 15px; border-left: 5px solid #0d6efd; font-size: 16px; margin-top: 30px; border-radius: 0 5px 5px 0; }
-        
-        .intro-text { font-size: 12px; color: #555; text-align: justify; margin-bottom: 30px; }
-        
-        /* CAIXA DA NARRATIVA INTELIGENTE */
-        .narrativa-box {
-            background-color: #f1f8ff;
-            border: 1px solid #cce5ff;
-            color: #004085;
-            padding: 10px 15px;
-            font-size: 11px;
-            font-style: italic;
-            border-radius: 4px;
-            margin-bottom: 15px;
-            text-align: justify;
+        .section-title { 
+            font-size: 16pt; 
+            color: #000; 
+            background-color: #eee; 
+            padding: 8px; 
+            margin-top: 30px; 
+            margin-bottom: 20px; 
+            border-left: 5px solid #0056b3; 
         }
-
-        .item-box { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px dashed #eee; page-break-inside: avoid; }
-        .item-header { display: flex; justify-content: space-between; align-items: baseline; }
-        .item-name { font-weight: bold; font-size: 13px; color: #1e1e1e; }
-        .item-qty { font-size: 11px; font-weight: bold; background-color: #0d6efd; color: white; padding: 2px 8px; border-radius: 10px; }
-        .item-desc { font-size: 11px; color: #666; margin-top: 5px; text-align: justify; }
         
-        .footer { position: fixed; bottom: 0; width: 100%; text-align: center; font-size: 9px; color: #aaa; border-top: 1px solid #eee; padding-top: 10px; }
+        .client-info table { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
+        .client-info th, .client-info td { padding: 6px 0; text-align: left; }
+        .client-info th { width: 25%; font-weight: normal; color: #555; }
+        .client-info td { font-weight: bold; }
+        
+        .ambiente { margin-bottom: 30px; border: 1px dashed #ccc; padding: 20px; }
+        .ambiente h3 { font-size: 13pt; color: #0056b3; margin-top: 0; margin-bottom: 10px; }
+        
+        .narrativa p { margin-bottom: 15px; text-align: justify; }
+        
+        .item-list ul { list-style: disc; margin-left: 20px; padding-left: 0; }
+        .item-list li { margin-bottom: 5px; }
+        
+        .footer { border-top: 1px solid #ccc; padding-top: 15px; margin-top: 40px; text-align: center; font-size: 9pt; color: #777; }
     </style>
 </head>
 <body>
-
-    <div class="capa">
-        <div class="logo-box">
-            <div class="titulo-capa">Home Automation<br>Technology</div>
-            <div class="subtitulo-capa">Memorial Descritivo</div>
-        </div>
-        
-        <div class="info-cliente">
-            <p><strong>PREPARADO PARA:</strong><br>
-            {{ project.client.name }}</p>
-            <p>{{ project.client.address }}</p>
-            <p style="color: #888; font-size: 12px;">Data de Emissão: {{ data_hoje }}</p>
-        </div>
-    </div>
-
-    <div class="page-break">
-        <h1>O Conceito Smart Home</h1>
-        <div class="intro-text">
-            <p>
-                Este projeto foi desenvolvido visando transformar sua residência em um ambiente inteligente, seguro e confortável. 
-                Abaixo detalhamos as soluções de tecnologia selecionadas para cada ambiente.
-            </p>
-            <p><strong>Principais Benefícios do seu Projeto:</strong></p>
-            <ul>
-                <li><strong>Comando de Voz:</strong> Controle total da iluminação e equipamentos via assistentes virtuais (Alexa / Google).</li>
-                <li><strong>Cenas Inteligentes:</strong> Crie momentos como "Modo Cinema" (luzes baixas) ou "Modo Saída" (apaga tudo) com um único toque.</li>
-                <li><strong>Acesso Remoto:</strong> Visualize o status da sua casa e comande dispositivos de qualquer lugar do mundo via Aplicativo.</li>
-                <li><strong>Design Premium:</strong> Interruptores com acabamento em <strong>acrílico temperado</strong> que agregam sofisticação ao design de interiores.</li>
-            </ul>
+    <div class="container">
+        <div class="header">
+            <!-- TÍTULO DINÂMICO AQUI -->
+            <h1>{{ app_title_custom }}</h1>
+            <h2>Memorial Descritivo do Projeto de Automação Residencial</h2>
+            <p>Data de Emissão: {{ data_hoje }}</p>
         </div>
 
-        <h1>Especificações por Ambiente</h1>
+        <div class="client-info">
+            <div class="section-title">1. Dados do Cliente e Projeto</div>
+            <table>
+                <tr><th>Cliente:</th><td>{{ project.client.name }}</td><th>Endereço:</th><td>{{ project.client.address }}</td></tr>
+                <tr><th>Telefone:</th><td>{{ project.client.phone }}</td><th>Consultor:</th><td>{{ app_title_custom }}</td></tr>
+            </table>
+        </div>
+
+        <div class="section-title">2. Escopo Detalhado por Ambiente</div>
 
         {% for ambiente, itens in itens_por_ambiente.items() %}
-            <h2>📍 {{ ambiente }}</h2>
-            
-            {% if narrativas[ambiente] and narrativas[ambiente] != "" %}
-            <div class="narrativa-box">
-                {{ narrativas[ambiente] }}
-            </div>
-            {% endif %}
+        <div class="ambiente">
+            <h3>{{ ambiente }}</h3>
 
-            {% for item in itens %}
-            <div class="item-box">
-                <div class="item-header">
-                    <span class="item-name">🔹 {{ item.catalog_item.name }}</span>
-                    <span class="item-qty">{{ item.quantity }} un.</span>
-                </div>
-                <div class="item-desc">
-                    {{ item.catalog_item.description_commercial }}
-                    {% if item.obs %}
-                    <br><em>Nota Específica: {{ item.obs }}</em>
-                    {% endif %}
-                </div>
+            <div class="narrativa">
+                <p>
+                    O projeto de automação no **{{ ambiente }}** foi desenhado para maximizar o conforto, segurança e eficiência, integrando tecnologia de ponta de forma discreta.
+                    {{ narrativas[ambiente] | safe }}
+                </p>
             </div>
-            {% endfor %}
-            
+
+            <div class="item-list">
+                <h4>Dispositivos Principais Incluídos:</h4>
+                <ul>
+                    {% for item in itens %}
+                    <li>
+                        <strong>{{ item.catalog_item.name }} (Qtd: {{ item.quantity }})</strong>: 
+                        {{ item.catalog_item.description_commercial }}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
         {% endfor %}
-    </div>
 
-    <div class="footer">
-        Home Automation Technology - Soluções em Automação Residencial | Documento confidencial.
+        <div class="section-title">3. Considerações Finais</div>
+        <p>
+            Este memorial descreve os equipamentos e a funcionalidade esperada. Para os requisitos de infraestrutura (elétrica, dados, cabos), por favor, consulte o Relatório Técnico anexo.
+        </p>
+
+        <div class="footer">
+            Documento emitido por {{ app_title_custom }}. Confiança e Inovação em Automação.
+        </div>
     </div>
 </body>
 </html>

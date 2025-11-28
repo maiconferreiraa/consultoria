@@ -3,19 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Home Automation Technology</title>
+    <title>{{ app_title_custom | default('Home Automation Technology') }}</title>
     
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     
     <style>
-        /* CSS ESCURO PROFISSIONAL (Seus Estilos) */
+        /* CSS ESCURO PROFISSIONAL (Estilos Mantidos) */
         body { 
             background-color: #121212 !important; 
-            /* Espaço para a navbar fixa no topo */
             padding-top: 70px; 
-            /* Espaço para o footer fixo na parte inferior */
-            padding-bottom: 60px; /* Ajustado para dar espaço ao footer fixo */
+            padding-bottom: 60px;
         }
         .navbar { background-color: #1e1e1e !important; border-bottom: 1px solid #333; }
         .navbar-brand { color: #0d6efd !important; }
@@ -40,15 +40,30 @@
         .modal-header { border-bottom: 1px solid #333; }
         .modal-footer { border-top: 1px solid #333; }
         .btn-close { filter: invert(1) grayscale(100%) brightness(200%); }
+        
+        .navbar-title-link { cursor: pointer; }
+        .navbar-title-link:hover { opacity: 0.8; }
     </style>
 </head>
 
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 fixed-top">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="{{ url_for('index') }}">
-                <i class="bi bi-house-gear-fill"></i> Home Automation Technology
+            
+            <!-- TÍTULO DINÂMICO E EDITÁVEL -->
+            <a class="navbar-brand fw-bold navbar-title-link" 
+               data-bs-toggle="modal" 
+               data-bs-target="#modalEditarTitulo" 
+               title="Clique para editar o nome da sua empresa">
+                <i class="bi bi-house-gear-fill"></i> {{ app_title_custom | default('Home Automation Technology') }}
             </a>
+
+            <!-- BOTÃO LOGOUT (SÓ APARECE SE HOUVER SESSÃO ATIVA) -->
+            {% if session.get('user_id') %}
+            <a class="btn btn-sm btn-outline-danger" href="{{ url_for('logout') }}" title="Sair do Sistema">
+                <i class="bi bi-box-arrow-right"></i> Sair
+            </a>
+            {% endif %}
         </div>
     </nav>
 
@@ -56,6 +71,7 @@
         {% block content %}{% endblock %}
     </div>
 
+    <!-- Modal "Sobre o Sistema" -->
     <div class="modal fade" id="modalSobre" tabindex="-1" aria-labelledby="modalSobreLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -81,7 +97,7 @@
                             <ul>
                                 <li><strong>Catálogo Unificado:</strong> Permite manter uma lista mestra de dispositivos (Zigbee, Tomadas, Integrações, etc.).</li>
                                 <li><strong>Criação de Ambientes:</strong> Permite padronizar os nomes dos cômodos para evitar erros de escrita.</li>
-                                <li><strong>Relatório Inteligente:</strong> O sistema gera a narrativa descritiva de cada ambiente automaticamente, contando circuitos, tomadas e destacando as integrações (sonorização, ar condicionado, etc.).</li>
+                                <li><strong>Relatório Inteligente:</strong> O sistema gera a narrativa descritiva de cada ambiente automaticamente.</li>
                                 <li><strong>Geração de PDFs:</strong> Emite o Memorial Descritivo (para o cliente) e o Roteiro de Infra/Lista de Compras (para o técnico/compras).</li>
                             </ul>
                         </div>
@@ -113,7 +129,39 @@
             </div>
         </div>
     </div>
+
+    <!-- NOVO MODAL: EDITAR TÍTULO DA APLICAÇÃO -->
+    {% if session.get('user_id') %}
+    <div class="modal fade" id="modalEditarTitulo" tabindex="-1" aria-labelledby="modalEditarTituloLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-white" id="modalEditarTituloLabel">
+                        <i class="bi bi-pencil-square me-2"></i> Personalizar Título
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{{ url_for('editar_titulo') }}" method="POST">
+                    <div class="modal-body text-white">
+                        <p class="text-muted small">Este será o título da aplicação visível na barra superior e no navegador.</p>
+                        <label for="app_title_new" class="form-label">Novo Nome da Empresa/Sistema</label>
+                        <input type="text" 
+                               name="app_title_new" 
+                               id="app_title_new" 
+                               class="form-control" 
+                               value="{{ app_title_custom | default('Home Automation Technology') }}"
+                               required>
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="submit" class="btn btn-primary">Salvar Título</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
     
+    <!-- Rodapé FIXO (fixed-bottom) -->
     <footer class="bg-dark border-top border-secondary py-3 fixed-bottom">
         <div class="container d-flex justify-content-between align-items-center">
             <small class="text-muted">&copy; {{ now.year if now is defined else 2025 }} Home Automation | Versão 1.0</small>
@@ -126,6 +174,7 @@
         </div>
     </footer>
 
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
