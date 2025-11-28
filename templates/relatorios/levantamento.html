@@ -65,9 +65,12 @@
                 <tr class="total-row">
                     <td>Total Geral de Pontos:</td>
                     <td style="text-align: center;">
-                        {% set total_geral = 0 %}
-                        {% for item_name, data in resumo.items() %}{% set total_geral = total_geral + data.total %}{% endfor %}
-                        {{ total_geral }}
+                        <!-- NOVO MÉTODO DE CÁLCULO TOTAL NO TEMPLATE -->
+                        {% set total_geral = namespace(value=0) %}
+                        {% for item_name, data in resumo.items() %}
+                            {% set total_geral.value = total_geral.value + data.total %}
+                        {% endfor %}
+                        {{ total_geral.value }}
                     </td>
                     <td></td>
                 </tr>
