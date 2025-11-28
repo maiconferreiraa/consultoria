@@ -44,8 +44,6 @@ def get_master_list():
     
     desc_zigbee = "Interruptor inteligente 4x2. Acabamento Acrílico (Touch). Comando de Voz e App."
     desc_zigbee_4x4 = "Painel Inteligente 4x4. Acabamento Acrílico (Touch). Comando de Voz e App."
-    desc_way = "Paralelo Inteligente (Virtual). Acabamento Acrílico. Sincronização via Cena."
-    desc_4way = "Intermediário Inteligente (Virtual). Acabamento Acrílico. Sincronização via Cena."
     desc_tomada_red = "Tomada 20A Vermelha (Pino Grosso) 220V. Acabamento Acrílico."
     desc_tomada_white = "Tomada Branca Padrão. Acabamento Acrílico."
     desc_infra = "Módulo de infraestrutura. Acabamento Acrílico."
@@ -70,16 +68,7 @@ def get_master_list():
         {"name": "Zigbee 3 Teclas (4x2)", "category": "Iluminação", "description_commercial": desc_zigbee, "tech_requirement": "Caixa 4x2. F+N+3 Retornos."},
         {"name": "Zigbee 4 Teclas (4x2)", "category": "Iluminação", "description_commercial": desc_zigbee, "tech_requirement": "Caixa 4x2. F+N+4 Retornos. (Alta Densidade)."},
 
-        {"name": "Zigbee Three-Way 1 Tecla (4x2)", "category": "Iluminação", "description_commercial": desc_way, "tech_requirement": "Caixa 4x2. F+N."},
-        {"name": "Zigbee Three-Way 2 Teclas (4x2)", "category": "Iluminação", "description_commercial": desc_way, "tech_requirement": "Caixa 4x2. F+N."},
-        {"name": "Zigbee Three-Way 3 Teclas (4x2)", "category": "Iluminação", "description_commercial": desc_way, "tech_requirement": "Caixa 4x2. F+N."},
-        {"name": "Zigbee Three-Way 4 Teclas (4x2)", "category": "Iluminação", "description_commercial": desc_way, "tech_requirement": "Caixa 4x2. F+N."},
-
-        {"name": "Zigbee Four-Way 1 Tecla (4x2)", "category": "Iluminação", "description_commercial": desc_4way, "tech_requirement": "Caixa 4x2. F+N."},
-        {"name": "Zigbee Four-Way 2 Teclas (4x2)", "category": "Iluminação", "description_commercial": desc_4way, "tech_requirement": "Caixa 4x2. F+N."},
-        {"name": "Zigbee Four-Way 3 Teclas (4x2)", "category": "Iluminação", "description_commercial": desc_4way, "tech_requirement": "Caixa 4x2. F+N."},
-        {"name": "Zigbee Four-Way 4 Teclas (4x2)", "category": "Iluminação", "description_commercial": desc_4way, "tech_requirement": "Caixa 4x2. F+N."},
-
+    
         {"name": "Zigbee 1 Tecla (4x4)", "category": "Iluminação", "description_commercial": desc_zigbee_4x4, "tech_requirement": "Caixa 4x4. F+N+1 Retorno."},
         {"name": "Zigbee 2 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_zigbee_4x4, "tech_requirement": "Caixa 4x4. F+N+2 Retornos."},
         {"name": "Zigbee 3 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_zigbee_4x4, "tech_requirement": "Caixa 4x4. F+N+3 Retornos."},
@@ -87,22 +76,6 @@ def get_master_list():
         {"name": "Zigbee 5 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_zigbee_4x4, "tech_requirement": "Caixa 4x4. F+N+5 Retornos."},
         {"name": "Zigbee 6 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_zigbee_4x4, "tech_requirement": "Caixa 4x4. F+N+6 Retornos."},
         {"name": "Zigbee 8 Teclas (4x4)", "category": "Iluminação", "description_commercial": "Painel Master 4x4 8 Zonas. Acrílico.", "tech_requirement": "Caixa 4x4. F+N+8 Retornos."},
-
-        {"name": "Zigbee Three-Way 1 Tecla (4x4)", "category": "Iluminação", "description_commercial": desc_way, "tech_requirement": "Caixa 4x4. F+N."},
-        {"name": "Zigbee Three-Way 2 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_way, "tech_requirement": "Caixa 4x4. F+N."},
-        {"name": "Zigbee Three-Way 3 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_way, "tech_requirement": "Caixa 4x4. F+N."},
-        {"name": "Zigbee Three-Way 4 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_way, "tech_requirement": "Caixa 4x4. F+N."},
-        {"name": "Zigbee Three-Way 5 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_way, "tech_requirement": "Caixa 4x4. F+N."},
-        {"name": "Zigbee Three-Way 6 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_way, "tech_requirement": "Caixa 4x4. F+N."},
-        {"name": "Zigbee Three-Way 8 Teclas (4x4)", "category": "Iluminação", "description_commercial": "Painel de Cenas Master (Virtual).", "tech_requirement": "Caixa 4x4. F+N."},
-
-        {"name": "Zigbee Four-Way 1 Tecla (4x4)", "category": "Iluminação", "description_commercial": desc_4way, "tech_requirement": "Caixa 4x4. F+N."},
-        {"name": "Zigbee Four-Way 2 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_4way, "tech_requirement": "Caixa 4x4. F+N."},
-        {"name": "Zigbee Four-Way 3 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_4way, "tech_requirement": "Caixa 4x4. F+N."},
-        {"name": "Zigbee Four-Way 4 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_4way, "tech_requirement": "Caixa 4x4. F+N."},
-        {"name": "Zigbee Four-Way 5 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_4way, "tech_requirement": "Caixa 4x4. F+N."},
-        {"name": "Zigbee Four-Way 6 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_4way, "tech_requirement": "Caixa 4x4. F+N."},
-        {"name": "Zigbee Four-Way 8 Teclas (4x4)", "category": "Iluminação", "description_commercial": "Painel de Cenas Master (Virtual).", "tech_requirement": "Caixa 4x4. F+N."},
 
         {"name": "Tomada 20A Vermelha - 1 Módulo (4x2)", "category": "Energia", "description_commercial": desc_tomada_red, "tech_requirement": "Caixa 4x2. Fio 4mm. Circuito Específico."},
         {"name": "Tomada 20A Vermelha - 2 Módulos (4x2)", "category": "Energia", "description_commercial": "Dupla 20A Vermelha.", "tech_requirement": "Caixa 4x2. Fio 4mm."},
