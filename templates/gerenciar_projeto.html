@@ -1,5 +1,248 @@
+<!DOCTYPE html>
 {% extends "base.html" %}
+
 {% block content %}
+
+<!-- MODAIS DE CRUD DE AMBIENTES -->
+<!-- Modal Novo Ambiente -->
+<div class="modal fade" id="modalNovoAmbiente" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark border-secondary">
+            <div class="modal-header border-secondary"><h5 class="modal-title text-white">Novo Cômodo</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <form action="{{ url_for('adicionar_ambiente') }}" method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="project_id_redirect" value="{{ project.id }}">
+                    <label class="text-white">Nome do Cômodo</label>
+                    <input type="text" name="name" class="form-control" placeholder="Ex: Adega" required>
+                </div>
+                <div class="modal-footer border-secondary"><button type="submit" class="btn btn-success">Salvar</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Gerenciar Ambientes -->
+<div class="modal fade" id="modalGerenciarAmbientes" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content bg-dark border-secondary">
+            <div class="modal-header border-secondary"><h5 class="modal-title text-white">Gerenciar Cômodos</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body p-0">
+                <table class="table table-dark table-striped mb-0">
+                    <thead><tr><th>Nome</th><th class="text-end">Ações</th></tr></thead>
+                    <tbody>
+                        {% for room in ambientes %}
+                        <tr>
+                            <td>{{ room.name }}</td>
+                            <td class="text-end">
+                                <!-- Passando os dados para o ModalEditarAmbiente via data-* attributes -->
+                                <button class="btn btn-sm btn-outline-warning border-0 btn-edit-ambiente" 
+                                        data-id="{{ room.id }}"
+                                        data-name="{{ room.name }}"
+                                        title="Editar Cômodo"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#modalEditarAmbiente">
+                                    <i class="bi bi-pencil-fill"></i>
+                                </button>
+                                <a href="{{ url_for('excluir_ambiente', room_id=room.id) }}" class="btn btn-sm btn-outline-danger border-0" onclick="return confirm('Tem certeza?')" title="Excluir Cômodo"><i class="bi bi-trash-fill"></i></a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar Ambiente -->
+<div class="modal fade" id="modalEditarAmbiente" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark border-warning">
+            <div class="modal-header border-warning bg-warning text-dark"><h5 class="modal-title">Editar Nome</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form action="{{ url_for('editar_ambiente') }}" method="POST">
+                <div class="modal-body text-white">
+                    <input type="hidden" name="project_id_redirect" value="{{ project.id }}">
+                    <input type="hidden" name="room_id" id="edit_room_id">
+                    <label>Nome</label>
+                    <input type="text" name="name" id="edit_room_name" class="form-control" required>
+                </div>
+                <div class="modal-footer border-secondary"><button type="submit" class="btn btn-warning">Salvar</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAIS DE CRUD DE ITENS DO CATÁLOGO -->
+<!-- Modal Novo Item -->
+<div class="modal fade" id="modalNovoItem" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark border-secondary">
+            <div class="modal-header border-secondary"><h5 class="modal-title text-white">Novo Item no Catálogo</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <form action="{{ url_for('adicionar_item_catalogo') }}" method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="project_id_redirect" value="{{ project.id }}">
+                    <div class="row">
+                        <div class="col-md-6 mb-3"><label class="form-label text-white">Nome</label><input type="text" name="name" class="form-control" required></div>
+                        <div class="col-md-6 mb-3"><label class="form-label text-white">Categoria</label><select name="category" class="form-select"><option value="Iluminação">Iluminação</option><option value="Energia">Energia</option><option value="Integração">Integração</option><option value="Misto">Misto</option><option value="Dados">Dados</option><option value="Infra">Infra</option></select></div>
+                    </div>
+                    <div class="mb-3"><label class="form-label text-white">Descrição (Memorial)</label><textarea name="description_commercial" class="form-control" rows="4" required></textarea></div>
+                    <div class="mb-3"><label class="form-label text-white">Req. Técnico</label><input type="text" name="tech_requirement" class="form-control"></div>
+                </div>
+                <div class="modal-footer border-secondary"><button type="submit" class="btn btn-success">Salvar</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Gerenciar Catálogo -->
+<div class="modal fade" id="modalGerenciarCatalogo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content bg-dark border-secondary">
+            <div class="modal-header border-secondary"><h5 class="modal-title text-white">Gerenciar Catálogo</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body p-0">
+                <table class="table table-dark table-striped mb-0">
+                    <thead><tr><th>Nome</th><th>Cat.</th><th>Desc.</th><th class="text-end">Ações</th></tr></thead>
+                    <tbody>
+                        {% for item in catalogo %}
+                        <tr>
+                            <td>{{ item.name }}</td><td>{{ item.category }}</td><td><small>{{ item.description_commercial[:50] }}...</small></td>
+                            <td class="text-end">
+                                <!-- Passando os dados para o ModalEditarItem via data-* attributes -->
+                                <button class="btn btn-sm btn-outline-warning border-0 btn-edit-catalogo" 
+                                        data-id="{{ item.id }}"
+                                        data-name="{{ item.name }}"
+                                        data-category="{{ item.category }}"
+                                        data-desc="{{ item.description_commercial }}"
+                                        data-tech="{{ item.tech_requirement }}"
+                                        title="Editar Item do Catálogo"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#modalEditarItem">
+                                    <i class="bi bi-pencil-fill"></i>
+                                </button>
+                                <a href="{{ url_for('excluir_item_catalogo', item_id=item.id) }}" class="btn btn-sm btn-outline-danger border-0" onclick="return confirm('Tem certeza?')" title="Excluir Item do Catálogo"><i class="bi bi-trash-fill"></i></a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar Item Catálogo -->
+<div class="modal fade" id="modalEditarItem" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark border-warning">
+            <div class="modal-header border-warning bg-warning text-dark"><h5 class="modal-title">Editar Item Catálogo</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form action="{{ url_for('editar_item_catalogo') }}" method="POST">
+                <div class="modal-body text-white">
+                    <input type="hidden" name="project_id_redirect" value="{{ project.id }}">
+                    <input type="hidden" name="item_id" id="edit_item_id">
+                    <input type="text" name="name" id="edit_name" class="form-control mb-3" required>
+                    <select name="category" id="edit_category" class="form-select mb-3"><option value="Iluminação">Iluminação</option><option value="Energia">Energia</option><option value="Integração">Integração</option><option value="Misto">Misto</option><option value="Dados">Dados</option><option value="Infra">Infra</option></select>
+                    <textarea name="description_commercial" id="edit_desc" class="form-control mb-3" rows="4"></textarea>
+                    <input type="text" name="tech_requirement" id="edit_tech" class="form-control">
+                </div>
+                <div class="modal-footer border-secondary"><button type="submit" class="btn btn-warning">Salvar</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<!-- MODAIS DE EDIÇÃO/EXCLUSÃO DE ITEM DO PROJETO -->
+<!-- Modal Exclusão de Item de Projeto (Simples, usa formulário POST) -->
+<div class="modal fade" id="modalExcluirItemProjeto" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark border-danger">
+            <div class="modal-header border-danger bg-danger text-white"><h5 class="modal-title">Confirmar Exclusão</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <form action="{{ url_for('gerenciar_projeto', project_id=project.id) }}" method="POST">
+                <div class="modal-body text-white">
+                    <p>Tem certeza que deseja remover o item <strong id="delete_item_name_display"></strong>?</p>
+                    <input type="hidden" name="delete_item_id" id="delete_item_id">
+                </div>
+                <div class="modal-footer border-secondary"><button type="submit" class="btn btn-danger">Excluir</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar Item Projeto (O MAIS IMPORTANTE) -->
+{% for item in project.items %}
+<div class="modal fade" id="modalEditarItemProjeto-{{ item.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark border-primary">
+            <div class="modal-header border-primary bg-primary bg-opacity-10">
+                <h5 class="modal-title text-primary"><i class="bi bi-pencil-square"></i> Editar Item do Projeto</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('editar_item_projeto') }}" method="POST">
+                <div class="modal-body text-white">
+                    <input type="hidden" name="project_id" value="{{ project.id }}">
+                    <input type="hidden" name="item_id" value="{{ item.id }}">
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Ambiente</label>
+                        <select name="room_name" id="proj_edit_room_{{ item.id }}" class="form-select" required>
+                            {% for room in ambientes %}
+                                <option value="{{ room.name }}" {% if room.name == item.room_name %}selected{% endif %}>{{ room.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Dispositivo</label>
+                        <select name="catalog_item_id" id="proj_edit_catalog_id_{{ item.id }}" class="form-select" required>
+                            {% for cat_item in catalogo %}
+                                <option value="{{ cat_item.id }}" {% if cat_item.id == item.catalog_item_id %}selected{% endif %}>{{ cat_item.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- NOVO CAMPO: COR COM PREVIEW -->
+                    <div class="mb-3 row">
+                        <div class="col-8">
+                            <label for="item_color_edit_{{ item.id }}" class="form-label fw-bold">Cor Suvinil/Coral</label>
+                            <select name="item_color" 
+                                    id="item_color_edit_{{ item.id }}" 
+                                    class="form-select color-selector" 
+                                    data-preview-id="color-preview-edit-{{ item.id }}" 
+                                    required>
+                                {% for name, hex in cores.items() %}
+                                    <option value="{{ name }}" 
+                                            data-hex="{{ hex }}" 
+                                            {% if name == item.item_color %}selected{% endif %}>
+                                        {{ name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label fw-bold">Preview</label>
+                            {% set current_hex = cores.get(item.item_color, '#F0F0F0') %}
+                            <div id="color-preview-edit-{{ item.id }}" 
+                                 style="width: 100%; height: 38px; border: 1px solid #444; border-radius: 4px; background-color: {{ current_hex }};">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Qtd</label>
+                        <input type="number" name="quantity" id="proj_edit_qty_{{ item.id }}" class="form-control text-center" min="1" value="{{ item.quantity }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Obs</label>
+                        <input type="text" name="obs" id="proj_edit_obs_{{ item.id }}" class="form-control" value="{{ item.obs }}">
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary"><button type="submit" class="btn btn-primary">Salvar</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
 
 <div class="row mb-4 align-items-center">
     <div class="col-12 col-md-7 mb-3 mb-md-0 d-flex align-items-center">
@@ -29,7 +272,7 @@
             <div class="card-body p-3">
                 <form method="POST" class="row g-3">
                     
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label small text-muted fw-bold">Ambiente</label>
                         <div class="input-group">
                             <select name="room_name" class="form-select" required>
@@ -43,10 +286,10 @@
                         </div>
                     </div>
 
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label small text-muted fw-bold">Dispositivo</label>
                         <div class="input-group">
-                            <select name="catalog_item_id" class="form-select" required>
+                            <select name="catalog_item_id" id="item_catalog_select" class="form-select" required>
                                 <option value="" selected disabled>Selecione...</option>
                                 {% for item in catalogo %}
                                     <option value="{{ item.id }}">{{ item.name }}</option>
@@ -56,8 +299,22 @@
                             <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#modalGerenciarCatalogo" title="Gerenciar Itens do Catálogo"><i class="bi bi-gear-fill"></i></button>
                         </div>
                     </div>
+                    
+                    <!-- NOVO CAMPO DE COR NA ADIÇÃO -->
+                    <div class="col-md-3">
+                        <label class="form-label small text-muted fw-bold">Cor (Acabamento)</label>
+                        <div class="input-group">
+                            <select name="item_color" id="item_color_add_main" class="form-select color-selector" data-preview-id="color-preview-main" required>
+                                {% for name, hex in cores.items() %}
+                                    <option value="{{ name }}" data-hex="{{ hex }}" {% if loop.first %}selected{% endif %}>{{ name }}</option>
+                                {% endfor %}
+                            </select>
+                            {% set first_hex = cores.values() | first | default('#F0F0F0') %}
+                            <span class="input-group-text p-0" id="color-preview-main" style="width: 2.5rem; background-color: {{ first_hex }}; border: 1px solid #444; border-radius: 0 0.25rem 0.25rem 0;"></span>
+                        </div>
+                    </div>
 
-                    <div class="col-md-2">
+                    <div class="col-md-1">
                         <label class="form-label small text-muted fw-bold">Qtd</label>
                         <input type="number" name="quantity" value="1" min="1" class="form-control text-center">
                     </div>
@@ -66,7 +323,7 @@
                         <label class="d-none d-md-block">&nbsp;</label>
                         <button type="submit" class="btn btn-primary">Add</button>
                     </div>
-                    <div class="col-12"><input type="text" name="obs" class="form-control" placeholder="Obs..."></div>
+                    <div class="col-12"><input type="text" name="obs" class="form-control" placeholder="Obs: Localização específica, detalhes extras..."></div>
                 </form>
             </div>
         </div>
@@ -74,21 +331,35 @@
         <div class="card">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light"><tr><th>Ambiente</th><th>Item</th><th class="text-center">Qtd</th><th>Obs</th><th class="text-end">Ação</th></tr></thead>
+                    <thead class="table-light"><tr><th>Ambiente</th><th>Item</th><th class="d-none d-md-table-cell">Cor</th><th class="text-center">Qtd</th><th>Obs</th><th class="text-end">Ação</th></tr></thead>
                     <tbody>
                         {% for item in project.items %}
                         <tr>
                             <td class="fw-bold text-primary">{{ item.room_name }}</td>
                             <td>{{ item.catalog_item.name }}</td>
+                            
+                            <!-- Coluna COR -->
+                            {% set item_color = item.item_color | default('Branco Puro Suvinil') %}
+                            {% set color_hex = cores.get(item_color, '#F0F0F0') %}
+                            <td class="d-none d-md-table-cell">
+                                <span style="display: inline-block; width: 15px; height: 15px; background-color: {{ color_hex }}; border: 1px solid #444; vertical-align: middle; margin-right: 5px; border-radius: 3px;"></span>
+                                <small class="text-muted">{{ item_color }}</small>
+                            </td>
+
                             <td class="text-center"><span class="badge bg-dark">{{ item.quantity }}</span></td>
-                            <td class="small text-muted">{{ item.obs }}</td>
+                            <td class="small text-muted">{{ item.obs | default('N/A') }}</td>
                             <td class="text-end">
                                 <button class="btn btn-sm btn-outline-warning border-0 me-1" 
-                                        onclick="prepararEdicaoItemProjeto('{{ item.id }}', '{{ item.room_name }}', '{{ item.quantity }}', `{{ item.obs }}`, '{{ item.catalog_item_id }}')"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#modalEditarItemProjeto-{{ item.id }}"
                                         title="Editar Item">
                                     <i class="bi bi-pencil-fill"></i>
                                 </button>
-                                <form method="POST" style="display:inline;"><input type="hidden" name="delete_item_id" value="{{ item.id }}"><button type="submit" class="btn btn-sm btn-outline-danger border-0" title="Excluir Item"><i class="bi bi-trash-fill"></i></button></form>
+                                <button class="btn btn-sm btn-outline-danger border-0" 
+                                        onclick="prepararExclusaoItemProjeto('{{ item.id }}', '{{ item.catalog_item.name }} em {{ item.room_name }}')" 
+                                        title="Excluir Item">
+                                    <i class="bi bi-trash-fill"></i>
+                                </button>
                             </td>
                         </tr>
                         {% endfor %}
@@ -99,222 +370,193 @@
     </div>
     
     <div class="tab-pane fade" id="resumo">
+        <!-- O conteúdo será preenchido pelo JavaScript -->
         <div class="card"><div class="card-body p-0"><table class="table table-hover mb-0"><thead class="table-light"><tr><th>Item</th><th>Locais</th><th>Total</th></tr></thead><tbody id="tabela-resumo"></tbody></table></div></div>
     </div>
 </div>
 
-<div class="modal fade" id="modalNovoAmbiente" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content bg-dark border-secondary">
-            <div class="modal-header border-secondary"><h5 class="modal-title text-white">Novo Cômodo</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-            <form action="{{ url_for('adicionar_ambiente') }}" method="POST">
-                <div class="modal-body">
-                    <input type="hidden" name="project_id_redirect" value="{{ project.id }}">
-                    <label class="text-white">Nome do Cômodo</label>
-                    <input type="text" name="name" class="form-control" placeholder="Ex: Adega" required>
-                </div>
-                <div class="modal-footer border-secondary"><button type="submit" class="btn btn-success">Salvar</button></div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalGerenciarAmbientes" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-scrollable">
-        <div class="modal-content bg-dark border-secondary">
-            <div class="modal-header border-secondary"><h5 class="modal-title text-white">Gerenciar Cômodos</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body p-0">
-                <table class="table table-dark table-striped mb-0">
-                    <thead><tr><th>Nome</th><th class="text-end">Ações</th></tr></thead>
-                    <tbody>
-                        {% for room in ambientes %}
-                        <tr>
-                            <td>{{ room.name }}</td>
-                            <td class="text-end">
-                                <button class="btn btn-sm btn-outline-warning border-0" onclick="prepararEdicaoAmbiente('{{ room.id }}', '{{ room.name }}')" title="Editar Cômodo"><i class="bi bi-pencil-fill"></i></button>
-                                <a href="{{ url_for('excluir_ambiente', room_id=room.id) }}" class="btn btn-sm btn-outline-danger border-0" onclick="return confirm('Tem certeza?')" title="Excluir Cômodo"><i class="bi bi-trash-fill"></i></a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalEditarAmbiente" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content bg-dark border-warning">
-            <div class="modal-header border-warning bg-warning text-dark"><h5 class="modal-title">Editar Nome</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <form action="{{ url_for('editar_ambiente') }}" method="POST">
-                <div class="modal-body text-white">
-                    <input type="hidden" name="project_id_redirect" value="{{ project.id }}">
-                    <input type="hidden" name="room_id" id="edit_room_id">
-                    <label>Nome</label>
-                    <input type="text" name="name" id="edit_room_name" class="form-control" required>
-                </div>
-                <div class="modal-footer border-secondary"><button type="submit" class="btn btn-warning">Salvar</button></div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalNovoItem" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content bg-dark border-secondary">
-            <div class="modal-header border-secondary"><h5 class="modal-title text-white">Novo Item no Catálogo</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-            <form action="{{ url_for('adicionar_item_catalogo') }}" method="POST">
-                <div class="modal-body">
-                    <input type="hidden" name="project_id_redirect" value="{{ project.id }}">
-                    <div class="row">
-                        <div class="col-md-6 mb-3"><label class="form-label text-white">Nome</label><input type="text" name="name" class="form-control" required></div>
-                        <div class="col-md-6 mb-3"><label class="form-label text-white">Categoria</label><select name="category" class="form-select"><option value="Iluminação">Iluminação</option><option value="Energia">Energia</option><option value="Integração">Integração</option><option value="Misto">Misto</option><option value="Dados">Dados</option><option value="Infra">Infra</option></select></div>
-                    </div>
-                    <div class="mb-3"><label class="form-label text-white">Descrição (Memorial)</label><textarea name="description_commercial" class="form-control" rows="4" required></textarea></div>
-                    <div class="mb-3"><label class="form-label text-white">Req. Técnico</label><input type="text" name="tech_requirement" class="form-control"></div>
-                </div>
-                <div class="modal-footer border-secondary"><button type="submit" class="btn btn-success">Salvar</button></div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalGerenciarCatalogo" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
-        <div class="modal-content bg-dark border-secondary">
-            <div class="modal-header border-secondary"><h5 class="modal-title text-white">Gerenciar Catálogo</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body p-0">
-                <table class="table table-dark table-striped mb-0">
-                    <thead><tr><th>Nome</th><th>Cat.</th><th>Desc.</th><th class="text-end">Ações</th></tr></thead>
-                    <tbody>
-                        {% for item in catalogo %}
-                        <tr>
-                            <td>{{ item.name }}</td><td>{{ item.category }}</td><td><small>{{ item.description_commercial[:50] }}...</small></td>
-                            <td class="text-end">
-                                <button class="btn btn-sm btn-outline-warning border-0" onclick="prepararEdicao('{{ item.id }}', '{{ item.name }}', '{{ item.category }}', `{{ item.description_commercial }}`, `{{ item.tech_requirement }}`)" title="Editar Item do Catálogo"><i class="bi bi-pencil-fill"></i></button>
-                                <a href="{{ url_for('excluir_item_catalogo', item_id=item.id) }}" class="btn btn-sm btn-outline-danger border-0" onclick="return confirm('Apagar?')" title="Excluir Item do Catálogo"><i class="bi bi-trash-fill"></i></a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalEditarItem" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content bg-dark border-warning">
-            <div class="modal-header border-warning bg-warning text-dark"><h5 class="modal-title">Editar Item Catálogo</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <form action="{{ url_for('editar_item_catalogo') }}" method="POST">
-                <div class="modal-body text-white">
-                    <input type="hidden" name="project_id_redirect" value="{{ project.id }}">
-                    <input type="hidden" name="item_id" id="edit_item_id">
-                    <input type="text" name="name" id="edit_name" class="form-control mb-3" required>
-                    <select name="category" id="edit_category" class="form-select mb-3"><option value="Iluminação">Iluminação</option><option value="Energia">Energia</option><option value="Integração">Integração</option><option value="Misto">Misto</option><option value="Dados">Dados</option><option value="Infra">Infra</option></select>
-                    <textarea name="description_commercial" id="edit_desc" class="form-control mb-3" rows="4"></textarea>
-                    <input type="text" name="tech_requirement" id="edit_tech" class="form-control">
-                </div>
-                <div class="modal-footer border-secondary"><button type="submit" class="btn btn-warning">Salvar</button></div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalEditarItemProjeto" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content bg-dark border-primary">
-            <div class="modal-header border-primary bg-primary bg-opacity-10">
-                <h5 class="modal-title text-primary"><i class="bi bi-pencil-square"></i> Editar Item do Projeto</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <form action="{{ url_for('editar_item_projeto') }}" method="POST">
-                <div class="modal-body text-white">
-                    <input type="hidden" name="project_id" value="{{ project.id }}">
-                    <input type="hidden" name="item_id" id="proj_edit_id">
-                    
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Ambiente</label>
-                        <select name="room_name" id="proj_edit_room" class="form-select" required>
-                            {% for room in ambientes %}
-                                <option value="{{ room.name }}">{{ room.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Dispositivo</label>
-                        <select name="catalog_item_id" id="proj_edit_catalog_id" class="form-select" required>
-                            {% for item in catalogo %}
-                                <option value="{{ item.id }}">{{ item.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Qtd</label>
-                        <input type="number" name="quantity" id="proj_edit_qty" class="form-control text-center" min="1" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Obs</label>
-                        <input type="text" name="obs" id="proj_edit_obs" class="form-control">
-                    </div>
-                </div>
-                <div class="modal-footer border-secondary"><button type="submit" class="btn btn-primary">Salvar</button></div>
-            </form>
-        </div>
-    </div>
-</div>
-
 <script>
-    // Resumo
-    document.addEventListener("DOMContentLoaded", function() {
-        const itens = [{% for item in project.items %}{ name: "{{ item.catalog_item.name }}", room: "{{ item.room_name }}", qty: {{ item.quantity }} },{% endfor %}];
-        const resumo = {};
-        itens.forEach(item => {
-            if (!resumo[item.name]) { resumo[item.name] = { total: 0, rooms: new Set() }; }
-            resumo[item.name].total += item.qty;
-            resumo[item.name].rooms.add(item.room);
+    // Mapeamento de Cores em JavaScript (para preview)
+    const SuvinilCoralColors = {
+        {% for name, hex in cores.items() %}
+            "{{ name }}": "{{ hex }}",
+        {% endfor %}
+    };
+    
+    // Função para atualizar a pré-visualização de cor
+    function updateColorPreview(colorName, previewElementId) {
+        const hex = SuvinilCoralColors[colorName] || '#F0F0F0'; 
+        const previewElement = document.getElementById(previewElementId);
+        if (previewElement) {
+            previewElement.style.backgroundColor = hex;
+        }
+    }
+    
+    // FUNÇÃO AUXILIAR: Decodifica o JSON com segurança (para dados passados via |tojson)
+    const safeParse = (jsonString) => {
+        // Se for nulo ou não for string, retorna string vazia
+        if (!jsonString || typeof jsonString !== 'string') return ''; 
+        
+        try {
+            // Tenta JSON.parse
+            const parsed = JSON.parse(jsonString);
+            
+            // Se o resultado for uma string, retorna ela, senão retorna a string crua limpa
+            if (typeof parsed === 'string') {
+                return parsed;
+            } else {
+                 // Caso o JSON seja um objeto válido, retorna a string original limpa
+                return jsonString.replace(/^"|"$/g, '').replace(/\\"/g, '"').replace(/\\n/g, '\n');
+            }
+        } catch (e) {
+            // Em caso de falha, retorna a string crua limpa
+            return jsonString.replace(/^"|"$/g, '').replace(/\\"/g, '"').replace(/\\n/g, '\n');
+        }
+    };
+
+    // --- FUNÇÕES DE PREENCHIMENTO DE DADOS DENTRO DO MODAL ---
+    
+    // Preenchimento para Ambientes (Chamado pelo evento shown.bs.modal)
+    function fillAmbienteModal(button) {
+        // Pega os dados do botão que acionou o modal (Data Attributes)
+        const id = button.getAttribute('data-id');
+        const name = button.getAttribute('data-name');
+        
+        // PREENCHE OS CAMPOS
+        document.getElementById('edit_room_id').value = id;
+        document.getElementById('edit_room_name').value = name;
+        
+        // O modal de Gerenciamento pode ser fechado manualmente, se necessário, mas o Bootstrap deve lidar com isso.
+        // const modalGerenciar = bootstrap.Modal.getInstance(document.getElementById('modalGerenciarAmbientes'));
+        // if (modalGerenciar) modalGerenciar.hide();
+    }
+    
+    // Preenchimento para Catálogo (Chamado pelo evento shown.bs.modal)
+    function fillCatalogoModal(button) {
+        // Pega os dados do botão que acionou o modal
+        const id = button.getAttribute('data-id');
+        const name = button.getAttribute('data-name');
+        const category = button.getAttribute('data-category');
+        const desc = button.getAttribute('data-desc');
+        const tech = button.getAttribute('data-tech');
+        
+        // PREENCHE OS CAMPOS
+        document.getElementById('edit_item_id').value = id;
+        document.getElementById('edit_name').value = name;
+        document.getElementById('edit_category').value = category; // O Bootstrap seleciona o valor automaticamente
+        document.getElementById('edit_desc').value = desc;
+        document.getElementById('edit_tech').value = tech;
+        
+        // const modalGerenciar = bootstrap.Modal.getInstance(document.getElementById('modalGerenciarCatalogo'));
+        // if (modalGerenciar) modalGerenciar.hide();
+    }
+    
+    function prepararExclusaoItemProjeto(itemId, itemName) {
+        // Função para excluir Item do Projeto
+        document.getElementById('delete_item_id').value = itemId;
+        document.getElementById('delete_item_name_display').textContent = itemName;
+        // Abre o modal
+        new bootstrap.Modal(document.getElementById('modalExcluirItemProjeto')).show();
+    }
+
+
+    // Lógica principal de inicialização e LISTENERS
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        // --- 1. CONFIGURAÇÃO DOS LISTENERS DE COR (ROBUSTO) ---
+        
+        document.querySelectorAll('.color-selector').forEach(selectElement => {
+            const previewElementId = selectElement.getAttribute('data-preview-id') || 'color-preview-main';
+            
+            selectElement.addEventListener('change', function() {
+                updateColorPreview(this.value, previewElementId);
+            });
+            
+            updateColorPreview(selectElement.value, previewElementId);
+
+            const modalId = selectElement.closest('.modal')?.id;
+            if (modalId) {
+                const modalElement = document.getElementById(modalId);
+                if (modalElement) {
+                    modalElement.addEventListener('shown.bs.modal', function() {
+                        updateColorPreview(selectElement.value, previewElementId);
+                    });
+                }
+            }
         });
+        
+        // --- 2. LISTENERS DO MODAL PARA EDIÇÃO DE AMBIENTE E CATÁLOGO (FIX DEFINITIVO) ---
+        
+        // Listener para o Modal de Edição de Ambiente
+        const modalEditarAmbiente = document.getElementById('modalEditarAmbiente');
+        if (modalEditarAmbiente) {
+            modalEditarAmbiente.addEventListener('shown.bs.modal', function (event) {
+                // Pega o botão que acionou o modal (evento.relatedTarget)
+                const button = event.relatedTarget;
+                fillAmbienteModal(button);
+                
+                // Oculta o modal de gerenciamento (se estiver aberto)
+                const modalGerenciar = bootstrap.Modal.getInstance(document.getElementById('modalGerenciarAmbientes'));
+                if (modalGerenciar) modalGerenciar.hide();
+            });
+        }
+        
+        // Listener para o Modal de Edição de Catálogo
+        const modalEditarItem = document.getElementById('modalEditarItem');
+        if (modalEditarItem) {
+            modalEditarItem.addEventListener('shown.bs.modal', function (event) {
+                // Pega o botão que acionou o modal (evento.relatedTarget)
+                const button = event.relatedTarget;
+                fillCatalogoModal(button);
+                
+                // Oculta o modal de gerenciamento (se estiver aberto)
+                const modalGerenciar = bootstrap.Modal.getInstance(document.getElementById('modalGerenciarCatalogo'));
+                if (modalGerenciar) modalGerenciar.hide();
+            });
+        }
+
+
+        // --- 3. LÓGICA DO RESUMO ---
+        
+        // Dados brutos extraídos do Jinja
+        const itens = [{% for item in project.items %}{ name: "{{ item.catalog_item.name }}", room: "{{ item.room_name }}", qty: {{ item.quantity }}, color: "{{ item.item_color | default('Branco Puro Suvinil') }}" },{% endfor %}];
+        
+        const resumo = {};
+        
+        itens.forEach(item => {
+            const key = `${item.name} (${item.color})`;
+            
+            if (!resumo[key]) { 
+                resumo[key] = { 
+                    name: item.name, 
+                    color: item.color, 
+                    total: 0, 
+                    rooms: new Set() 
+                }; 
+            }
+            resumo[key].total += item.qty;
+            resumo[key].rooms.add(item.room);
+        });
+        
         const tbody = document.getElementById('tabela-resumo');
-        if (Object.keys(resumo).length === 0) { tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Vazio.</td></tr>'; } 
-        else {
-            for (const [name, data] of Object.entries(resumo)) {
-                tbody.innerHTML += `<tr><td>${name}</td><td><small class="text-muted">${Array.from(data.rooms).join(', ')}</small></td><td class="text-center fw-bold fs-5">${data.total}</td></tr>`;
+        
+        if (tbody) {
+            if (Object.keys(resumo).length === 0) { 
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Nenhum dispositivo cadastrado no projeto.</td></tr>'; 
+            } else {
+                tbody.innerHTML = ''; 
+                
+                for (const [key, data] of Object.entries(resumo)) {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${data.name} <span class="small text-muted">(${data.color})</span></td>
+                            <td><small class="text-muted">${Array.from(data.rooms).join(', ')}</small></td>
+                            <td class="text-center fw-bold fs-5">${data.total}</td>
+                        </tr>
+                    `;
+                }
             }
         }
     });
-
-    // Edição Catálogo
-    function prepararEdicao(id, nome, cat, desc, tech) {
-        const modalLista = bootstrap.Modal.getInstance(document.getElementById('modalGerenciarCatalogo'));
-        modalLista.hide();
-        document.getElementById('edit_item_id').value = id;
-        document.getElementById('edit_name').value = nome;
-        document.getElementById('edit_category').value = cat;
-        document.getElementById('edit_desc').value = desc;
-        document.getElementById('edit_tech').value = tech;
-        new bootstrap.Modal(document.getElementById('modalEditarItem')).show();
-    }
-
-    // Edição Ambiente
-    function prepararEdicaoAmbiente(id, nome) {
-        bootstrap.Modal.getInstance(document.getElementById('modalGerenciarAmbientes')).hide();
-        document.getElementById('edit_room_id').value = id;
-        document.getElementById('edit_room_name').value = nome;
-        new bootstrap.Modal(document.getElementById('modalEditarAmbiente')).show();
-    }
-
-    // Edição Projeto (Item)
-    function prepararEdicaoItemProjeto(id, room, qty, obs, catId) {
-        document.getElementById('proj_edit_id').value = id;
-        document.getElementById('proj_edit_room').value = room;
-        document.getElementById('proj_edit_qty').value = qty;
-        document.getElementById('proj_edit_obs').value = obs;
-        document.getElementById('proj_edit_catalog_id').value = catId;
-        new bootstrap.Modal(document.getElementById('modalEditarItemProjeto')).show();
-    }
 </script>
 {% endblock %}

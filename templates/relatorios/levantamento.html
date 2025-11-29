@@ -44,34 +44,37 @@
             </table>
         </div>
 
-        <div class="section-title">Resumo Total de Itens</div>
+        <div class="section-title">Resumo Total de Itens (Agrupado por Cor/Acabamento)</div>
 
         <table class="summary-table">
             <thead>
                 <tr>
-                    <th style="width: 50%;">Item de Catálogo</th>
+                    <th style="width: 50%;">Item de Catálogo e Cor</th>
                     <th style="width: 10%; text-align: center;">Total</th>
                     <th style="width: 40%;">Locais de Instalação (Exemplo)</th>
                 </tr>
             </thead>
             <tbody>
-                {% for item_name, data in resumo.items() %}
+                {% set total_geral = namespace(value=0) %}
+                {% for item_key, data in resumo.items() %}
                 <tr>
-                    <td>{{ item_name }}</td>
+                    <!-- item_key: Nome do Item (Cor) -->
+                    <td>
+                        {{ item_key }}
+                        
+                        <!-- Novo: Adiciona a amostra de cor ao lado do nome, se houver HEX na data -->
+                        {% if data.color_hex %}
+                            <span style="display: inline-block; width: 10px; height: 10px; background-color: {{ data.color_hex }}; border: 1px solid #333; vertical-align: middle; margin-left: 10px; border-radius: 2px;"></span>
+                        {% endif %}
+                    </td>
                     <td style="text-align: center;">{{ data.total }}</td>
                     <td>{{ data.locais | join(", ") }}</td>
                 </tr>
+                {% set total_geral.value = total_geral.value + data.total %}
                 {% endfor %}
                 <tr class="total-row">
                     <td>Total Geral de Pontos:</td>
-                    <td style="text-align: center;">
-                        <!-- NOVO MÉTODO DE CÁLCULO TOTAL NO TEMPLATE -->
-                        {% set total_geral = namespace(value=0) %}
-                        {% for item_name, data in resumo.items() %}
-                            {% set total_geral.value = total_geral.value + data.total %}
-                        {% endfor %}
-                        {{ total_geral.value }}
-                    </td>
+                    <td style="text-align: center;">{{ total_geral.value }}</td>
                     <td></td>
                 </tr>
             </tbody>

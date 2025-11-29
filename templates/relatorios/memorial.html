@@ -1,95 +1,104 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Memorial Descritivo - {{ app_title_custom }}</title>
-    <style>
-        /* Estilos de impressão e PDF */
-        body { font-family: 'Times New Roman', Times, serif; margin: 0; padding: 0; font-size: 11pt; color: #000; }
-        .container { width: 85%; margin: 30px auto; line-height: 1.6; }
-        .header { text-align: center; border-bottom: 3px solid #000; padding-bottom: 15px; margin-bottom: 30px; }
-        
-        /* Título Principal (Nome da Empresa) */
-        .header h1 { font-size: 18pt; margin: 0; color: #000; } 
-        .header h2 { font-size: 14pt; margin: 5px 0 0; color: #333; }
-        
-        .section-title { 
-            font-size: 16pt; 
-            color: #000; 
-            background-color: #eee; 
-            padding: 8px; 
-            margin-top: 30px; 
-            margin-bottom: 20px; 
-            border-left: 5px solid #0056b3; 
-        }
-        
-        .client-info table { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
-        .client-info th, .client-info td { padding: 6px 0; text-align: left; }
-        .client-info th { width: 25%; font-weight: normal; color: #555; }
-        .client-info td { font-weight: bold; }
-        
-        .ambiente { margin-bottom: 30px; border: 1px dashed #ccc; padding: 20px; }
-        .ambiente h3 { font-size: 13pt; color: #0056b3; margin-top: 0; margin-bottom: 10px; }
-        
-        .narrativa p { margin-bottom: 15px; text-align: justify; }
-        
-        .item-list ul { list-style: disc; margin-left: 20px; padding-left: 0; }
-        .item-list li { margin-bottom: 5px; }
-        
-        .footer { border-top: 1px solid #ccc; padding-top: 15px; margin-top: 40px; text-align: center; font-size: 9pt; color: #777; }
-    </style>
+<title>Memorial Descritivo - {{ app_title_custom }}</title>
+<style>
+/* Estilos de impressão e PDF */
+body { font-family: 'Times New Roman', Times, serif; margin: 0; padding: 0; font-size: 11pt; color: #000; }
+.container { width: 85%; margin: 30px auto; line-height: 1.6; }
+.header { text-align: center; border-bottom: 3px solid #000; padding-bottom: 15px; margin-bottom: 30px; }
+
+/* Título Principal (Nome da Empresa) */
+.header h1 { font-size: 18pt; margin: 0; color: #000; } 
+.header h2 { font-size: 14pt; margin: 5px 0 0; color: #333; }
+
+.section-title { 
+    font-size: 16pt; 
+    color: #000; 
+    background-color: #eee; 
+    padding: 8px; 
+    margin-top: 30px; 
+    margin-bottom: 20px; 
+    border-left: 5px solid #0056b3; 
+}
+
+.client-info table { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
+.client-info th, .client-info td { padding: 6px 0; text-align: left; }
+.client-info th { width: 25%; font-weight: normal; color: #555; }
+.client-info td { font-weight: bold; }
+
+.ambiente { margin-bottom: 30px; border: 1px dashed #ccc; padding: 20px; }
+.ambiente h3 { font-size: 13pt; color: #0056b3; margin-top: 0; margin-bottom: 10px; }
+
+.narrativa p { margin-bottom: 15px; text-align: justify; }
+
+.item-list ul { list-style: disc; margin-left: 20px; padding-left: 0; }
+.item-list li { margin-bottom: 5px; }
+
+.footer { border-top: 1px solid #ccc; padding-top: 15px; margin-top: 40px; text-align: center; font-size: 9pt; color: #777; }
+</style>
+
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <!-- TÍTULO DINÂMICO AQUI -->
-            <h1>{{ app_title_custom }}</h1>
-            <h2>Memorial Descritivo do Projeto de Automação Residencial</h2>
-            <p>Data de Emissão: {{ data_hoje }}</p>
+<div class="container">
+<div class="header">
+<!-- TÍTULO DINÂMICO AQUI -->
+<h1>{{ app_title_custom }}</h1>
+<h2>Memorial Descritivo do Escopo de Soluções em Automação</h2>
+<p>Data de Emissão: {{ data_hoje }}</p>
+</div>
+
+    <div class="client-info">
+        <div class="section-title">1. Informações Cadastrais do Cliente e do Projeto</div>
+        <table>
+            <tr><th>Cliente:</th><td>{{ project.client.name }}</td><th>Endereço:</th><td>{{ project.client.address }}</td></tr>
+            <tr><th>Telefone:</th><td>{{ project.client.phone }}</td><th>Consultor Responsável:</th><td>{{ app_title_custom }}</td></tr>
+        </table>
+    </div>
+
+    <div class="section-title">2. Escopo Detalhado das Soluções por Ambiente</div>
+
+    {% for ambiente, itens in itens_por_ambiente.items() %}
+    <div class="ambiente">
+        <h3>{{ ambiente }}</h3>
+
+        <div class="narrativa">
+            <p>
+                O escopo de automação destinado ao **{{ ambiente }}** foi concebido com o objetivo de otimizar o conforto, a segurança e a eficiência energética, mediante a integração discreta e eficaz de tecnologias avançadas.
+                {{ narrativas[ambiente] | safe }}
+            </p>
         </div>
 
-        <div class="client-info">
-            <div class="section-title">1. Dados do Cliente e Projeto</div>
-            <table>
-                <tr><th>Cliente:</th><td>{{ project.client.name }}</td><th>Endereço:</th><td>{{ project.client.address }}</td></tr>
-                <tr><th>Telefone:</th><td>{{ project.client.phone }}</td><th>Consultor:</th><td>{{ app_title_custom }}</td></tr>
-            </table>
-        </div>
-
-        <div class="section-title">2. Escopo Detalhado por Ambiente</div>
-
-        {% for ambiente, itens in itens_por_ambiente.items() %}
-        <div class="ambiente">
-            <h3>{{ ambiente }}</h3>
-
-            <div class="narrativa">
-                <p>
-                    O projeto de automação no **{{ ambiente }}** foi desenhado para maximizar o conforto, segurança e eficiência, integrando tecnologia de ponta de forma discreta.
-                    {{ narrativas[ambiente] | safe }}
-                </p>
-            </div>
-
-            <div class="item-list">
-                <h4>Dispositivos Principais Incluídos:</h4>
-                <ul>
-                    {% for item in itens %}
-                    <li>
-                        <strong>{{ item.catalog_item.name }} (Qtd: {{ item.quantity }})</strong>: 
-                        {{ item.catalog_item.description_commercial }}
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
-        </div>
-        {% endfor %}
-
-        <div class="section-title">3. Considerações Finais</div>
-        <p>
-            Este memorial descreve os equipamentos e a funcionalidade esperada. Para os requisitos de infraestrutura (elétrica, dados, cabos), por favor, consulte o Relatório Técnico anexo.
-        </p>
-
-        <div class="footer">
-            Documento emitido por {{ app_title_custom }}. Confiança e Inovação em Automação.
+        <div class="item-list">
+            <h4>Componentes Principais Especificados:</h4>
+            <ul>
+                {% for item in itens %}
+                <li>
+                    <strong>{{ item.catalog_item.name }} (Qtd: {{ item.quantity }})</strong> 
+                    
+                    <!-- NOVO: EXIBIÇÃO DA COR PARA O CLIENTE -->
+                    {% if item.color_name %}
+                        <span style="display: inline-block; width: 10px; height: 10px; background-color: {{ item.color_hex }}; border: 1px solid #333; vertical-align: middle; margin-left: 10px; border-radius: 2px;"></span>
+                        (Acabamento: {{ item.color_name }})
+                    {% endif %}
+                    
+                    : {{ item.catalog_item.description_commercial }}
+                </li>
+                {% endfor %}
+            </ul>
         </div>
     </div>
+    {% endfor %}
+
+    <div class="section-title">3. Disposições Gerais e Referências Técnicas</div>
+    <p>
+        O presente memorial tem por objetivo detalhar os equipamentos especificados e as funcionalidades previstas para o sistema. No que concerne aos requisitos técnicos de infraestrutura (incluindo instalações elétricas, cabeamento de dados e disposição de condutores), é imprescindível consultar o Relatório Técnico anexo para uma análise completa.
+    </p>
+
+    <div class="footer">
+        Este documento é uma emissão oficial da {{ app_title_custom }}. Compromisso com a excelência, a confiabilidade e a inovação tecnológica em soluções de automação.
+    </div>
+</div>
+
 </body>
 </html>

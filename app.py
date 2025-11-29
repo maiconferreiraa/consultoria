@@ -31,6 +31,37 @@ class DictObj:
             for key, value in data.items():
                 setattr(self, key, value)
 
+# --- CONFIGURAÇÃO DE CORES SUVINIL & CORAL (AMOSTRA EXPANDIDA) ---
+# Você pode expandir esta lista no futuro. O formato é "Nome": "Código HEX".
+SUVINIL_CORAL_COLORS = {
+    # Suvinil Neutros e Bases
+    "Branco Puro Suvinil": "#F0F0F0",
+    "Gelo Suvinil": "#F8F8FF",
+    "Papiro Suvinil": "#F2F0E6",
+    "Cinza Elefante Suvinil": "#A9A9A9",
+    "Concreto Suvinil": "#989898",
+    "Preto Absoluto Suvinil": "#000000",
+    # Coral Neutros e Bases
+    "Branco Neve Coral": "#FCFCFC",
+    "Areia do Deserto Coral": "#D2B48C",
+    "Marfim Coral": "#FFFFF0",
+    "Mármore Coral": "#EBEBEB",
+    "Grafite Coral": "#4F4F4F",
+    "Terra Cota Coral": "#E2725B",
+    # Tons Quentes
+    "Amarelo Ouro": "#FFD700",
+    "Laranja Cítrico": "#FFA500",
+    "Vermelho Vivo": "#FF0000",
+    "Vinho Tinto": "#800000",
+    "Rosa Pêssego": "#FFDAB9",
+    # Tons Frios
+    "Azul Profundo": "#000080",
+    "Azul Sereno": "#ADD8E6",
+    "Verde Limão": "#32CD32",
+    "Verde Esmeralda": "#50C878",
+    "Turquesa": "#40E0D0",
+}
+
 # --- DECORADOR DE SEGURANÇA ---
 
 def get_current_user_id():
@@ -190,8 +221,16 @@ def gerar_narrativa_ambiente(itens):
     tem_automacao = False
     
     for item in itens:
+        # Verifica se 'catalog_item' existe no objeto do item
+        if not hasattr(item, 'catalog_item') or not item.catalog_item:
+            continue
+
         nome = item.catalog_item.name.lower()
-        qtd = int(item.quantity)
+        # Garante que a quantidade seja tratada como int
+        try:
+            qtd = int(item.quantity)
+        except (TypeError, ValueError):
+            qtd = 0
         
         if "zigbee" in nome and "tecla" in nome:
             tem_automacao = True
@@ -290,6 +329,7 @@ def index():
 @login_required 
 def adicionar_ambiente():
     project_id = request.form.get('project_id_redirect')
+    # Adicionando um ID de usuário (Embora o ambiente deva ser global ou do projeto, no modelo atual, ele está sendo tratado como global/pessoal)
     db.collection('ambientes').add({"name": request.form['name'], "user_id": get_current_user_id()})
     if project_id: return redirect(url_for('gerenciar_projeto', project_id=project_id))
     return redirect(url_for('index'))
@@ -403,7 +443,7 @@ def gerenciar_projeto(project_id):
     project_obj = DictObj(proj_data, id=proj_doc.id)
     project_obj.client = client_obj
     
-    # --- 1. Catálogo de Dispositivos: DUAS CONSULTAS (resolve o problema dos itens mestres vazios) ---
+    # --- 1. Catálogo de Dispositivos: DUAS CONSULTAS ---
     global_cat_ref = db.collection('catalogo').order_by('name').stream()
     global_catalogo = [DictObj(doc.to_dict(), id=doc.id) for doc in global_cat_ref]
     
@@ -413,7 +453,7 @@ def gerenciar_projeto(project_id):
     # Mescla as duas listas
     catalogo = global_catalogo + user_catalogo
     
-    # --- 2. Lista de Ambientes: DUAS CONSULTAS (resolve o problema dos ambientes mestres vazios) ---
+    # --- 2. Lista de Ambientes: DUAS CONSULTAS ---
     global_room_ref = db.collection('ambientes').order_by('name').stream()
     global_ambientes = [DictObj(doc.to_dict(), id=doc.id) for doc in global_room_ref]
     
@@ -429,7 +469,9 @@ def gerenciar_projeto(project_id):
     for doc in items_ref:
         i_data = doc.to_dict()
         cat_item_obj = DictObj({
-            "name": i_data.get('item_name'), "tech_requirement": i_data.get('tech_requirement'), "description_commercial": i_data.get('description_commercial')
+            "name": i_data.get('item_name'), 
+            "tech_requirement": i_data.get('tech_requirement'), 
+            "description_commercial": i_data.get('description_commercial')
         })
         item_obj = DictObj(i_data, id=doc.id)
         item_obj.catalog_item = cat_item_obj
@@ -441,6 +483,8 @@ def gerenciar_projeto(project_id):
             db.collection('projects').document(project_id).collection('items').document(request.form['delete_item_id']).delete()
         else:
             cat_id = request.form['catalog_item_id']
+            # NOVO: Obtém a cor
+            item_color = request.form.get('item_color')
             cat_doc = db.collection('catalogo').document(cat_id).get().to_dict()
             item_data = {
                 "room_name": request.form['room_name'],
@@ -449,12 +493,21 @@ def gerenciar_projeto(project_id):
                 "catalog_item_id": cat_id,
                 "item_name": cat_doc['name'],
                 "tech_requirement": cat_doc['tech_requirement'],
-                "description_commercial": cat_doc['description_commercial']
+                "description_commercial": cat_doc['description_commercial'],
+                "item_color": item_color # NOVO: Salva a cor
             }
             db.collection('projects').document(project_id).collection('items').add(item_data)
         return redirect(url_for('gerenciar_projeto', project_id=project_id))
 
-    return render_template('gerenciar_projeto.html', project=project_obj, catalogo=catalogo, ambientes=ambientes, now=datetime.now())
+    # Adiciona a lista de cores ao contexto do template
+    global SUVINIL_CORAL_COLORS
+    return render_template('gerenciar_projeto.html', 
+        project=project_obj, 
+        catalogo=catalogo, 
+        ambientes=ambientes, 
+        cores=SUVINIL_CORAL_COLORS, # NOVO: Passa as cores
+        now=datetime.now()
+    )
 
 # --- ROTA: EDITAR ITEM DO PROJETO ---
 @app.route('/editar_item_projeto', methods=['POST'])
@@ -473,7 +526,8 @@ def editar_item_projeto():
         "catalog_item_id": cat_id,
         "item_name": cat_doc['name'],
         "tech_requirement": cat_doc['tech_requirement'],
-        "description_commercial": cat_doc['description_commercial']
+        "description_commercial": cat_doc['description_commercial'],
+        "item_color": request.form.get('item_color') # NOVO: Atualiza a cor
     })
     
     return redirect(url_for('gerenciar_projeto', project_id=project_id))
@@ -496,11 +550,27 @@ def gerar_pdf(project_id, tipo):
     
     items_ref = db.collection('projects').document(project_id).collection('items').stream()
     itens_por_ambiente = {}
+    
+    # NOVO: Obtém o dicionário de cores
+    global SUVINIL_CORAL_COLORS
+    
     for doc in items_ref:
         data = doc.to_dict()
-        cat_obj = DictObj({"name": data['item_name'], "tech_requirement": data['tech_requirement'], "description_commercial": data['description_commercial']})
+        cat_obj = DictObj({
+            "name": data['item_name'], 
+            "tech_requirement": data['tech_requirement'], 
+            "description_commercial": data['description_commercial']
+        })
+        
+        # Converte o nome da cor em código HEX para uso nos relatórios (se necessário)
+        color_name = data.get('item_color', 'Branco Puro Suvinil')
+        color_hex = SUVINIL_CORAL_COLORS.get(color_name, '#F0F0F0') 
+        
         item_obj = DictObj(data)
         item_obj.catalog_item = cat_obj
+        item_obj.color_name = color_name # Passa o nome da cor
+        item_obj.color_hex = color_hex   # Passa o código HEX
+        
         room = data['room_name']
         if room not in itens_por_ambiente: itens_por_ambiente[room] = []
         itens_por_ambiente[room].append(item_obj)
@@ -510,13 +580,22 @@ def gerar_pdf(project_id, tipo):
         narrativas[ambiente] = gerar_narrativa_ambiente(itens)
 
     template = 'relatorios/tecnico.html' if tipo == 'tecnico' else 'relatorios/memorial.html'
-    html = render_template(template, project=project, itens_por_ambiente=itens_por_ambiente, narrativas=narrativas, data_hoje=datetime.now().strftime("%d/%m/%Y"))
+    
+    # NOVO: Passa as cores globais para o template PDF
+    html = render_template(template, 
+                           project=project, 
+                           itens_por_ambiente=itens_por_ambiente, 
+                           narrativas=narrativas, 
+                           data_hoje=datetime.now().strftime("%d/%m/%Y"),
+                           cores=SUVINIL_CORAL_COLORS # Passa as cores para o caso de precisar delas no template
+                          )
     pdf = HTML(string=html).write_pdf()
     response = make_response(pdf)
     response.headers['Content-Type'] = 'application/pdf'
     response.headers['Content-Disposition'] = f'inline; filename={tipo}.pdf'
     return response
 
+# ROTA PDF LEVANTAMENTO (Ajustada para lidar com cores)
 @app.route('/projeto/<project_id>/pdf/levantamento')
 @login_required 
 def gerar_levantamento(project_id):
@@ -532,14 +611,37 @@ def gerar_levantamento(project_id):
     project.client = client_obj
     items_ref = db.collection('projects').document(project_id).collection('items').stream()
     resumo = {}
+    
+    # NOVO: Obtém o dicionário de cores
+    global SUVINIL_CORAL_COLORS
+    
     for doc in items_ref:
         data = doc.to_dict()
         name = data['item_name']
         qtde = int(data['quantity'])
-        if name not in resumo: resumo[name] = {'nome': name, 'total': 0, 'locais': []}
-        resumo[name]['total'] += qtde
-        resumo[name]['locais'].append(data['room_name'])
-    html = render_template('relatorios/levantamento.html', project=project, resumo=resumo, data_hoje=datetime.now().strftime("%d/%m/%Y"))
+        color_name = data.get('item_color', 'Branco Puro Suvinil')
+        
+        # Chave composta para diferenciar itens pela cor
+        key = f"{name} ({color_name})" 
+        
+        if key not in resumo: 
+            resumo[key] = {
+                'nome': name, 
+                'total': 0, 
+                'locais': [],
+                'color_name': color_name,
+                'color_hex': SUVINIL_CORAL_COLORS.get(color_name, '#F0F0F0')
+            }
+        resumo[key]['total'] += qtde
+        resumo[key]['locais'].append(data['room_name'])
+
+    # NOVO: Passa as cores globais para o template PDF
+    html = render_template('relatorios/levantamento.html', 
+                           project=project, 
+                           resumo=resumo, 
+                           data_hoje=datetime.now().strftime("%d/%m/%Y"),
+                           cores=SUVINIL_CORAL_COLORS # Passa as cores
+                          )
     pdf = HTML(string=html).write_pdf()
     response = make_response(pdf)
     response.headers['Content-Type'] = 'application/pdf'
