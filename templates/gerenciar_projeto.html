@@ -152,7 +152,7 @@
 
 
 <!-- MODAIS DE EDIÇÃO/EXCLUSÃO DE ITEM DO PROJETO -->
-<!-- Modal Exclusão de Item de Projeto (Simples, usa formulário POST) -->
+<!-- Modal Excluir Item Projeto (Simples, usa formulário POST) -->
 <div class="modal fade" id="modalExcluirItemProjeto" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content bg-dark border-danger">
@@ -200,29 +200,45 @@
                         </select>
                     </div>
 
-                    <!-- NOVO CAMPO: COR COM PREVIEW -->
+                    <!-- CAMPO DE COR REESTRUTURADO PARA EDIÇÃO -->
                     <div class="mb-3 row">
-                        <div class="col-8">
-                            <label for="item_color_edit_{{ item.id }}" class="form-label fw-bold">Cor Suvinil/Coral</label>
-                            <select name="item_color" 
-                                    id="item_color_edit_{{ item.id }}" 
-                                    class="form-select color-selector" 
-                                    data-preview-id="color-preview-edit-{{ item.id }}" 
-                                    required>
-                                {% for name, hex in cores.items() %}
-                                    <option value="{{ name }}" 
-                                            data-hex="{{ hex }}" 
-                                            {% if name == item.item_color %}selected{% endif %}>
-                                        {{ name }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-4">
-                            <label class="form-label fw-bold">Preview</label>
-                            {% set current_hex = cores.get(item.item_color, '#F0F0F0') %}
-                            <div id="color-preview-edit-{{ item.id }}" 
-                                 style="width: 100%; height: 38px; border: 1px solid #444; border-radius: 4px; background-color: {{ current_hex }};">
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Cor Suvinil/Coral</label>
+                            <div class="input-group">
+                                <!-- Select de Presets -->
+                                <select id="item_color_edit_preset_{{ item.id }}" 
+                                        class="form-select color-selector-preset" 
+                                        data-target-id="item_color_edit_submit_{{ item.id }}" 
+                                        data-custom-id="item_color_edit_custom_{{ item.id }}">
+                                    <option value="" disabled>Selecione a cor</option>
+                                    <option value="custom" class="bg-dark text-white">Outra Cor / HEX livre</option>
+                                    {% for name, hex in cores.items() %}
+                                        <option value="{{ name }}" data-hex="{{ hex }}" 
+                                                {% if name == item.item_color or hex == item.item_color %}selected{% endif %}>
+                                            {{ name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                
+                                <!-- Input de Texto Livre (Opcional, inicialmente oculto) -->
+                                <input type="text" 
+                                       id="item_color_edit_custom_{{ item.id }}" 
+                                       class="form-control color-selector-custom"
+                                       placeholder="#HEX (ex: #008880) ou Nome Comum" 
+                                       value="{{ '' if item.item_color in cores.keys() else item.item_color }}"
+                                       style="display:none;" />
+
+                                <!-- Hidden input for submission (Salva o valor real) -->
+                                <input type="hidden" name="item_color" 
+                                       id="item_color_edit_submit_{{ item.id }}" 
+                                       value="{{ item.item_color }}">
+
+                                <!-- Preview -->
+                                {% set current_val = cores.get(item.item_color, item.item_color) %}
+                                {% set current_hex = current_val if current_val.startswith('#') else cores.get(item.item_color, '#F0F0F0') %}
+                                <span class="input-group-text p-0" 
+                                      id="color-preview-edit-{{ item.id }}" 
+                                      style="width: 2.5rem; background-color: {{ current_hex }}; border: 1px solid #444; border-radius: 0 0.25rem 0.25rem 0;"></span>
                             </div>
                         </div>
                     </div>
@@ -272,7 +288,8 @@
             <div class="card-body p-3">
                 <form method="POST" class="row g-3">
                     
-                    <div class="col-md-3">
+                    <!-- AMBIENTE: col-12 em mobile, col-md-3 em desktop -->
+                    <div class="col-12 col-md-3">
                         <label class="form-label small text-muted fw-bold">Ambiente</label>
                         <div class="input-group">
                             <select name="room_name" class="form-select" required>
@@ -286,7 +303,8 @@
                         </div>
                     </div>
 
-                    <div class="col-md-3">
+                    <!-- DISPOSITIVO: col-12 em mobile, col-md-3 em desktop -->
+                    <div class="col-12 col-md-3">
                         <label class="form-label small text-muted fw-bold">Dispositivo</label>
                         <div class="input-group">
                             <select name="catalog_item_id" id="item_catalog_select" class="form-select" required>
@@ -300,29 +318,54 @@
                         </div>
                     </div>
                     
-                    <!-- NOVO CAMPO DE COR NA ADIÇÃO -->
-                    <div class="col-md-3">
+                    <!-- COR (ACABAMENTO): col-12 em mobile, col-md-3 em desktop (FIX) -->
+                    <div class="col-12 col-md-3">
                         <label class="form-label small text-muted fw-bold">Cor (Acabamento)</label>
                         <div class="input-group">
-                            <select name="item_color" id="item_color_add_main" class="form-select color-selector" data-preview-id="color-preview-main" required>
+                            <!-- Select de Presets -->
+                            <select id="item_color_add_preset" 
+                                    class="form-select color-selector-preset"
+                                    data-target-id="item_color_add_submit" 
+                                    data-custom-id="item_color_add_custom">
+                                <option value="" selected disabled>Selecione a cor</option>
+                                <option value="custom" class="bg-dark text-white">Outra Cor / HEX livre</option>
                                 {% for name, hex in cores.items() %}
-                                    <option value="{{ name }}" data-hex="{{ hex }}" {% if loop.first %}selected{% endif %}>{{ name }}</option>
+                                    <option value="{{ name }}" data-hex="{{ hex }}">{{ name }}</option>
                                 {% endfor %}
                             </select>
+
+                            <!-- Input de Texto Livre (Opcional, inicialmente oculto) -->
+                            <input type="text" 
+                                   id="item_color_add_custom" 
+                                   class="form-control color-selector-custom"
+                                   placeholder="#HEX (ex: #008880) ou Nome Comum" 
+                                   style="display:none;" />
+
+                            <!-- Hidden input for submission (Salva o valor real) -->
+                            <input type="hidden" name="item_color" 
+                                   id="item_color_add_submit" 
+                                   value="{{ cores.keys()|first or 'Branco Neve Suvinil' }}">
+                            
+                            <!-- Preview -->
                             {% set first_hex = cores.values() | first | default('#F0F0F0') %}
-                            <span class="input-group-text p-0" id="color-preview-main" style="width: 2.5rem; background-color: {{ first_hex }}; border: 1px solid #444; border-radius: 0 0.25rem 0.25rem 0;"></span>
+                            <span class="input-group-text p-0" 
+                                  id="color-preview-main" 
+                                  style="width: 2.5rem; background-color: {{ first_hex }}; border: 1px solid #444; border-radius: 0 0.25rem 0.25rem 0;"></span>
                         </div>
                     </div>
 
-                    <div class="col-md-1">
+                    <!-- QUANTIDADE: col-6 em mobile, col-md-1 em desktop -->
+                    <div class="col-6 col-md-1">
                         <label class="form-label small text-muted fw-bold">Qtd</label>
                         <input type="number" name="quantity" value="1" min="1" class="form-control text-center">
                     </div>
 
-                    <div class="col-md-2 d-grid">
+                    <!-- BOTÃO ADICIONAR: col-6 em mobile, col-md-2 em desktop -->
+                    <div class="col-6 col-md-2 d-grid">
                         <label class="d-none d-md-block">&nbsp;</label>
                         <button type="submit" class="btn btn-primary">Add</button>
                     </div>
+                    
                     <div class="col-12"><input type="text" name="obs" class="form-control" placeholder="Obs: Localização específica, detalhes extras..."></div>
                 </form>
             </div>
@@ -339,11 +382,15 @@
                             <td>{{ item.catalog_item.name }}</td>
                             
                             <!-- Coluna COR -->
-                            {% set item_color = item.item_color | default('Branco Puro Suvinil') %}
-                            {% set color_hex = cores.get(item_color, '#F0F0F0') %}
+                            {% set item_color_val = item.item_color | default('Branco Neve Suvinil') %}
+                            {% set color_hex = cores.get(item_color_val, item_color_val) %}
+                            {% if not color_hex.startswith('#') %}
+                                {% set color_hex = '#F0F0F0' %}
+                            {% endif %}
+
                             <td class="d-none d-md-table-cell">
                                 <span style="display: inline-block; width: 15px; height: 15px; background-color: {{ color_hex }}; border: 1px solid #444; vertical-align: middle; margin-right: 5px; border-radius: 3px;"></span>
-                                <small class="text-muted">{{ item_color }}</small>
+                                <small class="text-muted">{{ item_color_val }}</small>
                             </td>
 
                             <td class="text-center"><span class="badge bg-dark">{{ item.quantity }}</span></td>
@@ -383,79 +430,62 @@
         {% endfor %}
     };
     
+    // Função que tenta obter o HEX: prioriza preset, depois verifica HEX livre, senão retorna o nome (para o navegador tentar renderizar)
+    function getHexValue(colorNameOrHex) {
+        if (!colorNameOrHex) return '#F0F0F0';
+        
+        // 1. Tenta preset
+        const presetHex = SuvinilCoralColors[colorNameOrHex];
+        if (presetHex) return presetHex;
+        
+        // 2. Verifica se é um HEX válido (Ex: #FF00AA)
+        if (colorNameOrHex.match(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)) {
+            return colorNameOrHex;
+        }
+        
+        // 3. Retorna o nome da cor (o navegador tentará renderizar se for um nome web como 'red', 'blue', etc.)
+        return colorNameOrHex; 
+    }
+    
     // Função para atualizar a pré-visualização de cor
-    function updateColorPreview(colorName, previewElementId) {
-        const hex = SuvinilCoralColors[colorName] || '#F0F0F0'; 
+    function updateColorPreview(colorInput, previewElementId) {
+        const colorValue = colorInput.value || colorInput.getAttribute('data-hex') || '#F0F0F0';
+        const hex = getHexValue(colorValue);
         const previewElement = document.getElementById(previewElementId);
         if (previewElement) {
             previewElement.style.backgroundColor = hex;
         }
     }
     
-    // FUNÇÃO AUXILIAR: Decodifica o JSON com segurança (para dados passados via |tojson)
-    const safeParse = (jsonString) => {
-        // Se for nulo ou não for string, retorna string vazia
-        if (!jsonString || typeof jsonString !== 'string') return ''; 
-        
-        try {
-            // Tenta JSON.parse
-            const parsed = JSON.parse(jsonString);
-            
-            // Se o resultado for uma string, retorna ela, senão retorna a string crua limpa
-            if (typeof parsed === 'string') {
-                return parsed;
-            } else {
-                 // Caso o JSON seja um objeto válido, retorna a string original limpa
-                return jsonString.replace(/^"|"$/g, '').replace(/\\"/g, '"').replace(/\\n/g, '\n');
-            }
-        } catch (e) {
-            // Em caso de falha, retorna a string crua limpa
-            return jsonString.replace(/^"|"$/g, '').replace(/\\"/g, '"').replace(/\\n/g, '\n');
-        }
-    };
-
     // --- FUNÇÕES DE PREENCHIMENTO DE DADOS DENTRO DO MODAL ---
     
     // Preenchimento para Ambientes (Chamado pelo evento shown.bs.modal)
     function fillAmbienteModal(button) {
-        // Pega os dados do botão que acionou o modal (Data Attributes)
         const id = button.getAttribute('data-id');
         const name = button.getAttribute('data-name');
         
-        // PREENCHE OS CAMPOS
         document.getElementById('edit_room_id').value = id;
         document.getElementById('edit_room_name').value = name;
-        
-        // O modal de Gerenciamento pode ser fechado manualmente, se necessário, mas o Bootstrap deve lidar com isso.
-        // const modalGerenciar = bootstrap.Modal.getInstance(document.getElementById('modalGerenciarAmbientes'));
-        // if (modalGerenciar) modalGerenciar.hide();
     }
     
     // Preenchimento para Catálogo (Chamado pelo evento shown.bs.modal)
     function fillCatalogoModal(button) {
-        // Pega os dados do botão que acionou o modal
         const id = button.getAttribute('data-id');
         const name = button.getAttribute('data-name');
         const category = button.getAttribute('data-category');
         const desc = button.getAttribute('data-desc');
         const tech = button.getAttribute('data-tech');
         
-        // PREENCHE OS CAMPOS
         document.getElementById('edit_item_id').value = id;
         document.getElementById('edit_name').value = name;
-        document.getElementById('edit_category').value = category; // O Bootstrap seleciona o valor automaticamente
+        document.getElementById('edit_category').value = category; 
         document.getElementById('edit_desc').value = desc;
         document.getElementById('edit_tech').value = tech;
-        
-        // const modalGerenciar = bootstrap.Modal.getInstance(document.getElementById('modalGerenciarCatalogo'));
-        // if (modalGerenciar) modalGerenciar.hide();
     }
     
     function prepararExclusaoItemProjeto(itemId, itemName) {
-        // Função para excluir Item do Projeto
         document.getElementById('delete_item_id').value = itemId;
         document.getElementById('delete_item_name_display').textContent = itemName;
-        // Abre o modal
         new bootstrap.Modal(document.getElementById('modalExcluirItemProjeto')).show();
     }
 
@@ -463,41 +493,90 @@
     // Lógica principal de inicialização e LISTENERS
     document.addEventListener('DOMContentLoaded', () => {
         
-        // --- 1. CONFIGURAÇÃO DOS LISTENERS DE COR (ROBUSTO) ---
+        // --- 1. FUNÇÃO PRINCIPAL PARA GERENCIAR INPUTS DE COR ---
         
-        document.querySelectorAll('.color-selector').forEach(selectElement => {
-            const previewElementId = selectElement.getAttribute('data-preview-id') || 'color-preview-main';
+        function setupColorInputGroup(presetSelectId, customInputId, submitInputId, previewId) {
+            const presetSelect = document.getElementById(presetSelectId);
+            const customInput = document.getElementById(customInputId);
+            const submitInput = document.getElementById(submitInputId);
+
+            if (!presetSelect || !customInput || !submitInput) return;
+
+            // Função auxiliar para sincronizar o estado
+            function syncColorState() {
+                const selectedValue = presetSelect.value;
+                if (selectedValue === 'custom') {
+                    // Estado Customizado
+                    customInput.style.display = 'block';
+                    // Se o custom input tiver valor, use-o, senão use o valor do hidden para inicializar
+                    customInput.value = customInput.value || submitInput.value;
+                    submitInput.value = customInput.value;
+                } else {
+                    // Estado Preset
+                    customInput.style.display = 'none';
+                    customInput.value = '';
+                    submitInput.value = selectedValue;
+                }
+                updateColorPreview(submitInput, previewId);
+            }
             
-            selectElement.addEventListener('change', function() {
-                updateColorPreview(this.value, previewElementId);
+            // Inicializa o estado com base no valor de submissão salvo
+            syncColorState();
+            
+            // 1.2. Listener: Quando o Preset (dropdown) muda
+            presetSelect.addEventListener('change', syncColorState);
+
+            // 1.3. Listener: Quando o Custom Input (texto livre) muda
+            customInput.addEventListener('input', function() {
+                submitInput.value = this.value; // Atualiza o valor a ser submetido
+                updateColorPreview(submitInput, previewId);
             });
             
-            updateColorPreview(selectElement.value, previewElementId);
-
-            const modalId = selectElement.closest('.modal')?.id;
-            if (modalId) {
-                const modalElement = document.getElementById(modalId);
-                if (modalElement) {
-                    modalElement.addEventListener('shown.bs.modal', function() {
-                        updateColorPreview(selectElement.value, previewElementId);
-                    });
-                }
+            // Adiciona um listener para garantir que, se o valor salvo for 'custom' (ou não for um preset), 
+            // o select se ajuste ao abrir o modal.
+            const modalElement = presetSelect.closest('.modal');
+            if(modalElement) {
+                 modalElement.addEventListener('shown.bs.modal', function () {
+                    const savedValue = submitInput.value;
+                    if (savedValue && !SuvinilCoralColors.hasOwnProperty(savedValue)) {
+                        // Não é um preset, força o modo custom
+                        presetSelect.value = 'custom';
+                        customInput.style.display = 'block';
+                        customInput.value = savedValue;
+                    } else {
+                        // É um preset ou valor vazio, mantém o select normal
+                        presetSelect.value = savedValue || presetSelect.options[1].value; // Seleciona o valor salvo ou o primeiro valor (depois do custom/disabled)
+                        customInput.style.display = 'none';
+                        customInput.value = '';
+                    }
+                    updateColorPreview(submitInput, previewId);
+                });
             }
-        });
+        }
+
+        // --- 2. CONFIGURA OS GRUPOS DE INPUTS DE COR ---
         
-        // --- 2. LISTENERS DO MODAL PARA EDIÇÃO DE AMBIENTE E CATÁLOGO (FIX DEFINITIVO) ---
+        // A. Campo de Adição Principal
+        setupColorInputGroup('item_color_add_preset', 'item_color_add_custom', 'item_color_add_submit', 'color-preview-main');
+        
+        // B. Campos de Edição em Loop (Dentro dos Modais)
+        {% for item in project.items %}
+            setupColorInputGroup(
+                'item_color_edit_preset_{{ item.id }}', 
+                'item_color_edit_custom_{{ item.id }}', 
+                'item_color_edit_submit_{{ item.id }}', 
+                'color-preview-edit-{{ item.id }}'
+            );
+        {% endfor %}
+
+        // --- 3. LISTENERS DO MODAL PARA EDIÇÃO DE AMBIENTE E CATÁLOGO (CORRIGIDO) ---
         
         // Listener para o Modal de Edição de Ambiente
         const modalEditarAmbiente = document.getElementById('modalEditarAmbiente');
         if (modalEditarAmbiente) {
             modalEditarAmbiente.addEventListener('shown.bs.modal', function (event) {
-                // Pega o botão que acionou o modal (evento.relatedTarget)
-                const button = event.relatedTarget;
+                const button = event.relatedTarget; 
                 fillAmbienteModal(button);
-                
-                // Oculta o modal de gerenciamento (se estiver aberto)
-                const modalGerenciar = bootstrap.Modal.getInstance(document.getElementById('modalGerenciarAmbientes'));
-                if (modalGerenciar) modalGerenciar.hide();
             });
         }
         
@@ -505,21 +584,15 @@
         const modalEditarItem = document.getElementById('modalEditarItem');
         if (modalEditarItem) {
             modalEditarItem.addEventListener('shown.bs.modal', function (event) {
-                // Pega o botão que acionou o modal (evento.relatedTarget)
-                const button = event.relatedTarget;
+                const button = event.relatedTarget; 
                 fillCatalogoModal(button);
-                
-                // Oculta o modal de gerenciamento (se estiver aberto)
-                const modalGerenciar = bootstrap.Modal.getInstance(document.getElementById('modalGerenciarCatalogo'));
-                if (modalGerenciar) modalGerenciar.hide();
             });
         }
 
 
-        // --- 3. LÓGICA DO RESUMO ---
+        // --- 4. LÓGICA DO RESUMO ---
         
-        // Dados brutos extraídos do Jinja
-        const itens = [{% for item in project.items %}{ name: "{{ item.catalog_item.name }}", room: "{{ item.room_name }}", qty: {{ item.quantity }}, color: "{{ item.item_color | default('Branco Puro Suvinil') }}" },{% endfor %}];
+        const itens = [{% for item in project.items %}{ name: "{{ item.catalog_item.name }}", room: "{{ item.room_name }}", qty: {{ item.quantity }}, color: "{{ item.item_color | default('Branco Neve Suvinil') }}" },{% endfor %}];
         
         const resumo = {};
         

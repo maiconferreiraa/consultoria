@@ -1,105 +1,230 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Relatório Técnico - {{ app_title_custom }}</title>
+    <meta charset="utf-8">
+    <title>Relatório Técnico - {{ project.client.name }}</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 10pt; color: #333; }
-        .container { width: 90%; margin: 20px auto; }
-        .header { text-align: center; border-bottom: 2px solid #0056b3; padding-bottom: 10px; margin-bottom: 20px; }
-        .header h1 { color: #0056b3; font-size: 16pt; margin: 0; }
-        .header h2 { font-size: 12pt; margin: 5px 0 0; color: #555; }
-        .section-title { font-size: 14pt; color: #0056b3; border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-top: 25px; margin-bottom: 15px; }
-        
-        /* BOX DE ATENÇÃO PARA O ELETRICISTA (VERMELHO) */
-        .eletrician-alert { 
-            border: 2px solid red; 
-            background-color: #ffeaea; 
-            color: #cc0000; 
-            padding: 10px; 
-            margin-bottom: 20px; 
-            font-weight: bold;
-            text-align: center;
+        @page {
+            size: A4;
+            margin: 20mm;
+            @top-center { content: "{{ project.client.name }} - Relatório Técnico"; font-size: 8pt; color: #555; }
+            @bottom-center { content: counter(page); font-size: 8pt; color: #555; }
         }
-        .eletrician-alert strong { color: #880000; }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11pt;
+            color: #333;
+        }
+        /* REVERTENDO CORES DE TITULO PARA AZUL */
+        h1, h2, h3 {
+            color: #007bff; /* Azul primário (Bootstrap Blue) */
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 5px;
+            margin-top: 25px;
+        }
+        h1 { font-size: 18pt; text-align: center; border-bottom: none; }
+        h2 { font-size: 14pt; margin-top: 20px; border-bottom-color: #007bff; }
+        h3 { font-size: 12pt; margin-top: 15px; color: #0056b3; /* Azul mais escuro */ border-bottom: 1px solid #cfd8dc; padding-bottom: 3px; }
+
+        /* CABEÇALHO COMPACTO E CENTRALIZADO */
+        .header-info {
+            text-align: center;
+            font-size: 10pt;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #ddd; 
+            margin-bottom: 20px; 
+            line-height: 1.3;
+        }
+        .header-info p {
+            margin: 0; 
+            padding: 0;
+        }
+        .header-info .consultor {
+            font-size: 9pt;
+            font-style: italic;
+            margin-top: 3px;
+        }
         
-        .client-info table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .client-info th, .client-info td { padding: 5px 0; text-align: left; }
-        .client-info th { width: 20%; color: #555; font-weight: normal; }
-        .client-info td { font-weight: bold; }
-        .ambiente { margin-bottom: 25px; border: 1px solid #eee; padding: 15px; border-radius: 5px; }
-        .ambiente h3 { font-size: 12pt; color: #333; margin-top: 0; border-bottom: 1px dotted #ccc; padding-bottom: 5px; }
-        .item-list table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .item-list th, .item-list td { border: 1px solid #eee; padding: 8px; text-align: left; vertical-align: top; }
-        .item-list th { background-color: #f5f5f5; color: #333; font-weight: bold; }
-        .footer { border-top: 1px solid #ccc; padding-top: 10px; margin-top: 30px; text-align: center; font-size: 8pt; color: #777; }
-        .narrativa p { font-style: italic; color: #444; margin-top: 5px; line-height: 1.4; }
-        .total-item { font-weight: bold; }
-        /* Destaque para as colunas de Requisitos e Observações */
-        .tech-highlight { color: #0056b3; font-weight: bold; }
+        .section {
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+        }
+
+        .item-list {
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+        .item-list table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10pt;
+        }
+        .item-list th, .item-list td {
+            border: 1px solid #eee;
+            padding: 6px 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+        .item-list th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
+        .item-row {
+            border-bottom: 1px solid #eee;
+        }
+        .color-sample {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 1px solid #aaa;
+            border-radius: 2px;
+            vertical-align: middle;
+            margin-right: 5px;
+        }
+        /* ESTILOS PARA ATENÇÃO/AVISOS CRÍTICOS (VERMELHO) */
+        .tech-note {
+            background-color: #fcebeb; /* Fundo Vermelho Claro */
+            border-left: 4px solid #dc3545; /* Borda Vermelha Forte */
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 10.5pt;
+        }
+        .tech-note strong {
+            color: #dc3545; /* Texto em Vermelho */
+        }
+        /* Ícone de Atenção (Triângulo) usando Unicode para máxima compatibilidade em PDF */
+        .attention-icon {
+            color: #dc3545;
+            font-size: 14pt;
+            line-height: 1;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+        /* NOVO ESTILO: Destaque Vermelho e Negrito para Códigos Técnicos */
+        .highlight-tech {
+            color: #dc3345;
+            font-weight: bold;
+            white-space: nowrap; /* Impede quebras de linha dentro do código */
+        }
+        .page-break {
+            page-break-before: always;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <!-- TÍTULO DINÂMICO AQUI -->
-            <h1>{{ app_title_custom }}</h1>
-            <h2>Relatório Técnico de Infraestrutura e Dispositivos</h2>
-            <p>Data: {{ data_hoje }}</p>
-        </div>
 
-        <div class="eletrician-alert">
-            ATENÇÃO AO ELETRICISTA: Este documento detalha os pontos e requisitos de infraestrutura. 
-            Verifique as colunas **"Requisito de Infraestrutura"** e **"Observação"** em cada ambiente para especificações críticas (ex: fiação, caixas 4x4, circuitos 20A, etc.).
+    <header>
+        <h1>RELATÓRIO TÉCNICO DE INFRAESTRUTURA</h1>
+        <h2 style="text-align: center;">Projeto de Automação Residencial</h2>
+        
+        <div class="header-info">
+            <p>
+                <span style="font-weight: bold;">Cliente:</span> {{ project.client.name }} | 
+                <span style="font-weight: bold;">Endereço:</span> {{ project.client.address }} | 
+                <span style="font-weight: bold;">Telefone:</span> {{ project.client.phone }}
+            </p>
+            <p class="consultor">
+                <span style="font-weight: bold;">Consultor Responsável:</span> {{ app_title_custom }}
+            </p>
         </div>
+    </header>
 
-        <div class="client-info">
-            <div class="section-title">Dados do Projeto</div>
+    <div class="section">
+        <h2>1. INSTRUÇÕES GERAIS</h2>
+        <p>Este documento é um guia de infraestrutura destinado às equipes de elétrica e construção civil. Ele detalha os requisitos técnicos de passagem de cabos, alimentação elétrica e preparação de caixas para a correta instalação dos dispositivos de automação.</p>
+        
+        <div class="tech-note">
+            <p><span class="attention-icon">&#9888;</span> <strong>ATENÇÃO:</strong> É obrigatório garantir a passagem de **FASE (F)** e **NEUTRO (N)** em todas as caixas 4x2 e 4x4 destinadas aos módulos de automação (interruptores e painéis).</p>
+        </div>
+        
+        <p style="text-align: right; font-size: 10pt; margin-top: 15px;">**Data de Emissão:** {{ data_hoje }}</p>
+    </div>
+
+    <h2>2. REQUISITOS DETALHADOS POR AMBIENTE</h2>
+    
+    {% for room, items in itens_por_ambiente.items() %}
+    <div class="section">
+        <h3>2.{{ loop.index }}. {{ room|upper }}</h3>
+
+        <!-- Tabela de Itens (Foco em Requisito Técnico) -->
+        <div class="item-list">
             <table>
-                <tr><th>Cliente:</th><td>{{ project.client.name }}</td><th>Endereço:</th><td>{{ project.client.address }}</td></tr>
-                <tr><th>Telefone:</th><td>{{ project.client.phone }}</td><th>ID do Projeto:</th><td>{{ project.id }}</td></tr>
+                <thead>
+                    <tr>
+                        <th style="width: 5%;">Qtd</th>
+                        <th style="width: 25%;">Dispositivo</th>
+                        <th style="width: 45%;">Requisito Técnico (Instalação)</th>
+                        <th style="width: 15%;">Acab.</th>
+                        <th style="width: 10%;">Obs</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    {% set color_hex = item.color_hex %}
+                    {% set color_name = item.color_name %}
+                    <tr class="item-row">
+                        <td style="text-align: center;">{{ item.quantity }}</td>
+                        <td>{{ item.catalog_item.name }}</td>
+                        <td>
+                            {% if 'zigbee' in item.catalog_item.name.lower() or 'painel' in item.catalog_item.name.lower() %}
+                                <span class="attention-icon" style="font-size: 10pt;">&#9888;</span>
+                            {% endif %}
+                            
+                            {% set tech_req = item.catalog_item.tech_requirement | default('Verificar alimentação (F+N) e cabos de dados.') %}
+                            
+                            {# SUBSTITUIÇÕES PARA DESTAQUE EM VERMELHO E NEGRITO #}
+                            {% set tech_req = tech_req | replace('F+N+T+R', '<span class="highlight-tech">F+N+T+R</span>') %}
+                            {% set tech_req = tech_req | replace('F+N+T', '<span class="highlight-tech">F+N+T</span>') %}
+                            {% set tech_req = tech_req | replace('F+N+R', '<span class="highlight-tech">F+N+R</span>') %}
+                            {% set tech_req = tech_req | replace('F+N+1 Retorno', '<span class="highlight-tech">F+N+1 Retorno</span>') %}
+                            {% set tech_req = tech_req | replace('F+N+2 Retornos', '<span class="highlight-tech">F+N+2 Retornos</span>') %}
+                            {% set tech_req = tech_req | replace('F+N+3 Retornos', '<span class="highlight-tech">F+N+3 Retornos</span>') %}
+                            {% set tech_req = tech_req | replace('F+N+4 Retornos', '<span class="highlight-tech">F+N+4 Retornos</span>') %}
+                            {% set tech_req = tech_req | replace('F+N+5 Retornos', '<span class="highlight-tech">F+N+5 Retornos</span>') %}
+                            {% set tech_req = tech_req | replace('F+N+6 Retornos', '<span class="highlight-tech">F+N+6 Retornos</span>') %}
+                            {% set tech_req = tech_req | replace('F+N+8 Retornos', '<span class="highlight-tech">F+N+8 Retornos</span>') %}
+                            {# Por último, a substituição mais simples F+N #}
+                            {% set tech_req = tech_req | replace('F+N', '<span class="highlight-tech">F+N</span>') %}
+                            
+                            {{ tech_req | safe }}
+                        </td>
+                        <td>
+                            <span class="color-sample" style="background-color: {{ color_hex }};"></span>
+                            {{ color_name }}
+                        </td>
+                        <td>{{ item.obs | default('N/A') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
             </table>
         </div>
-
-        <div class="section-title">Detalhamento por Ambiente</div>
-
-        {% for ambiente, itens in itens_por_ambiente.items() %}
-        <div class="ambiente">
-            <h3>{{ ambiente }}</h3>
-
-            <div class="narrativa">
-                <p><strong>Resumo Técnico:</strong> {{ narrativas[ambiente] | safe }}</p>
-            </div>
-
-            <div class="item-list">
-                <h4>Requisitos Técnicos por Ponto:</h4>
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width: 5%;">Qtd</th>
-                            <th style="width: 30%;">Item</th>
-                            <th style="width: 40%;">Requisito de Infraestrutura</th>
-                            <th style="width: 25%;">Observação</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in itens %}
-                        <tr>
-                            <td class="total-item">{{ item.quantity }}</td>
-                            <td>{{ item.catalog_item.name }}</td>
-                            <!-- Destaque para as informações críticas -->
-                            <td class="tech-highlight">{{ item.catalog_item.tech_requirement }}</td>
-                            <td class="tech-highlight">{{ item.obs | default('N/A') }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        {% endfor %}
-
-        <div class="footer">
-            Este documento é de uso interno e técnico, não deve ser distribuído ao cliente final.
-        </div>
     </div>
+    {% if not loop.last and loop.index % 2 == 0 %}
+        <!-- Insere uma quebra de página a cada dois ambientes, se houver mais, para melhor organização -->
+        <div class="page-break"></div>
+    {% endif %}
+    {% endfor %}
+
+    <div class="section page-break">
+        <h2>3. CHECKLIST DE INFRAESTRUTURA FINAL</h2>
+        
+        <h3>3.1. Antes do Acabamento:</h3>
+        <ul>
+            <li>Verificar se todos os circuitos de iluminação possuem Neutro (N) na caixa de passagem dos interruptores.</li>
+            <li>Conferir se os pontos de integração (Áudio/Vídeo, Ar Condicionado) possuem a alimentação (F+N) e o cabeamento de comunicação requisitados.</li>
+            <li>Garantir que todas as caixas 4x2 e 4x4 estejam niveladas e sem rebarbas para o encaixe dos painéis de acrílico.</li>
+        </ul>
+        
+        <h3>3.2. Responsabilidade:</h3>
+        <p>A equipe de Elétrica é responsável por garantir que os requisitos técnicos de fiação e cabeamento sejam estritamente seguidos, conforme detalhado na coluna "Requisito Técnico" acima.</p>
+
+
+        <p style="text-align: center; margin-top: 30px;">___________________________________________<br>
+        Engenheiro / Eletricista Responsável (Obra)</p>
+        
+        <p style="text-align: center; margin-top: 30px;">___________________________________________<br>
+        {{ app_title_custom }} (Consultor de Automação)</p>
+    </div>
+
 </body>
 </html>

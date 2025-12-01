@@ -1,104 +1,194 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Memorial Descritivo - {{ app_title_custom }}</title>
-<style>
-/* Estilos de impressão e PDF */
-body { font-family: 'Times New Roman', Times, serif; margin: 0; padding: 0; font-size: 11pt; color: #000; }
-.container { width: 85%; margin: 30px auto; line-height: 1.6; }
-.header { text-align: center; border-bottom: 3px solid #000; padding-bottom: 15px; margin-bottom: 30px; }
+    <meta charset="utf-8">
+    <title>Memorial Descritivo - {{ project.client.name }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 20mm;
+            @top-center { content: "{{ project.client.name }} - Memorial Descritivo"; font-size: 8pt; color: #555; }
+            @bottom-center { content: counter(page); font-size: 8pt; color: #555; }
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11pt;
+            color: #333;
+        }
+        h1, h2, h3 {
+            color: #004d40; /* Verde escuro (cor da marca) */
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 5px;
+            margin-top: 25px;
+        }
+        h1 { font-size: 18pt; text-align: center; border-bottom: none; }
+        h2 { font-size: 14pt; margin-top: 20px; border-bottom-color: #004d40; }
+        h3 { font-size: 12pt; margin-top: 15px; color: #00796b; border-bottom: 1px solid #cfd8dc; padding-bottom: 3px; }
 
-/* Título Principal (Nome da Empresa) */
-.header h1 { font-size: 18pt; margin: 0; color: #000; } 
-.header h2 { font-size: 14pt; margin: 5px 0 0; color: #333; }
+        /* CABEÇALHO COMPACTO E CENTRALIZADO (FIX) */
+        .header-info {
+            text-align: center;
+            font-size: 10pt;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #ddd; 
+            margin-bottom: 20px; 
+            line-height: 1.3;
+        }
+        .header-info p {
+            margin: 0; 
+            padding: 0;
+        }
+        .header-info .consultor {
+            font-size: 9pt;
+            font-style: italic;
+            margin-top: 3px;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+        }
 
-.section-title { 
-    font-size: 16pt; 
-    color: #000; 
-    background-color: #eee; 
-    padding: 8px; 
-    margin-top: 30px; 
-    margin-bottom: 20px; 
-    border-left: 5px solid #0056b3; 
-}
-
-.client-info table { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
-.client-info th, .client-info td { padding: 6px 0; text-align: left; }
-.client-info th { width: 25%; font-weight: normal; color: #555; }
-.client-info td { font-weight: bold; }
-
-.ambiente { margin-bottom: 30px; border: 1px dashed #ccc; padding: 20px; }
-.ambiente h3 { font-size: 13pt; color: #0056b3; margin-top: 0; margin-bottom: 10px; }
-
-.narrativa p { margin-bottom: 15px; text-align: justify; }
-
-.item-list ul { list-style: disc; margin-left: 20px; padding-left: 0; }
-.item-list li { margin-bottom: 5px; }
-
-.footer { border-top: 1px solid #ccc; padding-top: 15px; margin-top: 40px; text-align: center; font-size: 9pt; color: #777; }
-</style>
-
+        .item-list {
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+        .item-list table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10pt;
+        }
+        .item-list th, .item-list td {
+            border: 1px solid #eee;
+            padding: 6px 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+        .item-list th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
+        .item-row {
+            border-bottom: 1px solid #eee;
+        }
+        .color-sample {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 1px solid #aaa;
+            border-radius: 2px;
+            vertical-align: middle;
+            margin-right: 5px;
+        }
+        .narrativa {
+            background-color: #f7f9f9;
+            border-left: 4px solid #00796b;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 10.5pt;
+        }
+        .narrativa strong {
+            color: #004d40;
+        }
+        .page-break {
+            page-break-before: always;
+        }
+    </style>
 </head>
 <body>
-<div class="container">
-<div class="header">
-<!-- TÍTULO DINÂMICO AQUI -->
-<h1>{{ app_title_custom }}</h1>
-<h2>Memorial Descritivo do Escopo de Soluções em Automação</h2>
-<p>Data de Emissão: {{ data_hoje }}</p>
-</div>
 
-    <div class="client-info">
-        <div class="section-title">1. Informações Cadastrais do Cliente e do Projeto</div>
-        <table>
-            <tr><th>Cliente:</th><td>{{ project.client.name }}</td><th>Endereço:</th><td>{{ project.client.address }}</td></tr>
-            <tr><th>Telefone:</th><td>{{ project.client.phone }}</td><th>Consultor Responsável:</th><td>{{ app_title_custom }}</td></tr>
-        </table>
-    </div>
-
-    <div class="section-title">2. Escopo Detalhado das Soluções por Ambiente</div>
-
-    {% for ambiente, itens in itens_por_ambiente.items() %}
-    <div class="ambiente">
-        <h3>{{ ambiente }}</h3>
-
-        <div class="narrativa">
+    <header>
+        <h1>MEMORIAL DESCRITIVO</h1>
+        <h2 style="text-align: center;">Projeto de Automação Residencial</h2>
+        
+        <div class="header-info">
             <p>
-                O escopo de automação destinado ao **{{ ambiente }}** foi concebido com o objetivo de otimizar o conforto, a segurança e a eficiência energética, mediante a integração discreta e eficaz de tecnologias avançadas.
-                {{ narrativas[ambiente] | safe }}
+                <span style="font-weight: bold;">Cliente:</span> {{ project.client.name }} | 
+                <span style="font-weight: bold;">Endereço:</span> {{ project.client.address }} | 
+                <span style="font-weight: bold;">Telefone:</span> {{ project.client.phone }}
+            </p>
+            <p class="consultor">
+                <span style="font-weight: bold;">Consultor Responsável:</span> {{ app_title_custom }}
             </p>
         </div>
+    </header>
 
+    <div class="section">
+        <h2>1. INTRODUÇÃO</h2>
+        <p>Este Memorial Descritivo detalha as soluções e equipamentos propostos para o sistema de automação e infraestrutura elétrica no imóvel, garantindo conforto, eficiência e modernidade.</p>
+        <p>O projeto visa integrar os subsistemas de Iluminação, Energia, Mídia e Climatização, proporcionando uma experiência de casa inteligente centralizada por comando de voz e aplicativo móvel.</p>
+        <p style="text-align: right; font-size: 10pt; margin-top: 15px;">**Data de Emissão:** {{ data_hoje }}</p>
+    </div>
+
+    <h2>2. ESCOPO DETALHADO POR AMBIENTE</h2>
+    
+    {% for room, items in itens_por_ambiente.items() %}
+    <div class="section">
+        <h3>2.{{ loop.index }}. {{ room|upper }}</h3>
+
+        <!-- Narrativa do Ambiente -->
+        {% if room in narrativas and narrativas[room] %}
+        <div class="narrativa">
+            <p><strong>Visão Geral:</strong> {{ narrativas[room] | safe }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Tabela de Itens -->
         <div class="item-list">
-            <h4>Componentes Principais Especificados:</h4>
-            <ul>
-                {% for item in itens %}
-                <li>
-                    <strong>{{ item.catalog_item.name }} (Qtd: {{ item.quantity }})</strong> 
-                    
-                    <!-- NOVO: EXIBIÇÃO DA COR PARA O CLIENTE -->
-                    {% if item.color_name %}
-                        <span style="display: inline-block; width: 10px; height: 10px; background-color: {{ item.color_hex }}; border: 1px solid #333; vertical-align: middle; margin-left: 10px; border-radius: 2px;"></span>
-                        (Acabamento: {{ item.color_name }})
-                    {% endif %}
-                    
-                    : {{ item.catalog_item.description_commercial }}
-                </li>
-                {% endfor %}
-            </ul>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 5%;">Qtd</th>
+                        <th style="width: 25%;">Item / Dispositivo</th>
+                        <th style="width: 50%;">Descrição Comercial (Memorial)</th>
+                        <th style="width: 10%;">Acab.</th>
+                        <th style="width: 10%;">Obs</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    {% set color_hex = item.color_hex %}
+                    {% set color_name = item.color_name %}
+                    <tr class="item-row">
+                        <td style="text-align: center;">{{ item.quantity }}</td>
+                        <td>{{ item.catalog_item.name }}</td>
+                        <td>{{ item.catalog_item.description_commercial }}</td>
+                        <td>
+                            <span class="color-sample" style="background-color: {{ color_hex }};"></span>
+                            {{ color_name }}
+                        </td>
+                        <td>{{ item.obs | default('N/A') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
+    {% if not loop.last and loop.index % 2 == 0 %}
+        <!-- Insere uma quebra de página a cada dois ambientes, se houver mais, para melhor organização -->
+        <div class="page-break"></div>
+    {% endif %}
     {% endfor %}
 
-    <div class="section-title">3. Disposições Gerais e Referências Técnicas</div>
-    <p>
-        O presente memorial tem por objetivo detalhar os equipamentos especificados e as funcionalidades previstas para o sistema. No que concerne aos requisitos técnicos de infraestrutura (incluindo instalações elétricas, cabeamento de dados e disposição de condutores), é imprescindível consultar o Relatório Técnico anexo para uma análise completa.
-    </p>
-
-    <div class="footer">
-        Este documento é uma emissão oficial da {{ app_title_custom }}. Compromisso com a excelência, a confiabilidade e a inovação tecnológica em soluções de automação.
+    <div class="section page-break">
+        <h2>3. CONCLUSÃO E REQUISITOS TÉCNICOS</h2>
+        
+        <p>A implantação deste projeto garantirá uma experiência de moradia conectada e eficiente, com a infraestrutura preparada para futuras expansões.</p>
+        
+        <h3>Requisitos Gerais de Instalação:</h3>
+        <ul>
+            <li>**Rede:** Necessidade de rede Wi-Fi estável e robusta em todos os ambientes.</li>
+            <li>**Eletricidade:** Garantir a passagem de fase e neutro (F+N) nas caixas de passagem dos interruptores e painéis de automação, conforme especificado nos requisitos técnicos de cada dispositivo.</li>
+            <li>**Cabeamento:** Utilização de cabos de rede Cat6 e cabos de áudio de alta qualidade onde a sonorização ambiente for prevista.</li>
+            <li>**Acabamento:** O acabamento dos painéis e dispositivos será fornecido na cor ({{ cores.keys()|first or 'Padrão' }}) ou conforme a escolha de cor indicada acima para cada ponto.</li>
+        </ul>
+        
+        <p style="text-align: center; margin-top: 30px;">___________________________________________<br>
+        {{ project.client.name }} (Contratante)</p>
+        
+        <p style="text-align: center; margin-top: 30px;">___________________________________________<br>
+        {{ app_title_custom }} (Consultor Responsável)</p>
     </div>
-</div>
 
 </body>
 </html>
