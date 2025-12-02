@@ -32,36 +32,64 @@ class DictObj:
                 setattr(self, key, value)
 
 # --- CONFIGURAÇÃO DE CORES SUVINIL & CORAL (PALETA AMPLIADA E ESSENCIAL) ---
-# Lista expandida com os nomes e códigos HEX mais populares e essenciais.
-# Você pode expandir esta lista manualmente, se necessário.
+# LISTA EXPANDIDA COM OS NOMES E CÓDIGOS HEX MAIS POPULARES E ESSENCIAIS.
+# HEX codes são aproximados e baseados em referências populares da indústria.
 SUVINIL_CORAL_COLORS = {
-    # Cores Suvinil
+    # Cores Neutras / Clássicas Suvinil (EXPANDIDO)
     "Branco Neve Suvinil": "#F0F0F0",
     "Gelo Suvinil": "#F4F4F4",
     "Papiro Suvinil": "#F0EDE6",
+    "Off White Suvinil": "#F5F5F5",
+    "Creme Suvinil": "#FFFDD0",
+    "Algodão Egípcio Suvinil": "#EBEAE3",
+    "Palha Suvinil": "#FAF0C9",
+    "Broto de Feijão Suvinil": "#C2B8A3",
+    
+    # Tons de Cinza Suvinil (EXPANDIDO)
     "Cinza Elefante Suvinil": "#B0B0B0",
     "Crômio Suvinil": "#A9A9A9",
+    "Prata Suvinil": "#CCD1D1",
+    "Névoa Intensa Suvinil": "#D3D7D2",
     "Cinza Urbano Suvinil": "#5E5E5E",
+    "Nanquim Suvinil": "#262626",
+    "Cinza Asfalto Suvinil": "#4C5357",
     "Preto Absoluto Suvinil": "#0A0A0A",
+    
+    # Cores Quentes Suvinil
     "Amarelo Sol Suvinil": "#FFD700",
+    "Luz de Inverno Suvinil": "#F5E6B5",
+    "Amarelo Real Suvinil": "#FAD32B",
     "Laranja Outonal Suvinil": "#F0A300",
+    "Terra Roxa Suvinil": "#A0522D",
+    "Bege Areia Suvinil": "#D8C5A5",
+    "Valentino Suvinil": "#DC143C", # Vermelho/Rosa Vibrante
+    
+    # Cores Frias Suvinil
     "Verde Piscina Suvinil": "#00A99D",
     "Azul Profundo Suvinil": "#000080",
     "Azul Celeste Suvinil": "#56A0C5",
+    "Céu Sereno Suvinil": "#87CEEB",
     "Rosa Açaí Suvinil": "#E0B0FF",
-    "Terra Roxa Suvinil": "#A0522D",
-    "Bege Areia Suvinil": "#D8C5A5",
-    "Creme Suvinil": "#FFFDD0",
-    "Off White Suvinil": "#F5F5F5",
+    "Rosa Pastel Suvinil": "#FFB6C1",
+    "Chá de Rosas Suvinil": "#D8BFD8",
     
-    # Cores Coral
+    # Cores Coral (EXPANDIDO)
     "Branco Coton Coral": "#F8F8FF",
     "Ovelha Coral": "#F9F6F0",
     "Toque de Seda Coral": "#EBE7DB",
+    "Lagoa Gélida Coral": "#E7EAE6",
+    "Dia De Inverno Coral": "#E6E9E6",
+    "Marfim Coral": "#FFFFF0",
+    "Fendi Coral": "#BCB8B1",
+    
+    # Tons de Cinza/Escuros Coral
     "Crômo Fosco Coral": "#BDBDBD",
     "Chuva de Granizo Coral": "#A8A8A8",
     "Elefante Branco Coral": "#888888",
     "Preto Total Coral": "#1C1C1C",
+    "Tubarão Branco Coral": "#DCDCDC",
+    
+    # Cores Vivas Coral
     "Amarelo Gema Coral": "#FFC000",
     "Laranja Caliente Coral": "#FF6700",
     "Verde Amazonas Coral": "#008880",
@@ -70,16 +98,30 @@ SUVINIL_CORAL_COLORS = {
     "Rosa Choque Coral": "#FF69B4",
     "Marrom Tabaco Coral": "#4D3900",
     "Areia do Deserto Coral": "#D2B48C",
-    "Marfim Coral": "#FFFFF0",
-    "Fendi Coral": "#BCB8B1",
+    "Vermelho Rubi Coral": "#E0115F",
+    "Amarelo Trator Coral": "#FFB84C",
 
-    # Tons de Madeira (para painéis/móveis, se aplicável)
+    # Tons de Madeira / Metálicos (EXPANDIDO)
     "Madeira Carvalho": "#964B00",
     "Madeira Nogueira": "#582900",
     "Madeira Mogno": "#C04000",
-    "Aço Escovado": "#C0C0C0",
-    "Alumínio Fosco": "#A9A9A9",
+    "Aço Escovado": "#A9A9A9",
+    "Alumínio Fosco": "#BDBDBD",
+    "Prata Metálico": "#C0C0C0", # Adicionado (C0C0C0 é um prata padrão)
+    "Ouro Metálico": "#D4AF37",  # Adicionado
+    "Dourado Brilhante": "#FFD700", # Adicionado
 }
+
+# --- FUNÇÃO DE REVERSE LOOKUP (NOVA) ---
+
+def get_color_name_from_hex(hex_code, color_palette):
+    """Tenta encontrar o nome da cor na paleta dado um código HEX. Ignora maiúsculas/minúsculas."""
+    # Garante que o HEX code esteja em maiúsculas para comparação consistente
+    hex_code = hex_code.upper()
+    for name, hex_value in color_palette.items():
+        if hex_value.upper() == hex_code:
+            return name
+    return None
 
 # --- DECORADOR DE SEGURANÇA ---
 
@@ -485,6 +527,8 @@ def gerenciar_projeto(project_id):
     # 3. Itens do Projeto
     items_ref = db.collection('projects').document(project_id).collection('items').stream()
     project_items = []
+    itens_por_ambiente = {} 
+    
     for doc in items_ref:
         i_data = doc.to_dict()
         cat_item_obj = DictObj({
@@ -495,6 +539,13 @@ def gerenciar_projeto(project_id):
         item_obj = DictObj(i_data, id=doc.id)
         item_obj.catalog_item = cat_item_obj
         project_items.append(item_obj)
+        
+        # LÓGICA DE AGRUPAMENTO DE ITENS POR AMBIENTE
+        room_name = i_data.get('room_name', 'Sem Ambiente')
+        if room_name not in itens_por_ambiente:
+            itens_por_ambiente[room_name] = []
+        itens_por_ambiente[room_name].append(item_obj)
+        
     project_obj.items = project_items
 
     if request.method == 'POST':
@@ -504,6 +555,13 @@ def gerenciar_projeto(project_id):
             cat_id = request.form['catalog_item_id']
             # Obtém o nome/HEX da cor (agora pode ser do select ou do campo de texto livre)
             item_color = request.form.get('item_color')
+            
+            # NOVO: Se for um código HEX, tenta reverter para o nome do preset
+            if item_color and re.match(r'^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$', item_color):
+                matched_name = get_color_name_from_hex(item_color, SUVINIL_CORAL_COLORS)
+                if matched_name:
+                    item_color = matched_name # Salva o nome do preset (ex: "Branco Neve Suvinil")
+            
             cat_doc = db.collection('catalogo').document(cat_id).get().to_dict()
             item_data = {
                 "room_name": request.form['room_name'],
@@ -513,18 +571,19 @@ def gerenciar_projeto(project_id):
                 "item_name": cat_doc['name'],
                 "tech_requirement": cat_doc['tech_requirement'],
                 "description_commercial": cat_doc['description_commercial'],
-                "item_color": item_color # Salva o valor da cor (nome ou HEX)
+                "item_color": item_color # Salva o nome ou o HEX não reconhecido
             }
             db.collection('projects').document(project_id).collection('items').add(item_data)
         return redirect(url_for('gerenciar_projeto', project_id=project_id))
 
     # Adiciona a lista de cores ao contexto do template
-    global SUVINIL_CORAL_COLORS
+    # REMOVIDO: global SUVINIL_CORAL_COLORS
     return render_template('gerenciar_projeto.html', 
         project=project_obj, 
         catalogo=catalogo, 
         ambientes=ambientes, 
         cores=SUVINIL_CORAL_COLORS, # Passa as cores
+        itens_por_ambiente=itens_por_ambiente, 
         now=datetime.now()
     )
 
@@ -536,6 +595,14 @@ def editar_item_projeto():
     item_id = request.form['item_id']
     cat_id = request.form['catalog_item_id']
     
+    item_color = request.form.get('item_color')
+    
+    # NOVO: Se for um código HEX, tenta reverter para o nome do preset
+    if item_color and re.match(r'^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$', item_color):
+        matched_name = get_color_name_from_hex(item_color, SUVINIL_CORAL_COLORS)
+        if matched_name:
+            item_color = matched_name # Salva o nome do preset (ex: "Branco Neve Suvinil")
+            
     cat_doc = db.collection('catalogo').document(cat_id).get().to_dict()
     
     db.collection('projects').document(project_id).collection('items').document(item_id).update({
@@ -546,7 +613,7 @@ def editar_item_projeto():
         "item_name": cat_doc['name'],
         "tech_requirement": cat_doc['tech_requirement'],
         "description_commercial": cat_doc['description_commercial'],
-        "item_color": request.form.get('item_color') # Atualiza o valor da cor (nome ou HEX)
+        "item_color": item_color # Atualiza o valor da cor (nome ou HEX)
     })
     
     return redirect(url_for('gerenciar_projeto', project_id=project_id))
@@ -570,7 +637,8 @@ def gerar_pdf(project_id, tipo):
     items_ref = db.collection('projects').document(project_id).collection('items').stream()
     itens_por_ambiente = {}
     
-    global SUVINIL_CORAL_COLORS
+    # Obtém o dicionário de cores
+    # REMOVIDO: global SUVINIL_CORAL_COLORS
     
     for doc in items_ref:
         data = doc.to_dict()
@@ -580,10 +648,8 @@ def gerar_pdf(project_id, tipo):
             "description_commercial": data['description_commercial']
         })
         
+        # Converte o nome da cor em código HEX para uso nos relatórios (se necessário)
         color_name = data.get('item_color', 'Branco Neve Suvinil')
-        
-        # LÓGICA DE RENDERIZAÇÃO DE COR NO PDF:
-        # 1. Tenta buscar no dicionário de cores (para presets)
         color_hex = SUVINIL_CORAL_COLORS.get(color_name, '#F0F0F0') 
         
         # 2. Se for uma cor livre, verifica se é um HEX válido para renderizar corretamente
@@ -593,8 +659,8 @@ def gerar_pdf(project_id, tipo):
         
         item_obj = DictObj(data)
         item_obj.catalog_item = cat_obj
-        item_obj.color_name = color_name 
-        item_obj.color_hex = color_hex   
+        item_obj.color_name = color_name # Passa o nome da cor
+        item_obj.color_hex = color_hex   # Passa o código HEX
         
         room = data['room_name']
         if room not in itens_por_ambiente: itens_por_ambiente[room] = []
@@ -606,12 +672,13 @@ def gerar_pdf(project_id, tipo):
 
     template = 'relatorios/tecnico.html' if tipo == 'tecnico' else 'relatorios/memorial.html'
     
+    # Passa as cores globais para o template PDF
     html = render_template(template, 
                            project=project, 
                            itens_por_ambiente=itens_por_ambiente, 
                            narrativas=narrativas, 
                            data_hoje=datetime.now().strftime("%d/%m/%Y"),
-                           cores=SUVINIL_CORAL_COLORS
+                           cores=SUVINIL_CORAL_COLORS 
                           )
     pdf = HTML(string=html).write_pdf()
     response = make_response(pdf)
@@ -636,7 +703,7 @@ def gerar_levantamento(project_id):
     items_ref = db.collection('projects').document(project_id).collection('items').stream()
     resumo = {}
     
-    global SUVINIL_CORAL_COLORS
+    # REMOVIDO: global SUVINIL_CORAL_COLORS
     
     for doc in items_ref:
         data = doc.to_dict()

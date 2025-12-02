@@ -15,17 +15,18 @@
             font-size: 11pt;
             color: #333;
         }
+        /* AZUL PROFISSIONAL PARA TÍTULOS (Sóbrio) */
         h1, h2, h3 {
-            color: #004d40; /* Verde escuro (cor da marca) */
+            color: #003366; /* Azul Marinho (Profissional) */
             border-bottom: 2px solid #e0e0e0;
             padding-bottom: 5px;
             margin-top: 25px;
         }
         h1 { font-size: 18pt; text-align: center; border-bottom: none; }
-        h2 { font-size: 14pt; margin-top: 20px; border-bottom-color: #004d40; }
-        h3 { font-size: 12pt; margin-top: 15px; color: #00796b; border-bottom: 1px solid #cfd8dc; padding-bottom: 3px; }
+        h2 { font-size: 14pt; margin-top: 20px; border-bottom-color: #003366; }
+        h3 { font-size: 12pt; margin-top: 15px; color: #0056b3; /* Azul um pouco mais claro */ border-bottom: 1px solid #cfd8dc; padding-bottom: 3px; }
 
-        /* CABEÇALHO COMPACTO E CENTRALIZADO (FIX) */
+        /* CABEÇALHO COMPACTO E CENTRALIZADO */
         .header-info {
             text-align: center;
             font-size: 10pt;
@@ -45,13 +46,13 @@
         }
         
         .section {
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             page-break-inside: avoid;
         }
 
         .item-list {
-            margin-top: 10px;
-            margin-bottom: 15px;
+            margin-top: 8px;
+            margin-bottom: 10px;
         }
         .item-list table {
             width: 100%;
@@ -80,16 +81,24 @@
             vertical-align: middle;
             margin-right: 5px;
         }
+        /* Estilo para Narrativa (Mantendo um destaque neutro/suave) */
         .narrativa {
-            background-color: #f7f9f9;
-            border-left: 4px solid #00796b;
+            background-color: #f0f7ff;
+            border-left: 4px solid #0056b3;
             padding: 10px;
             margin-top: 10px;
             font-size: 10.5pt;
         }
         .narrativa strong {
-            color: #004d40;
+            color: #003366;
         }
+        /* Destaques Técnicos (mantidos para consistência de estilo, mas não usados na tabela) */
+        .highlight-tech {
+            color: #dc3345;
+            font-weight: bold;
+            white-space: nowrap; 
+        }
+        /* QUEBRA DE PÁGINA: APENAS NO FINAL DA SEÇÃO PRINCIPAL */
         .page-break {
             page-break-before: always;
         }
@@ -133,7 +142,7 @@
         </div>
         {% endif %}
 
-        <!-- Tabela de Itens -->
+        <!-- Tabela de Itens (REMOVENDO REQUISITO TÉCNICO) -->
         <div class="item-list">
             <table>
                 <thead>
@@ -149,6 +158,7 @@
                     {% for item in items %}
                     {% set color_hex = item.color_hex %}
                     {% set color_name = item.color_name %}
+
                     <tr class="item-row">
                         <td style="text-align: center;">{{ item.quantity }}</td>
                         <td>{{ item.catalog_item.name }}</td>
@@ -164,12 +174,9 @@
             </table>
         </div>
     </div>
-    {% if not loop.last and loop.index % 2 == 0 %}
-        <!-- Insere uma quebra de página a cada dois ambientes, se houver mais, para melhor organização -->
-        <div class="page-break"></div>
-    {% endif %}
     {% endfor %}
 
+    <!-- O page-break é mantido aqui, apenas antes da conclusão, para garantir que os ambientes sigam um após o outro. -->
     <div class="section page-break">
         <h2>3. CONCLUSÃO E REQUISITOS TÉCNICOS</h2>
         

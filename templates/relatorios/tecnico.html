@@ -15,16 +15,16 @@
             font-size: 11pt;
             color: #333;
         }
-        /* REVERTENDO CORES DE TITULO PARA AZUL */
+        /* AZUL PROFISSIONAL PARA TÍTULOS (Sóbrio) */
         h1, h2, h3 {
-            color: #007bff; /* Azul primário (Bootstrap Blue) */
+            color: #003366; /* Azul Marinho (Profissional) */
             border-bottom: 2px solid #e0e0e0;
             padding-bottom: 5px;
             margin-top: 25px;
         }
         h1 { font-size: 18pt; text-align: center; border-bottom: none; }
-        h2 { font-size: 14pt; margin-top: 20px; border-bottom-color: #007bff; }
-        h3 { font-size: 12pt; margin-top: 15px; color: #0056b3; /* Azul mais escuro */ border-bottom: 1px solid #cfd8dc; padding-bottom: 3px; }
+        h2 { font-size: 14pt; margin-top: 20px; border-bottom-color: #003366; }
+        h3 { font-size: 12pt; margin-top: 15px; color: #0056b3; /* Azul um pouco mais claro */ border-bottom: 1px solid #cfd8dc; padding-bottom: 3px; }
 
         /* CABEÇALHO COMPACTO E CENTRALIZADO */
         .header-info {
@@ -46,13 +46,13 @@
         }
         
         .section {
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             page-break-inside: avoid;
         }
 
         .item-list {
-            margin-top: 10px;
-            margin-bottom: 15px;
+            margin-top: 8px;
+            margin-bottom: 10px;
         }
         .item-list table {
             width: 100%;
@@ -83,16 +83,16 @@
         }
         /* ESTILOS PARA ATENÇÃO/AVISOS CRÍTICOS (VERMELHO) */
         .tech-note {
-            background-color: #fcebeb; /* Fundo Vermelho Claro */
-            border-left: 4px solid #dc3545; /* Borda Vermelha Forte */
+            background-color: #fcebeb; 
+            border-left: 4px solid #dc3545; 
             padding: 10px;
             margin-top: 10px;
             font-size: 10.5pt;
         }
         .tech-note strong {
-            color: #dc3545; /* Texto em Vermelho */
+            color: #dc3545; 
         }
-        /* Ícone de Atenção (Triângulo) usando Unicode para máxima compatibilidade em PDF */
+        /* Ícone de Atenção (Triângulo) */
         .attention-icon {
             color: #dc3545;
             font-size: 14pt;
@@ -100,12 +100,13 @@
             margin-right: 5px;
             vertical-align: middle;
         }
-        /* NOVO ESTILO: Destaque Vermelho e Negrito para Códigos Técnicos */
+        /* Destaque Vermelho e Negrito para Códigos Técnicos */
         .highlight-tech {
             color: #dc3345;
             font-weight: bold;
-            white-space: nowrap; /* Impede quebras de linha dentro do código */
+            white-space: nowrap; 
         }
+        /* QUEBRA DE PÁGINA: APENAS NO FINAL DE SEÇÕES MAIORES */
         .page-break {
             page-break-before: always;
         }
@@ -162,18 +163,36 @@
                     {% for item in items %}
                     {% set color_hex = item.color_hex %}
                     {% set color_name = item.color_name %}
+                    
+                    {% set item_name_lower = item.catalog_item.name.lower() %}
+                    {% set tech_req_base_display = item.catalog_item.tech_requirement | default('Verificar alimentação (F+N) e cabos de dados.') %}
+                    {% set tech_req_display = tech_req_base_display %}
+                    
+                    {# LÓGICA DE OVERRIDE PARA DESTAQUE CRÍTICO (Prioriza Mistos e Tomadas, depois Zigbee) #}
+                    {% if 'misto' in item_name_lower or ('tom' in item_name_lower and 'tecla' in item_name_lower) %}
+                        {# 1. Se for MISTO (tomada + interruptor) #}
+                        {% set tech_req_display = tech_req_base_display ~ ' | Fiação Mínima: F+N+T+R...' %}
+                    {% elif 'tomada' in item_name_lower and not 'tecla' in item_name_lower and not 'misto' in item_name_lower %}
+                        {# 2. Se for APENAS TOMADA #}
+                        {% set tech_req_display = tech_req_base_display ~ ' | Fiação Mínima: F+N+T' %}
+                    {% elif 'zigbee' in item_name_lower and ('interruptor' in item_name_lower or 'tecla' in item_name_lower) and not 'misto' in item_name_lower and not 'tomada' in item_name_lower %}
+                        {# 3. Se for INTERRUPTOR ZIGBEE PURO #}
+                        {% set tech_req_display = 'F+N, Não necessita de fios paralelos' %}
+                    {% endif %}
+                            
                     <tr class="item-row">
                         <td style="text-align: center;">{{ item.quantity }}</td>
                         <td>{{ item.catalog_item.name }}</td>
                         <td>
-                            {% if 'zigbee' in item.catalog_item.name.lower() or 'painel' in item.catalog_item.name.lower() %}
+                            {% if 'zigbee' in item_name_lower or 'painel' in item_name_lower %}
                                 <span class="attention-icon" style="font-size: 10pt;">&#9888;</span>
                             {% endif %}
                             
-                            {% set tech_req = item.catalog_item.tech_requirement | default('Verificar alimentação (F+N) e cabos de dados.') %}
+                            {% set tech_req = tech_req_display %}
                             
-                            {# SUBSTITUIÇÕES PARA DESTAQUE EM VERMELHO E NEGRITO #}
-                            {% set tech_req = tech_req | replace('F+N+T+R', '<span class="highlight-tech">F+N+T+R</span>') %}
+                            {# SUBSTITUIÇÕES PARA DESTAQUE EM VERMELHO E NEGRITO (INCLUI A NOVA INSTRUÇÃO) #}
+                            {% set tech_req = tech_req | replace('F+N, Não necessita de fios paralelos', '<span class="highlight-tech">F+N, Não necessita de fios paralelos</span>') %}
+                            {% set tech_req = tech_req | replace('F+N+T+R...', '<span class="highlight-tech">F+N+T+R...</span>') %}
                             {% set tech_req = tech_req | replace('F+N+T', '<span class="highlight-tech">F+N+T</span>') %}
                             {% set tech_req = tech_req | replace('F+N+R', '<span class="highlight-tech">F+N+R</span>') %}
                             {% set tech_req = tech_req | replace('F+N+1 Retorno', '<span class="highlight-tech">F+N+1 Retorno</span>') %}
@@ -183,7 +202,7 @@
                             {% set tech_req = tech_req | replace('F+N+5 Retornos', '<span class="highlight-tech">F+N+5 Retornos</span>') %}
                             {% set tech_req = tech_req | replace('F+N+6 Retornos', '<span class="highlight-tech">F+N+6 Retornos</span>') %}
                             {% set tech_req = tech_req | replace('F+N+8 Retornos', '<span class="highlight-tech">F+N+8 Retornos</span>') %}
-                            {# Por último, a substituição mais simples F+N #}
+                            {# APLICAR DESTAQUE PARA F+N (SOMENTE SE NÃO ESTIVER DENTRO DE OUTRO DESTAQUE MAIOR) #}
                             {% set tech_req = tech_req | replace('F+N', '<span class="highlight-tech">F+N</span>') %}
                             
                             {{ tech_req | safe }}
@@ -199,12 +218,9 @@
             </table>
         </div>
     </div>
-    {% if not loop.last and loop.index % 2 == 0 %}
-        <!-- Insere uma quebra de página a cada dois ambientes, se houver mais, para melhor organização -->
-        <div class="page-break"></div>
-    {% endif %}
     {% endfor %}
 
+    <!-- O page-break é mantido aqui, apenas antes da conclusão, para garantir que os ambientes sigam um após o outro. -->
     <div class="section page-break">
         <h2>3. CHECKLIST DE INFRAESTRUTURA FINAL</h2>
         
