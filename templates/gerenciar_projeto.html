@@ -10,12 +10,16 @@
             width: 100%;
             overflow-x: auto;
         }
-        /* Removendo regras agressivas de !important que causavam quebras de layout. */
+        /* CSS DINÂMICO SERÁ INJETADO AQUI PELO JAVASCRIPT */
+        .container-fluid {
+            padding-left: 10px;
+            padding-right: 10px;
+        }
     </style>
 </head>
 
-<!-- CONTAINER FLUID: Garante que ocupe 100% da largura em todos os dispositivos, incluindo o tablet na vertical. -->
-<div class="container-fluid">
+<!-- CONTAINER FLUID: ID adicionado para ser alvo do ajuste de largura via JS -->
+<div class="container-fluid" id="main-content-container"> 
 
 <!-- MODAIS DE CRUD DE AMBIENTES -->
 <!-- Modal Novo Ambiente -->
@@ -294,6 +298,20 @@
     </div>
 </div>
 
+<!-- NOVO: Painel de Ajuste de Largura Manual -->
+<div class="card mb-3 p-3 bg-dark text-white shadow-sm d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+    <label for="width-slider" class="form-label mb-2 mb-md-0 small me-md-3 text-warning fw-bold">
+        Ajuste de Largura (Solução para Tablet Vertical):
+    </label>
+    <div class="d-flex align-items-center flex-grow-1">
+        <input type="range" class="form-range me-2" min="600" max="1400" step="10" value="1000" id="width-slider">
+        <span id="width-display" class="small fw-bold text-info" style="min-width: 60px;">1000px</span>
+        <button class="btn btn-sm btn-outline-secondary ms-3" id="reset-width-btn" title="Resetar para a largura total do dispositivo (100%)">Reset</button>
+    </div>
+</div>
+<!-- FIM DO NOVO PAINEL -->
+
+
 <ul class="nav nav-tabs mb-3 nav-fill" id="myTab" role="tablist">
     <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#cadastro"><i class="bi bi-plus-circle"></i> Itens</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#resumo"><i class="bi bi-graph-up"></i> Resumo</button></li>
@@ -448,6 +466,53 @@
         {% endfor %}
     };
     
+    // --- LÓGICA DE AJUSTE DE LARGURA MANUAL (NOVA) ---
+    const container = document.getElementById('main-content-container');
+    const slider = document.getElementById('width-slider');
+    const display = document.getElementById('width-display');
+    const resetButton = document.getElementById('reset-width-btn');
+    const STORAGE_KEY = 'customWidth';
+
+    // Função para aplicar a largura ao container
+    function applyWidth(widthValue) {
+        if (widthValue === '100%') {
+            container.style.maxWidth = '100%';
+            container.style.margin = '0';
+            display.textContent = '100%';
+            localStorage.removeItem(STORAGE_KEY);
+        } else {
+            const widthPx = `${widthValue}px`;
+            container.style.maxWidth = widthPx;
+            container.style.margin = '0 auto'; /* Centraliza o container */
+            display.textContent = widthPx;
+            localStorage.setItem(STORAGE_KEY, widthValue);
+        }
+    }
+
+    // Inicializa o valor na carga da página
+    const savedWidth = localStorage.getItem(STORAGE_KEY);
+    if (savedWidth) {
+        slider.value = savedWidth;
+        applyWidth(savedWidth);
+    } else {
+        // Se não houver valor salvo, garante que o slider reflita a largura inicial de 100% (embora o slider esteja em 1000)
+        applyWidth('100%');
+    }
+    
+    // Listener para o slider
+    slider.addEventListener('input', (e) => {
+        applyWidth(e.target.value);
+    });
+
+    // Listener para o botão Reset
+    resetButton.addEventListener('click', () => {
+        // Reseta para 100% (largura total da tela)
+        slider.value = 1000; // Valor padrão visual do slider
+        applyWidth('100%');
+    });
+
+    // --- FUNÇÕES DE COR E MODAIS (EXISTENTES) ---
+
     // Função que tenta obter o HEX: prioriza preset, depois verifica HEX livre, senão retorna o nome (para o navegador tentar renderizar)
     function getHexValue(colorNameOrHex) {
         if (!colorNameOrHex) return '#F0F0F0';
