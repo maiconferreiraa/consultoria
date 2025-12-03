@@ -477,12 +477,15 @@
     function applyWidth(widthValue) {
         if (widthValue === '100%') {
             container.style.maxWidth = '100%';
+            container.style.width = '100%'; // Adicionado
             container.style.margin = '0';
             display.textContent = '100%';
             localStorage.removeItem(STORAGE_KEY);
         } else {
             const widthPx = `${widthValue}px`;
-            container.style.maxWidth = widthPx;
+            // FORÇANDO max-width e width para garantir que o container respeite a largura manual
+            container.style.maxWidth = widthPx; 
+            container.style.width = widthPx; // Adicionado: Essencial para anular estilos nativos do tablet
             container.style.margin = '0 auto'; /* Centraliza o container */
             display.textContent = widthPx;
             localStorage.setItem(STORAGE_KEY, widthValue);
