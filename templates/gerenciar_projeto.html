@@ -10,12 +10,16 @@
             width: 100%;
             overflow-x: auto;
         }
-        /* Removendo regras agressivas de !important que causavam quebras de layout. */
+        /* CSS DINÂMICO SERÁ INJETADO AQUI PELO JAVASCRIPT */
+        .container-fluid {
+            padding-left: 10px;
+            padding-right: 10px;
+        }
     </style>
 </head>
 
-<!-- CONTAINER FLUID: Garante que ocupe 100% da largura em todos os dispositivos, incluindo o tablet na vertical. -->
-<div class="container-fluid">
+<!-- CONTAINER FLUID: ID mantido, mas sem manipulação de largura via JS -->
+<div class="container-fluid" id="main-content-container"> 
 
 <!-- MODAIS DE CRUD DE AMBIENTES -->
 <!-- Modal Novo Ambiente -->
@@ -294,6 +298,9 @@
     </div>
 </div>
 
+<!-- REMOVIDO: Painel de Ajuste de Largura Manual -->
+
+
 <ul class="nav nav-tabs mb-3 nav-fill" id="myTab" role="tablist">
     <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#cadastro"><i class="bi bi-plus-circle"></i> Itens</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#resumo"><i class="bi bi-graph-up"></i> Resumo</button></li>
@@ -303,11 +310,12 @@
     <div class="tab-pane fade show active" id="cadastro">
         <div class="card mb-4">
             <div class="card-body p-3">
-                <!-- FORMULÁRIO: Garante que os inputs se quebrem em col-12 -->
+                <!-- FORMULÁRIO: Aplicando col-md-12 para forçar quebra de linha no tablet (empilhamento vertical) -->
                 <form method="POST" class="row g-3">
                     
-                    <!-- AMBIENTE: col-12 em mobile/tablet, col-md-3 em desktop -->
-                    <div class="col-12 col-md-3">
+                    <!-- AMBIENTE: col-12 em mobile/tablet, col-lg-3 em desktop -->
+                    <!-- FORÇADO A OCUPAR 100% (col-md-12) NO TABLET PARA GARANTIR NOVA LINHA -->
+                    <div class="col-12 col-md-12 col-lg-3">
                         <label class="form-label small text-muted fw-bold">Ambiente</label>
                         <div class="input-group">
                             <select name="room_name" class="form-select" required>
@@ -321,8 +329,9 @@
                         </div>
                     </div>
 
-                    <!-- DISPOSITIVO: col-12 em mobile/tablet, col-md-3 em desktop -->
-                    <div class="col-12 col-md-3">
+                    <!-- DISPOSITIVO (ITEM): col-12 em mobile/tablet, col-lg-3 em desktop -->
+                    <!-- FORÇADO A OCUPAR 100% (col-md-12) NO TABLET PARA GARANTIR NOVA LINHA -->
+                    <div class="col-12 col-md-12 col-lg-3">
                         <label class="form-label small text-muted fw-bold">Dispositivo</label>
                         <div class="input-group">
                             <select name="catalog_item_id" id="item_catalog_select" class="form-select" required>
@@ -336,8 +345,8 @@
                         </div>
                     </div>
                     
-                    <!-- COR (ACABAMENTO): COL-12 EM TELA MÉDIA E MENOR -->
-                    <div class="col-12 col-md-3">
+                    <!-- COR (ACABAMENTO): FORÇADO EM col-12/col-md-12 para aparecer na sua própria linha -->
+                    <div class="col-12 col-md-12 col-lg-3">
                         <label class="form-label small text-muted fw-bold">Cor (Acabamento)</label>
                         <div class="input-group">
                             <!-- Select de Presets -->
@@ -372,15 +381,15 @@
                         </div>
                     </div>
 
-                    <!-- QUANTIDADE: col-6 em mobile/tablet, col-md-1 em desktop -->
-                    <div class="col-6 col-md-1">
+                    <!-- QUANTIDADE: col-6 para mobile/tablet (divide a linha), col-lg-1 em desktop -->
+                    <div class="col-6 col-md-6 col-lg-1">
                         <label class="form-label small text-muted fw-bold">Qtd</label>
                         <input type="number" name="quantity" value="1" min="1" class="form-control text-center">
                     </div>
 
-                    <!-- BOTÃO ADICIONAR: col-6 em mobile/tablet, col-md-2 em desktop -->
-                    <div class="col-6 col-md-2 d-grid">
-                        <label class="d-none d-md-block">&nbsp;</label>
+                    <!-- BOTÃO ADICIONAR: col-6 para mobile/tablet (divide a linha), col-lg-2 em desktop -->
+                    <div class="col-6 col-md-6 col-lg-2 d-grid">
+                        <label class="d-none d-lg-block">&nbsp;</label>
                         <button type="submit" class="btn btn-primary">Add</button>
                     </div>
                     
