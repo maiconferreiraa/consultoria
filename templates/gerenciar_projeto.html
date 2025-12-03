@@ -303,11 +303,11 @@
     <div class="tab-pane fade show active" id="cadastro">
         <div class="card mb-4">
             <div class="card-body p-3">
-                <!-- FORMULÁRIO: Garante que os inputs se quebrem em col-12 -->
+                <!-- FORMULÁRIO: Usando a classe g-3 para espaçamento entre colunas -->
                 <form method="POST" class="row g-3">
                     
-                    <!-- AMBIENTE: col-12 em mobile/tablet, col-md-3 em desktop -->
-                    <div class="col-12 col-md-3">
+                    <!-- AMBIENTE: col-12 em mobile/tablet, col-lg-3 em desktop -->
+                    <div class="col-12 col-lg-3">
                         <label class="form-label small text-muted fw-bold">Ambiente</label>
                         <div class="input-group">
                             <select name="room_name" class="form-select" required>
@@ -321,8 +321,8 @@
                         </div>
                     </div>
 
-                    <!-- DISPOSITIVO: col-12 em mobile/tablet, col-md-3 em desktop -->
-                    <div class="col-12 col-md-3">
+                    <!-- DISPOSITIVO: col-12 em mobile/tablet, col-lg-3 em desktop -->
+                    <div class="col-12 col-lg-3">
                         <label class="form-label small text-muted fw-bold">Dispositivo</label>
                         <div class="input-group">
                             <select name="catalog_item_id" id="item_catalog_select" class="form-select" required>
@@ -336,8 +336,8 @@
                         </div>
                     </div>
                     
-                    <!-- COR (ACABAMENTO): COL-12 EM TELA MÉDIA E MENOR -->
-                    <div class="col-12 col-md-3">
+                    <!-- COR (ACABAMENTO): FORÇADO EM col-12 ATÉ O BREAKPOINT GRANDE (lg) PARA EVITAR SQUEEZING -->
+                    <div class="col-12 col-lg-3">
                         <label class="form-label small text-muted fw-bold">Cor (Acabamento)</label>
                         <div class="input-group">
                             <!-- Select de Presets -->
@@ -372,15 +372,15 @@
                         </div>
                     </div>
 
-                    <!-- QUANTIDADE: col-6 em mobile/tablet, col-md-1 em desktop -->
-                    <div class="col-6 col-md-1">
+                    <!-- QUANTIDADE: FORÇADO EM col-12 ATÉ O BREAKPOINT GRANDE (lg) -->
+                    <div class="col-12 col-lg-1">
                         <label class="form-label small text-muted fw-bold">Qtd</label>
                         <input type="number" name="quantity" value="1" min="1" class="form-control text-center">
                     </div>
 
-                    <!-- BOTÃO ADICIONAR: col-6 em mobile/tablet, col-md-2 em desktop -->
-                    <div class="col-6 col-md-2 d-grid">
-                        <label class="d-none d-md-block">&nbsp;</label>
+                    <!-- BOTÃO ADICIONAR: FORÇADO EM col-12 ATÉ O BREAKPOINT GRANDE (lg) -->
+                    <div class="col-12 col-lg-2 d-grid">
+                        <label class="d-none d-lg-block">&nbsp;</label>
                         <button type="submit" class="btn btn-primary">Add</button>
                     </div>
                     
