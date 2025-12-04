@@ -340,7 +340,7 @@ def gerar_narrativa_ambiente(itens):
     if not frases:
         return ""
         
-    return " ".join(frrases)
+    return " ".join(frases)
 
 # --- ROTAS DE AUTENTICAÇÃO ---
 
@@ -654,6 +654,12 @@ def generate_pdf_from_data(template_id, data_payload, output_filename):
         "output": "download", # Pede o conteúdo PDF binário diretamente
         "name": f"{output_filename}_{datetime.now().strftime('%Y%m%d')}"
     }
+    
+    # NOVO: Imprime o JSON de dados no console para debug
+    print("--- JSON PAYLOAD ENVIADO PARA API ---")
+    print(json.dumps(payload, indent=2))
+    print("--------------------------------------")
+
 
     try:
         response = requests.post(PDF_API_URL, headers=headers, json=payload, timeout=30)
@@ -664,7 +670,15 @@ def generate_pdf_from_data(template_id, data_payload, output_filename):
         else:
             error_details = response.text[:500]
             print(f"Erro na API de PDF Generator. Status: {response.status_code}. Resposta: {error_details}")
-            return None, f"Erro {response.status_code} na conversão de PDF. Detalhes: {error_details}"
+            # Se a API retornar JSON de erro, tenta parsear
+            try:
+                error_json = response.json()
+                # Tenta extrair a mensagem de erro específica
+                error_message = error_json.get('message', error_details)
+            except json.JSONDecodeError:
+                error_message = error_details
+
+            return None, f"Erro {response.status_code} na conversão de PDF. Detalhes: {error_message}"
 
     except requests.exceptions.RequestException as e:
         print(f"Erro de conexão com a API de PDF: {e}")
