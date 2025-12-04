@@ -2,12 +2,10 @@ import os
 from flask import Flask, render_template, request, redirect, url_for, make_response, session
 import firebase_admin
 from firebase_admin import credentials, firestore, auth as firebase_auth
-# from weasyprint import HTML  # COMENTADO: Causa falha no Vercel
+from weasyprint import HTML
 from datetime import datetime
 from functools import wraps
 import re
-import requests  # NOVO: Necessário para chamar a API de PDF
-import json # Adicionado para manipulação de JSON
 
 # --- CONFIGURAÇÃO INICIAL E SECRET KEY ---
 app = Flask(__name__)
@@ -15,15 +13,6 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'SUA_CHAVE_SECRETA_MUITO_LONGA_E_COMPLEXA')
 USER_SESSION_KEY = 'user_id'
 
-# --- CONFIGURAÇÃO DA API DE PDF (NOVO SERVIÇO: pdfgeneratorapi.com) ---
-PDF_API_URL = os.environ.get('PDF_API_URL', 'https://us1.pdfgeneratorapi.com/api/v4/documents/generate') 
-# IMPORTANTE: Este é o token Bearer, diferente da chave anterior.
-PDF_API_TOKEN = os.environ.get('PDF_API_TOKEN', 'SEU_TOKEN_BEARER_AQUI') 
-
-# Variáveis para os IDs dos templates que você vai carregar no painel da API:
-MEMORIAL_TEMPLATE_ID = os.environ.get('MEMORIAL_TEMPLATE_ID', '1450638')
-TECNICO_TEMPLATE_ID = os.environ.get('TECNICO_TEMPLATE_ID', '1450641')
-LEVANTAMENTO_TEMPLATE_ID = os.environ.get('LEVANTAMENTO_TEMPLATE_ID', '1450643')
 
 # Certifique-se de que o arquivo firebase_key.json está na mesma pasta
 if os.path.exists("firebase_key.json"):
@@ -629,62 +618,7 @@ def editar_item_projeto():
     
     return redirect(url_for('gerenciar_projeto', project_id=project_id))
 
-# --- FUNÇÃO AUXILIAR PARA A API DE PDF (USANDO O NOVO FORMATO DE DADOS) ---
-def generate_pdf_from_data(template_id, data_payload, output_filename):
-    """
-    Envia os dados estruturados para a API pdfgeneratorapi.com e retorna o PDF binário.
-    """
-    if not PDF_API_TOKEN or PDF_API_TOKEN == 'SEU_TOKEN_BEARER_AQUI':
-        print("ERRO: PDF_API_TOKEN não configurado. A conversão falhará.")
-        return None, "PDF_API_TOKEN não configurado. Por favor, adicione o Token Bearer no Vercel."
-
-    headers = {
-        'Authorization': f'Bearer {PDF_API_TOKEN}',
-        'Content-Type': 'application/json',
-        'Accept': 'application/pdf'
-    }
-
-    # O payload usa o formato exigido pela nova API
-    payload = {
-        "template": {
-            "id": template_id,
-            "data": data_payload
-        },
-        "format": "pdf",
-        "output": "download", # Pede o conteúdo PDF binário diretamente
-        "name": f"{output_filename}_{datetime.now().strftime('%Y%m%d')}"
-    }
-    
-    # NOVO: Imprime o JSON de dados no console para debug
-    print("--- JSON PAYLOAD ENVIADO PARA API ---")
-    print(json.dumps(payload, indent=2))
-    print("--------------------------------------")
-
-
-    try:
-        response = requests.post(PDF_API_URL, headers=headers, json=payload, timeout=30)
-        
-        if response.status_code == 200 and 'application/pdf' in response.headers.get('Content-Type', ''):
-            # Se a resposta for 200 e for um PDF, retorna o conteúdo binário
-            return response.content, None
-        else:
-            error_details = response.text[:500]
-            print(f"Erro na API de PDF Generator. Status: {response.status_code}. Resposta: {error_details}")
-            # Se a API retornar JSON de erro, tenta parsear
-            try:
-                error_json = response.json()
-                # Tenta extrair a mensagem de erro específica
-                error_message = error_json.get('message', error_details)
-            except json.JSONDecodeError:
-                error_message = error_details
-
-            return None, f"Erro {response.status_code} na conversão de PDF. Detalhes: {error_message}"
-
-    except requests.exceptions.RequestException as e:
-        print(f"Erro de conexão com a API de PDF: {e}")
-        return None, f"Erro de conexão: {str(e)}"
-
-# --- PDFS (REIMPLEMENTADOS VIA API DE DADOS E TEMPLATE) ---
+# --- PDFS (AGORA PROTEGIDOS) ---
 
 @app.route('/projeto/<project_id>/pdf/<tipo>')
 @login_required 
@@ -692,7 +626,6 @@ def gerar_pdf(project_id, tipo):
     user_id = get_current_user_id()
     proj_doc = db.collection('projects').document(project_id).get()
     
-    # (Lógica de segurança e coleta de dados permanece)
     if not proj_doc.exists or proj_doc.to_dict().get('user_id') != user_id:
         return redirect(url_for('index'))
 
@@ -704,7 +637,9 @@ def gerar_pdf(project_id, tipo):
     items_ref = db.collection('projects').document(project_id).collection('items').stream()
     itens_por_ambiente = {}
     
-    # Prepara a lista de itens e o agrupamento por ambiente
+    # Obtém o dicionário de cores
+    # REMOVIDO: global SUVINIL_CORAL_COLORS
+    
     for doc in items_ref:
         data = doc.to_dict()
         cat_obj = DictObj({
@@ -713,15 +648,19 @@ def gerar_pdf(project_id, tipo):
             "description_commercial": data['description_commercial']
         })
         
+        # Converte o nome da cor em código HEX para uso nos relatórios (se necessário)
         color_name = data.get('item_color', 'Branco Neve Suvinil')
         color_hex = SUVINIL_CORAL_COLORS.get(color_name, '#F0F0F0') 
+        
+        # 2. Se for uma cor livre, verifica se é um HEX válido para renderizar corretamente
         if color_hex == '#F0F0F0' and re.match(r'^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$', color_name):
-            color_hex = color_name
+            color_hex = color_name # Usa o valor do banco como HEX
+        # Caso contrário, usa o fallback #F0F0F0
         
         item_obj = DictObj(data)
         item_obj.catalog_item = cat_obj
-        item_obj.color_name = color_name
-        item_obj.color_hex = color_hex
+        item_obj.color_name = color_name # Passa o nome da cor
+        item_obj.color_hex = color_hex   # Passa o código HEX
         
         room = data['room_name']
         if room not in itens_por_ambiente: itens_por_ambiente[room] = []
@@ -731,54 +670,23 @@ def gerar_pdf(project_id, tipo):
     for ambiente, itens in itens_por_ambiente.items():
         narrativas[ambiente] = gerar_narrativa_ambiente(itens)
 
-    # 1. Decide o ID do Template
-    if tipo == 'tecnico':
-        template_id = TECNICO_TEMPLATE_ID
-        output_filename = "Relatorio_Tecnico"
-    else: # Memorial
-        template_id = MEMORIAL_TEMPLATE_ID
-        output_filename = "Relatorio_Memorial"
-        
-    # 2. Prepara os Dados Estruturados para a API
-    # ATENÇÃO: A estrutura JSON deve ser compatível com o template que você vai subir!
-    data_for_api = {
-        "ClientName": project.client.name,
-        "ClientAddress": project.client.address,
-        "ClientPhone": project.client.phone,
-        "CurrentDate": datetime.now().strftime("%d/%m/%Y"),
-        "Narratives": [{"room": room, "text": narrative} for room, narrative in narrativas.items()],
-        "Rooms": [
-            {
-                "RoomName": room,
-                "Narrative": narratives.get(room, ""),
-                # Converte os objetos DictObj em dicionários simples
-                "Items": [
-                    {
-                        "Name": item.catalog_item.name,
-                        "Quantity": item.quantity,
-                        "ColorName": item.color_name,
-                        "TechReq": item.catalog_item.tech_requirement,
-                        "CommercialDesc": item.catalog_item.description_commercial,
-                        "Obs": item.obs
-                    } for item in items
-                ]
-            } for room, items in itens_por_ambiente.items()
-        ]
-    }
+    template = 'relatorios/tecnico.html' if tipo == 'tecnico' else 'relatorios/memorial.html'
     
-    # 3. Chama a API
-    pdf_content, error_message = generate_pdf_from_data(template_id, data_for_api, output_filename)
+    # Passa as cores globais para o template PDF
+    html = render_template(template, 
+                           project=project, 
+                           itens_por_ambiente=itens_por_ambiente, 
+                           narrativas=narrativas, 
+                           data_hoje=datetime.now().strftime("%d/%m/%Y"),
+                           cores=SUVINIL_CORAL_COLORS 
+                          )
+    pdf = HTML(string=html).write_pdf()
+    response = make_response(pdf)
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'inline; filename={tipo}.pdf'
+    return response
 
-    if pdf_content:
-        response = make_response(pdf_content)
-        response.headers['Content-Type'] = 'application/pdf'
-        response.headers['Content-Disposition'] = f'inline; filename={output_filename}.pdf'
-        return response
-    else:
-        return f"Erro ao gerar PDF: {error_message}", 500
-
-
-# ROTA PDF LEVANTAMENTO (Reimplementada via API de Dados e Template)
+# ROTA PDF LEVANTAMENTO (Ajustada para lidar com cores)
 @app.route('/projeto/<project_id>/pdf/levantamento')
 @login_required 
 def gerar_levantamento(project_id):
@@ -794,17 +702,21 @@ def gerar_levantamento(project_id):
     project.client = client_obj
     items_ref = db.collection('projects').document(project_id).collection('items').stream()
     resumo = {}
-        
+    
+    # REMOVIDO: global SUVINIL_CORAL_COLORS
+    
     for doc in items_ref:
         data = doc.to_dict()
         name = data['item_name']
         qtde = int(data['quantity'])
         color_name = data.get('item_color', 'Branco Neve Suvinil')
         
+        # LÓGICA DE RENDERIZAÇÃO DE COR NO PDF:
         color_hex = SUVINIL_CORAL_COLORS.get(color_name, '#F0F0F0') 
         if color_hex == '#F0F0F0' and re.match(r'^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$', color_name):
             color_hex = color_name
         
+        # Chave composta para diferenciar itens pela cor
         key = f"{name} ({color_name})" 
         
         if key not in resumo: 
@@ -813,44 +725,22 @@ def gerar_levantamento(project_id):
                 'total': 0, 
                 'locais': [],
                 'color_name': color_name,
-                'color_hex': color_hex
+                'color_hex': color_hex # Passa o HEX determinado
             }
         resumo[key]['total'] += qtde
         resumo[key]['locais'].append(data['room_name'])
-        
-    # Prepara a lista de itens resumidos para a API
-    summarized_items = [
-        {
-            "Name": data['nome'],
-            "TotalQuantity": data['total'],
-            "Color": data['color_name'],
-            "Locations": ", ".join(set(data['locais']))
-        }
-        for key, data in resumo.items()
-    ]
-    
-    # 1. Define o ID do Template
-    template_id = LEVANTAMENTO_TEMPLATE_ID
-    output_filename = "Levantamento_Compras"
 
-    # 2. Prepara os Dados Estruturados para a API
-    data_for_api = {
-        "ClientName": project.client.name,
-        "CurrentDate": datetime.now().strftime("%d/%m/%Y"),
-        "SummarizedItems": summarized_items
-    }
-                          
-    # 3. Chama a API
-    pdf_content, error_message = generate_pdf_from_data(template_id, data_for_api, output_filename)
-
-    if pdf_content:
-        response = make_response(pdf_content)
-        response.headers['Content-Type'] = 'application/pdf'
-        response.headers['Content-Disposition'] = 'inline; filename=Levantamento.pdf'
-        return response
-    else:
-        return f"Erro ao gerar Levantamento PDF: {error_message}", 500
-
+    html = render_template('relatorios/levantamento.html', 
+                           project=project, 
+                           resumo=resumo, 
+                           data_hoje=datetime.now().strftime("%d/%m/%Y"),
+                           cores=SUVINIL_CORAL_COLORS
+                          )
+    pdf = HTML(string=html).write_pdf()
+    response = make_response(pdf)
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = 'inline; filename=Levantamento.pdf'
+    return response
 
 if __name__ == '__main__':
     seed_database()
