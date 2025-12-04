@@ -51,26 +51,28 @@
                 <tr>
                     <th style="width: 50%;">Item de Catálogo e Cor</th>
                     <th style="width: 10%; text-align: center;">Total</th>
-                    <th style="width: 40%;">Locais de Instalação (Exemplo)</th>
+                    <th style="width: 40%;">Locais de Instalação</th>
                 </tr>
             </thead>
             <tbody>
                 {% set total_geral = namespace(value=0) %}
-                {% for item_key, data in resumo.items() %}
+                {# CORRIGIDO: Itera sobre a lista 'itens_resumidos' que contém os dicionários de resumo #}
+                {% for item in itens_resumidos %}
                 <tr>
-                    <!-- item_key: Nome do Item (Cor) -->
                     <td>
-                        {{ item_key }}
+                        {{ item.nome }} ({{ item.color_name }})
                         
-                        <!-- Novo: Adiciona a amostra de cor ao lado do nome, se houver HEX na data -->
-                        {% if data.color_hex %}
-                            <span style="display: inline-block; width: 10px; height: 10px; background-color: {{ data.color_hex }}; border: 1px solid #333; vertical-align: middle; margin-left: 10px; border-radius: 2px;"></span>
+                        {# Acessa 'item.color_hex' pois a variável 'data' não existe mais #}
+                        {% if item.color_hex %}
+                            <span style="display: inline-block; width: 10px; height: 10px; background-color: {{ item.color_hex }}; border: 1px solid #333; vertical-align: middle; margin-left: 10px; border-radius: 2px;"></span>
                         {% endif %}
                     </td>
-                    <td style="text-align: center;">{{ data.total }}</td>
-                    <td>{{ data.locais | join(", ") }}</td>
+                    {# Acessa 'item.total' #}
+                    <td style="text-align: center;">{{ item.total }}</td>
+                    {# Acessa 'item.locais_str' que já está limpo e formatado no Python #}
+                    <td>{{ item.locais_str }}</td>
                 </tr>
-                {% set total_geral.value = total_geral.value + data.total %}
+                {% set total_geral.value = total_geral.value + item.total %}
                 {% endfor %}
                 <tr class="total-row">
                     <td>Total Geral de Pontos:</td>
