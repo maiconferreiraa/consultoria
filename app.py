@@ -2,7 +2,7 @@ import os
 from flask import Flask, render_template, request, redirect, url_for, make_response, session
 import firebase_admin
 from firebase_admin import credentials, firestore, auth as firebase_auth
-from weasyprint import HTML
+#from weasyprint import HTML
 from datetime import datetime
 from functools import wraps
 import re
