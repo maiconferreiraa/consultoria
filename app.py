@@ -2,10 +2,11 @@ import os
 from flask import Flask, render_template, request, redirect, url_for, make_response, session
 import firebase_admin
 from firebase_admin import credentials, firestore, auth as firebase_auth
-from weasyprint import HTML
+from weasyprint import HTML  # REATIVADO: Para gerar PDFs localmente
 from datetime import datetime
 from functools import wraps
 import re
+# REMOVIDO: import requests e import json (Não são mais necessários com o WeasyPrint)
 
 # --- CONFIGURAÇÃO INICIAL E SECRET KEY ---
 app = Flask(__name__)
@@ -13,6 +14,8 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'SUA_CHAVE_SECRETA_MUITO_LONGA_E_COMPLEXA')
 USER_SESSION_KEY = 'user_id'
 
+# REMOVIDO: Toda a seção de CONFIGURAÇÃO DA API DE PDF (PDF_API_URL, PDF_API_TOKEN, TEMPLATE_IDs)
+# O WeasyPrint não precisa de API keys externas.
 
 # Certifique-se de que o arquivo firebase_key.json está na mesma pasta
 if os.path.exists("firebase_key.json"):
@@ -112,7 +115,7 @@ SUVINIL_CORAL_COLORS = {
     "Dourado Brilhante": "#FFD700", # Adicionado
 }
 
-# --- FUNÇÃO DE REVERSE LOOKUP (NOVA) ---
+# --- FUNÇÃO DE REVERSE LOOKUP (MANTIDA) ---
 
 def get_color_name_from_hex(hex_code, color_palette):
     """Tenta encontrar o nome da cor na paleta dado um código HEX. Ignora maiúsculas/minúsculas."""
@@ -123,7 +126,7 @@ def get_color_name_from_hex(hex_code, color_palette):
             return name
     return None
 
-# --- DECORADOR DE SEGURANÇA ---
+# --- DECORADOR DE SEGURANÇA (MANTIDO) ---
 
 def get_current_user_id():
     """Retorna o UID do usuário atualmente logado."""
@@ -139,7 +142,7 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- CONTEXT PROCESSOR: Injeta configurações do usuário em todos os templates ---
+# --- CONTEXT PROCESSOR: Injeta configurações do usuário em todos os templates (MANTIDO) ---
 @app.context_processor
 def inject_user_settings():
     """Busca o título personalizado do usuário ou usa o padrão."""
@@ -159,7 +162,7 @@ def inject_user_settings():
     # Retorna as variáveis que estarão disponíveis em todos os templates
     return dict(app_title_custom=app_title_custom)
 
-# --- ROTAS DE CONFIGURAÇÃO (Título Personalizado) ---
+# --- ROTAS DE CONFIGURAÇÃO (Título Personalizado) (MANTIDO) ---
 @app.route('/editar_titulo', methods=['POST'])
 @login_required
 def editar_titulo():
@@ -331,7 +334,7 @@ def gerar_narrativa_ambiente(itens):
         
     return " ".join(frases)
 
-# --- ROTAS DE AUTENTICAÇÃO ---
+# --- ROTAS DE AUTENTICAÇÃO (MANTIDO) ---
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -367,7 +370,7 @@ def logout():
     return redirect(url_for('login'))
 
 
-# --- ROTAS DE GERENCIAMENTO (PROTEGIDAS E FILTRADAS) ---
+# --- ROTAS DE GERENCIAMENTO (PROTEGIDAS E FILTRADAS) (MANTIDO) ---
 
 @app.route('/')
 @login_required 
@@ -587,7 +590,7 @@ def gerenciar_projeto(project_id):
         now=datetime.now()
     )
 
-# --- ROTA: EDITAR ITEM DO PROJETO ---
+# --- ROTA: EDITAR ITEM DO PROJETO (MANTIDO) ---
 @app.route('/editar_item_projeto', methods=['POST'])
 @login_required 
 def editar_item_projeto():
@@ -618,7 +621,7 @@ def editar_item_projeto():
     
     return redirect(url_for('gerenciar_projeto', project_id=project_id))
 
-# --- PDFS (AGORA PROTEGIDOS) ---
+# --- PDFS (REATIVADO VIA WEASYPRINT) ---
 
 @app.route('/projeto/<project_id>/pdf/<tipo>')
 @login_required 
@@ -626,6 +629,7 @@ def gerar_pdf(project_id, tipo):
     user_id = get_current_user_id()
     proj_doc = db.collection('projects').document(project_id).get()
     
+    # 1. SEGURANÇA
     if not proj_doc.exists or proj_doc.to_dict().get('user_id') != user_id:
         return redirect(url_for('index'))
 
@@ -637,9 +641,7 @@ def gerar_pdf(project_id, tipo):
     items_ref = db.collection('projects').document(project_id).collection('items').stream()
     itens_por_ambiente = {}
     
-    # Obtém o dicionário de cores
-    # REMOVIDO: global SUVINIL_CORAL_COLORS
-    
+    # 2. COLETA DE DADOS (Mantida a lógica de cor e agrupamento)
     for doc in items_ref:
         data = doc.to_dict()
         cat_obj = DictObj({
@@ -648,19 +650,17 @@ def gerar_pdf(project_id, tipo):
             "description_commercial": data['description_commercial']
         })
         
-        # Converte o nome da cor em código HEX para uso nos relatórios (se necessário)
+        # Lógica de cor
         color_name = data.get('item_color', 'Branco Neve Suvinil')
         color_hex = SUVINIL_CORAL_COLORS.get(color_name, '#F0F0F0') 
         
-        # 2. Se for uma cor livre, verifica se é um HEX válido para renderizar corretamente
         if color_hex == '#F0F0F0' and re.match(r'^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$', color_name):
-            color_hex = color_name # Usa o valor do banco como HEX
-        # Caso contrário, usa o fallback #F0F0F0
+            color_hex = color_name
         
         item_obj = DictObj(data)
         item_obj.catalog_item = cat_obj
-        item_obj.color_name = color_name # Passa o nome da cor
-        item_obj.color_hex = color_hex   # Passa o código HEX
+        item_obj.color_name = color_name
+        item_obj.color_hex = color_hex
         
         room = data['room_name']
         if room not in itens_por_ambiente: itens_por_ambiente[room] = []
@@ -670,9 +670,9 @@ def gerar_pdf(project_id, tipo):
     for ambiente, itens in itens_por_ambiente.items():
         narrativas[ambiente] = gerar_narrativa_ambiente(itens)
 
+    # 3. RENDERIZAÇÃO E GERAÇÃO DO PDF (WEASYPRINT)
     template = 'relatorios/tecnico.html' if tipo == 'tecnico' else 'relatorios/memorial.html'
     
-    # Passa as cores globais para o template PDF
     html = render_template(template, 
                            project=project, 
                            itens_por_ambiente=itens_por_ambiente, 
@@ -680,19 +680,26 @@ def gerar_pdf(project_id, tipo):
                            data_hoje=datetime.now().strftime("%d/%m/%Y"),
                            cores=SUVINIL_CORAL_COLORS 
                           )
-    pdf = HTML(string=html).write_pdf()
-    response = make_response(pdf)
-    response.headers['Content-Type'] = 'application/pdf'
-    response.headers['Content-Disposition'] = f'inline; filename={tipo}.pdf'
-    return response
+    
+    try:
+        pdf = HTML(string=html).write_pdf()
+        response = make_response(pdf)
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = f'inline; filename={tipo}.pdf'
+        return response
+    except Exception as e:
+        # Erro comum do WeasyPrint se dependências não estiverem instaladas
+        return f"Erro ao gerar PDF com WeasyPrint. Certifique-se de que as dependências do sistema (libpango, libcairo) e o WeasyPrint Python package estão instalados. Detalhe: {str(e)}", 500
 
-# ROTA PDF LEVANTAMENTO (Ajustada para lidar com cores)
+
+# ROTA PDF LEVANTAMENTO (WEASYPRINT com correção de duplicação de cômodos)
 @app.route('/projeto/<project_id>/pdf/levantamento')
 @login_required 
 def gerar_levantamento(project_id):
     user_id = get_current_user_id()
     proj_doc = db.collection('projects').document(project_id).get()
 
+    # 1. SEGURANÇA
     if not proj_doc.exists or proj_doc.to_dict().get('user_id') != user_id:
         return redirect(url_for('index'))
 
@@ -703,15 +710,14 @@ def gerar_levantamento(project_id):
     items_ref = db.collection('projects').document(project_id).collection('items').stream()
     resumo = {}
     
-    # REMOVIDO: global SUVINIL_CORAL_COLORS
-    
+    # 2. COLETA E AGRUPAMENTO DE DADOS COM DESDUPLICAÇÃO DE AMBIENTES
     for doc in items_ref:
         data = doc.to_dict()
         name = data['item_name']
         qtde = int(data['quantity'])
         color_name = data.get('item_color', 'Branco Neve Suvinil')
         
-        # LÓGICA DE RENDERIZAÇÃO DE COR NO PDF:
+        # Lógica de cor
         color_hex = SUVINIL_CORAL_COLORS.get(color_name, '#F0F0F0') 
         if color_hex == '#F0F0F0' and re.match(r'^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$', color_name):
             color_hex = color_name
@@ -723,24 +729,44 @@ def gerar_levantamento(project_id):
             resumo[key] = {
                 'nome': name, 
                 'total': 0, 
-                'locais': [],
+                'locais': set(),  # Usamos um SET para garantir unicidade imediata
                 'color_name': color_name,
-                'color_hex': color_hex # Passa o HEX determinado
+                'color_hex': color_hex
             }
         resumo[key]['total'] += qtde
-        resumo[key]['locais'].append(data['room_name'])
+        resumo[key]['locais'].add(data['room_name'].strip()) # Adiciona ao SET
+    
+    # 3. PREPARAÇÃO FINAL DA LISTA (Converte o SET em string para o template)
+    # Precisamos converter o SET de volta para uma lista/dicionário para o Jinja2
+    resumo_final = []
+    for key, data in resumo.items():
+        resumo_final.append({
+            'nome': data['nome'],
+            'total': data['total'],
+            'color_name': data['color_name'],
+            'color_hex': data['color_hex'],
+            # Converte o SET (único) em string separada por vírgula
+            'locais_str': ", ".join(sorted(list(data['locais'])))
+        })
 
+
+    # 4. RENDERIZAÇÃO E GERAÇÃO DO PDF (WEASYPRINT)
     html = render_template('relatorios/levantamento.html', 
                            project=project, 
-                           resumo=resumo, 
+                           itens_resumidos=resumo_final, # VARIÁVEL CORRIGIDA: Usa um nome mais descritivo
                            data_hoje=datetime.now().strftime("%d/%m/%Y"),
                            cores=SUVINIL_CORAL_COLORS
                           )
-    pdf = HTML(string=html).write_pdf()
-    response = make_response(pdf)
-    response.headers['Content-Type'] = 'application/pdf'
-    response.headers['Content-Disposition'] = 'inline; filename=Levantamento.pdf'
-    return response
+    
+    try:
+        pdf = HTML(string=html).write_pdf()
+        response = make_response(pdf)
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = 'inline; filename=Levantamento.pdf'
+        return response
+    except Exception as e:
+        return f"Erro ao gerar Levantamento PDF com WeasyPrint. Detalhe: {str(e)}", 500
+
 
 if __name__ == '__main__':
     seed_database()
