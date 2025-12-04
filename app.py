@@ -21,9 +21,9 @@ PDF_API_URL = os.environ.get('PDF_API_URL', 'https://us1.pdfgeneratorapi.com/api
 PDF_API_TOKEN = os.environ.get('PDF_API_TOKEN', 'SEU_TOKEN_BEARER_AQUI') 
 
 # Variáveis para os IDs dos templates que você vai carregar no painel da API:
-MEMORIAL_TEMPLATE_ID = os.environ.get('MEMORIAL_TEMPLATE_ID', 'memorial_id_exemplo')
-TECNICO_TEMPLATE_ID = os.environ.get('TECNICO_TEMPLATE_ID', 'tecnico_id_exemplo')
-LEVANTAMENTO_TEMPLATE_ID = os.environ.get('LEVANTAMENTO_TEMPLATE_ID', 'levantamento_id_exemplo')
+MEMORIAL_TEMPLATE_ID = os.environ.get('MEMORIAL_TEMPLATE_ID', '1450638')
+TECNICO_TEMPLATE_ID = os.environ.get('TECNICO_TEMPLATE_ID', '1450641')
+LEVANTAMENTO_TEMPLATE_ID = os.environ.get('LEVANTAMENTO_TEMPLATE_ID', '1450643')
 
 # Certifique-se de que o arquivo firebase_key.json está na mesma pasta
 if os.path.exists("firebase_key.json"):
