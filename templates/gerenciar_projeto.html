@@ -401,7 +401,21 @@
         <div class="card">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light"><tr><th>Ambiente</th><th>Item</th><th class="d-none d-md-table-cell">Cor</th><th class="text-center">Qtd</th><th>Obs</th><th class="text-end">Ação</th></tr></thead>
+                    <thead class="table-light">
+    <tr>
+        <th>Ambiente</th>
+        <th>Item</th>
+        
+        <!-- CORRIGIDO: Removidas as classes d-none e d-md-table-cell para ser SEMPRE visível -->
+        <th>Cor</th>
+        
+        <!-- MANTIDO: Oculta Qtd em telas pequenas (d-none) para economizar espaço em celular -->
+        <th class="d-none d-md-table-cell">Qtd</th>
+        
+        <th>Obs</th>
+        <th class="text-end">Ação</th>
+    </tr>
+</thead>
                     <tbody>
                         {% for item in project.items %}
                         <tr>
