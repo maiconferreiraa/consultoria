@@ -16,6 +16,9 @@
             background-color: #121212 !important; 
             padding-top: 70px; 
             padding-bottom: 60px;
+            /* NOVO: Remove margens/padding externos do body */
+            padding-left: 0; 
+            padding-right: 0;
         }
         .navbar { background-color: #1e1e1e !important; border-bottom: 1px solid #333; }
         .navbar-brand { color: #0d6efd !important; }
@@ -43,12 +46,22 @@
         
         .navbar-title-link { cursor: pointer; }
         .navbar-title-link:hover { opacity: 0.8; }
+
+        /* --- FORÇA LARGURA MÁXIMA PARA 100% --- */
+        .container-fluid {
+            width: 100% !important; 
+            /* Zera o padding lateral padrão que o Bootstrap 
+               pode manter em container-fluid */
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+        /* -------------------------------------- */
     </style>
 </head>
 
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 fixed-top">
-        <div class="container">
+        <div class="container-fluid"> <!-- NOVO: Aplica container-fluid à nav bar -->
             
             <!-- TÍTULO DINÂMICO E EDITÁVEL -->
             <a class="navbar-brand fw-bold navbar-title-link" 
@@ -67,7 +80,9 @@
         </div>
     </nav>
 
-    <div class="container">
+    <!-- PONTO DE INJEÇÃO DO CONTEÚDO PRINCIPAL -->
+    <!-- MUDADO: De "container" para "container-fluid" -->
+    <div class="container-fluid">
         {% block content %}{% endblock %}
     </div>
 
@@ -163,7 +178,7 @@
     
     <!-- Rodapé FIXO (fixed-bottom) -->
     <footer class="bg-dark border-top border-secondary py-3 fixed-bottom">
-        <div class="container d-flex justify-content-between align-items-center">
+        <div class="container-fluid d-flex justify-content-between align-items-center"> <!-- NOVO: Aplica container-fluid aqui também -->
             <small class="text-muted">&copy; {{ now.year if now is defined else 2025 }} Home Automation | Versão 1.0</small>
             
             <a href="#" class="text-muted small text-decoration-none" 
