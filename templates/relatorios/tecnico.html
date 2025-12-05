@@ -25,7 +25,8 @@
             z-index: 10;
         }
         .logo-img {
-            height: 60px; 
+            height: 40px; 
+            /* Esta regra de CSS é mantida para garantir a altura correta no PDF */
         }
 
         .header h1 { color: #000; font-size: 16pt; margin: 0; } 
@@ -73,7 +74,8 @@
         <!-- NOVO CONTAINER PARA A LOGO: Posicionado no canto superior esquerdo -->
         <div class="logo-top-left">
             {% if app_logo_url %}
-                <img src="{{ app_logo_url }}" class="logo-img" alt="Logo da Empresa">
+                <!-- A URL AGORA É A DATA URI BASE64 EMBUTIDA -->
+                <img src="{{ app_logo_url }}" class="logo-img" alt="">
             {% endif %}
         </div>
 
