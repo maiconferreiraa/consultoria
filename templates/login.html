@@ -33,6 +33,78 @@
             border-color: #0d6efd;
             color: #fff;
         }
+        
+        /* --- ESTILOS DO MODAL DE AQUISIÇÃO --- */
+        .modal-content-custom {
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+            border: 1px solid #444;
+            border-radius: 10px;
+        }
+        .pix-qr-code {
+            width: 100%;
+            max-width: 180px;
+            height: auto;
+            margin: 15px auto;
+            display: block;
+            border-radius: 5px;
+            background: white; /* Fundo branco para QR code */
+        }
+        .pix-key-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .pix-key-input {
+            flex-grow: 1;
+            padding: 10px;
+            border-radius: 6px 0 0 6px;
+            background-color: #2d2d2d;
+            border: 1px solid #444;
+            color: #fff;
+            font-size: 0.9em;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+        .copy-btn {
+            background-color: #ff9800;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 0 6px 6px 0;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .copy-btn:hover {
+            background-color: #e68900;
+        }
+        .whatsapp-btn {
+            background-color: #25D366;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .whatsapp-btn:hover {
+            background-color: #128C7E;
+        }
+        .instructions-list {
+            padding-left: 20px;
+            font-size: 0.9em;
+            color: #aaa;
+        }
+        .btn-adquirir {
+            background-color: #28a745; /* Verde */
+            border-color: #28a745;
+        }
+        .btn-adquirir:hover {
+            background-color: #218838;
+            border-color: #1e7e34;
+        }
     </style>
 </head>
 <body>
@@ -58,18 +130,84 @@
         </div>
         
         <div class="d-grid gap-2 mt-4">
-            <!-- Botão de Login mantido -->
+            <!-- Botão de Login -->
             <button type="button" onclick="handleLogin()" class="btn btn-primary btn-lg shadow-sm">
                 <i class="bi bi-box-arrow-in-right me-2"></i> Entrar
             </button>
-            <!-- O botão de "Criar Nova Conta" foi removido -->
+            
+            <!-- Botão Adquirir Acesso -->
+            <button type="button" class="btn btn-adquirir btn-lg shadow-sm" data-bs-toggle="modal" data-bs-target="#aquireModal">
+                <i class="bi bi-cart-plus me-2"></i> Adquirir Acesso
+            </button>
         </div>
     </form>
+</div>
+
+<!-- Modal de Aquisição/Pagamento -->
+<div class="modal fade" id="aquireModal" tabindex="-1" aria-labelledby="aquireModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-custom">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title text-primary" id="aquireModalLabel">Adquirir Acesso</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-white text-center">Siga os passos abaixo para garantir seu acesso:</p>
+
+                <!-- 1. Pagamento Pix -->
+                <!-- TÍTULO MODIFICADO PARA REFLETIR O CUSTO MENSAL -->
+                <h6 class="text-muted border-bottom pb-2 mb-3">1. Pagamento PIX (R$ 497,00) Ativação do Sistema</h6>
+                
+                <!-- NOVA FRASE SOBRE MENSALIDADE -->
+                <p class="text-warning small text-center mb-3">
+                    <i class="bi bi-calendar-check-fill me-1"></i> Acesso 24h por dia. Custo de **R$ 125,00** cobrado todo dia **10** de cada mês. Podendo ser cancelado a qualquer momento.
+                </p>
+                
+                <!-- QR Code Mock - MODIFICADO PARA USAR CAMINHO ESTATICO DO FLASK NA RAIZ DA PASTA STATIC -->
+                <img src="{{ url_for('static', filename='pix.jpeg') }}" 
+                     alt="QR Code Pix" 
+                     class="pix-qr-code"
+                     onerror="this.onerror=null; this.src='https://placehold.co/180x180/000000/FFFFFF?text=QR+Code+PIX';"
+                >
+
+                <!-- Chave Pix Copia e Cola -->
+                <div class="pix-key-container">
+                    <div class="pix-key-input" id="pix-key-value">00020101021126360014br.gov.bcb.pix0114544610480001265204000053039865406497.005802BR592554.461.048 maicon junio b6009SAO PAULO622905251KBQXYSQCMQ2GEV3SDBFK78W863047F67</div>
+                    <button type="button" class="copy-btn" onclick="copyPixKey()">Copiar</button>
+                </div>
+                
+                <!-- 2. Dados de Cadastro e Instruções -->
+                <h6 class="text-muted border-bottom pb-2 mb-3 mt-4">2. Dados para Criação da Conta</h6>
+                
+                <p class="text-warning small"><i class="bi bi-exclamation-triangle-fill me-1"></i> **IMPORTANTE:** Preencha abaixo o E-mail e Senha que deseja usar para login.</p>
+
+                <div class="mb-3">
+                    <label for="reg-email" class="form-label text-muted">E-mail Desejado (Seu Login)</label>
+                    <input type="email" id="reg-email" class="form-control" placeholder="seu.novo.login@empresa.com" required>
+                </div>
+                <div class="mb-3">
+                    <label for="reg-password" class="form-label text-muted">Senha Desejada</label>
+                    <input type="password" id="reg-password" class="form-control" placeholder="Mínimo 6 caracteres" required>
+                </div>
+
+                <h6 class="text-muted border-bottom pb-2 mb-3 mt-4">3. Envio do Comprovante</h6>
+                
+                <p class="small text-white">Após o pagamento, envie o comprovante juntamente com o **E-mail** e **Senha** que você preencheu acima (etapa 2).</p>
+                
+                <a id="whatsapp-link" href="https://wa.me/5599999999999?text=Ol%C3%A1%2C%20realizei%20o%20pagamento%20Pix%20e%20gostaria%20de%20ativar%20minha%20conta.%20Dados%20de%20Login%3A%20%5BE-MAIL%20E%20SENHA%5D" target="_blank" class="d-block text-decoration-none">
+                    <button type="button" class="whatsapp-btn">
+                        <i class="bi bi-whatsapp me-2"></i> Enviar Comprovante e Dados
+                    </button>
+                </a>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- SDK Firebase (Client-side) -->
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
     // ⚠️ SUBSTITUA COM SUAS PRÓPRIAS CONFIGURAÇÕES DO FIREBASE ⚠️
@@ -93,6 +231,8 @@
             message = 'Senha incorreta.';
         } else if (message.includes('auth/user-not-found')) {
             message = 'Nenhuma conta encontrada com este e-mail.';
+        } else if (message.includes('auth/invalid-credential')) { // Erro genérico para e-mail/senha incorretos
+            message = 'Credenciais inválidas. Verifique e-mail e senha.';
         } else if (message.includes('auth/email-already-in-use')) {
             message = 'Este e-mail já está em uso por outra conta.';
         } else if (message.includes('auth/weak-password')) {
@@ -150,7 +290,60 @@
         }
     }
     
-    // NOTA: A função handleRegister foi removida para impedir o auto-registro.
+    // ----------------------------------------------------
+    // FUNÇÕES DO MODAL DE AQUISIÇÃO
+    // ----------------------------------------------------
+
+    function copyPixKey() {
+        const pixKey = document.getElementById('pix-key-value').innerText;
+        
+        // Simplesmente usa execCommand para compatibilidade com ambiente iframe
+        var textArea = document.createElement("textarea");
+        textArea.value = pixKey;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            alert('Chave Pix copiada com sucesso!');
+        } catch (err) {
+            alert('Erro ao tentar copiar a chave Pix.');
+        }
+        document.body.removeChild(textArea);
+    }
+    
+    // Atualiza o link do WhatsApp com os dados de e-mail e senha do usuário
+    document.getElementById('reg-email').addEventListener('input', updateWhatsAppLink);
+    document.getElementById('reg-password').addEventListener('input', updateWhatsAppLink);
+
+    function updateWhatsAppLink() {
+        const email = document.getElementById('reg-email').value;
+        const password = document.getElementById('reg-password').value;
+        
+        const baseMessage = "Olá, realizei o pagamento Pix e gostaria de ativar minha conta.";
+        let message = baseMessage;
+        
+        if (email && password) {
+            message += ` Dados de Login:\nE-mail: ${email}\nSenha: ${password}`;
+        } else if (email) {
+            message += ` E-mail desejado: ${email}`;
+        }
+        
+        // Substitua '5599999999999' pelo seu número de WhatsApp
+        const whatsappNumber = '5531995012927'; 
+        const encodedMessage = encodeURIComponent(message);
+        
+        // O link de aquisição está no modal.
+        const whatsappLinkElement = document.getElementById('whatsapp-link');
+        if (whatsappLinkElement) {
+            whatsappLinkElement.href = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+        }
+    }
+    
+    // Inicializa o link do WhatsApp
+    updateWhatsAppLink();
 </script>
 
 </body>
