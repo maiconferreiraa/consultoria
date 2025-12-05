@@ -153,8 +153,9 @@ def inject_user_settings():
     """Busca o título e a URL da logo (agora Data URI Base64) personalizados do usuário ou usa o padrão."""
     user_id = get_current_id()
     
-    app_title_custom = "Home Automation Technology"
-    app_logo_data_uri = None # MODIFICADO: Agora armazena a Data URI Base64
+    # --- NOVO PADRÃO: Mensagem de chamada para ação ---
+    app_title_custom = "Clique aqui e mude o nome da sua empresa" 
+    app_logo_data_uri = None
     
     if user_id:
         settings_doc = db.collection('user_settings').document(user_id).get()
@@ -162,6 +163,7 @@ def inject_user_settings():
             data = settings_doc.to_dict()
             custom_title = data.get('app_title')
             
+            # Se houver um título customizado no DB, ele SOBREPÕE o padrão.
             if custom_title:
                 app_title_custom = custom_title
             
