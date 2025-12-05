@@ -1,201 +1,130 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <title>Memorial Descritivo - {{ project.client.name }}</title>
+    <title>Memorial Descritivo - {{ app_title_custom }}</title>
     <style>
-        @page {
-            size: A4;
-            margin: 20mm;
-            @top-center { content: "{{ project.client.name }} - Memorial Descritivo"; font-size: 8pt; color: #555; }
-            @bottom-center { content: counter(page); font-size: 8pt; color: #555; }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 10pt; color: #333; }
+        .container { 
+            width: 90%; 
+            margin: 20px auto; 
+            position: relative; /* Adicionado para ancorar a posição absoluta da logo */
         }
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 11pt;
-            color: #333;
-        }
-        /* AZUL PROFISSIONAL PARA TÍTULOS (Sóbrio) */
-        h1, h2, h3 {
-            color: #003366; /* Azul Marinho (Profissional) */
-            border-bottom: 2px solid #e0e0e0;
-            padding-bottom: 5px;
-            margin-top: 25px;
-        }
-        h1 { font-size: 18pt; text-align: center; border-bottom: none; }
-        h2 { font-size: 14pt; margin-top: 20px; border-bottom-color: #003366; }
-        h3 { font-size: 12pt; margin-top: 15px; color: #0056b3; /* Azul um pouco mais claro */ border-bottom: 1px solid #cfd8dc; padding-bottom: 3px; }
-
-        /* CABEÇALHO COMPACTO E CENTRALIZADO */
-        .header-info {
-            text-align: center;
-            font-size: 10pt;
-            padding-bottom: 5px;
-            border-bottom: 1px solid #ddd; 
+        .header { 
+            text-align: center; 
+            border-bottom: 2px solid #333; 
+            padding-bottom: 10px; 
             margin-bottom: 20px; 
-            line-height: 1.3;
-        }
-        .header-info p {
-            margin: 0; 
-            padding: 0;
-        }
-        .header-info .consultor {
-            font-size: 9pt;
-            font-style: italic;
-            margin-top: 3px;
+            padding-top: 50px; /* Adicionado padding para dar espaço para a logo no topo */
         }
         
-        .section {
-            margin-bottom: 20px;
-            page-break-inside: avoid;
+        /* Estilo para a Logo no PDF: Posicionamento Top Left */
+        .logo-top-left {
+            position: absolute;
+            top: 0; /* Topo do container */
+            left: 0; /* Canto esquerdo */
+            z-index: 10;
+        }
+        .logo-img {
+            height: 60px; 
         }
 
-        .item-list {
-            margin-top: 8px;
-            margin-bottom: 10px;
-        }
-        .item-list table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 10pt;
-        }
-        .item-list th, .item-list td {
-            border: 1px solid #eee;
-            padding: 6px 8px;
-            text-align: left;
-            vertical-align: top;
-        }
-        .item-list th {
-            background-color: #f5f5f5;
-            font-weight: bold;
-        }
-        .item-row {
-            border-bottom: 1px solid #eee;
-        }
-        .color-sample {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border: 1px solid #aaa;
-            border-radius: 2px;
-            vertical-align: middle;
-            margin-right: 5px;
-        }
-        /* Estilo para Narrativa (Mantendo um destaque neutro/suave) */
-        .narrativa {
-            background-color: #f0f7ff;
-            border-left: 4px solid #0056b3;
-            padding: 10px;
-            margin-top: 10px;
-            font-size: 10.5pt;
-        }
-        .narrativa strong {
-            color: #003366;
-        }
-        /* Destaques Técnicos (mantidos para consistência de estilo, mas não usados na tabela) */
-        .highlight-tech {
-            color: #dc3345;
-            font-weight: bold;
-            white-space: nowrap; 
-        }
-        /* QUEBRA DE PÁGINA: APENAS NO FINAL DA SEÇÃO PRINCIPAL */
-        .page-break {
-            page-break-before: always;
-        }
+        .header h1 { color: #000; font-size: 16pt; margin: 0; } 
+        .header h2 { font-size: 12pt; margin: 5px 0 0; color: #555; }
+        
+        .section-title { font-size: 14pt; color: #0056b3; border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-top: 25px; margin-bottom: 15px; }
+        .subsection-title { font-size: 12pt; color: #333; margin-top: 15px; margin-bottom: 5px; }
+        
+        .client-info table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .client-info th, .client-info td { padding: 5px 0; text-align: left; }
+        .client-info th { width: 20%; color: #555; font-weight: normal; }
+        .client-info td { font-weight: bold; }
+        
+        .item-table { width: 100%; border-collapse: collapse; margin-top: 10px; page-break-inside: auto; }
+        .item-table th, .item-table td { border: 1px solid #eee; padding: 5px; text-align: left; }
+        .item-table th { background-color: #f0f0f0; font-weight: bold; }
+        .item-table tr { page-break-inside: avoid; page-break-after: auto; }
+        
+        .narrative p { margin-top: 0; margin-bottom: 15px; line-height: 1.4; }
+        .narrative strong { color: #0056b3; }
+        
+        .footer { border-top: 1px solid #ccc; padding-top: 10px; margin-top: 30px; text-align: center; font-size: 8pt; color: #777; }
+
+        /* Estilo para quebra de página antes do ambiente */
+        .room-section { page-break-before: auto; }
     </style>
 </head>
 <body>
-
-    <header>
-        <h1>MEMORIAL DESCRITIVO</h1>
-        <h2 style="text-align: center;">Projeto de Automação Residencial</h2>
+    <div class="container">
         
-        <div class="header-info">
-            <p>
-                <span style="font-weight: bold;">Cliente:</span> {{ project.client.name }} | 
-                <span style="font-weight: bold;">Endereço:</span> {{ project.client.address }} | 
-                <span style="font-weight: bold;">Telefone:</span> {{ project.client.phone }}
-            </p>
-            <p class="consultor">
-                <span style="font-weight: bold;">Consultor Responsável:</span> {{ app_title_custom }}
-            </p>
+        <!-- NOVO CONTAINER PARA A LOGO: Posicionado no canto superior esquerdo -->
+        <div class="logo-top-left">
+            {% if app_logo_url %}
+                <img src="{{ app_logo_url }}" class="logo-img" alt="Logo da Empresa">
+            {% endif %}
         </div>
-    </header>
 
-    <div class="section">
-        <h2>1. INTRODUÇÃO</h2>
-        <p>Este Memorial Descritivo detalha as soluções e equipamentos propostos para o sistema de automação e infraestrutura elétrica no imóvel, garantindo conforto, eficiência e modernidade.</p>
-        <p>O projeto visa integrar os subsistemas de Iluminação, Energia, Mídia e Climatização, proporcionando uma experiência de casa inteligente centralizada por comando de voz e aplicativo móvel.</p>
-        <p style="text-align: right; font-size: 10pt; margin-top: 15px;">**Data de Emissão:** {{ data_hoje }}</p>
-    </div>
-
-    <h2>2. ESCOPO DETALHADO POR AMBIENTE</h2>
-    
-    {% for room, items in itens_por_ambiente.items() %}
-    <div class="section">
-        <h3>2.{{ loop.index }}. {{ room|upper }}</h3>
-
-        <!-- Narrativa do Ambiente -->
-        {% if room in narrativas and narrativas[room] %}
-        <div class="narrativa">
-            <p><strong>Visão Geral:</strong> {{ narrativas[room] | safe }}</p>
+        <div class="header">
+            <!-- Título principal centralizado (agora sem o logo junto) -->
+            <h1 style="margin: 0;">{{ app_title_custom }}</h1>
+            
+            <h2>Memorial Descritivo do Projeto de Automação</h2>
+            <p>Data: {{ data_hoje }}</p>
         </div>
-        {% endif %}
 
-        <!-- Tabela de Itens (REMOVENDO REQUISITO TÉCNICO) -->
-        <div class="item-list">
+        <div class="client-info">
+            <div class="section-title">Dados do Projeto</div>
             <table>
-                <thead>
-                    <tr>
-                        <th style="width: 5%;">Qtd</th>
-                        <th style="width: 25%;">Item / Dispositivo</th>
-                        <th style="width: 50%;">Descrição Comercial (Memorial)</th>
-                        <th style="width: 10%;">Acab.</th>
-                        <th style="width: 10%;">Obs</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in items %}
-                    {% set color_hex = item.color_hex %}
-                    {% set color_name = item.color_name %}
-
-                    <tr class="item-row">
-                        <td style="text-align: center;">{{ item.quantity }}</td>
-                        <td>{{ item.catalog_item.name }}</td>
-                        <td>{{ item.catalog_item.description_commercial }}</td>
-                        <td>
-                            <span class="color-sample" style="background-color: {{ color_hex }};"></span>
-                            {{ color_name }}
-                        </td>
-                        <td>{{ item.obs | default('N/A') }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
+                <tr><th>Cliente:</th><td>{{ project.client.name }}</td><th>Endereço:</th><td>{{ project.client.address }}</td></tr>
+                <tr><th>Telefone:</th><td>{{ project.client.phone }}</td><th>ID do Projeto:</th><td>{{ project.id }}</td></tr>
             </table>
         </div>
-    </div>
-    {% endfor %}
 
-    <!-- O page-break é mantido aqui, apenas antes da conclusão, para garantir que os ambientes sigam um após o outro. -->
-    <div class="section page-break">
-        <h2>3. CONCLUSÃO E REQUISITOS TÉCNICOS</h2>
-        
-        <p>A implantação deste projeto garantirá uma experiência de moradia conectada e eficiente, com a infraestrutura preparada para futuras expansões.</p>
-        
-        <h3>Requisitos Gerais de Instalação:</h3>
-        <ul>
-            <li>**Rede:** Necessidade de rede Wi-Fi estável e robusta em todos os ambientes.</li>
-            <li>**Eletricidade:** Garantir a passagem de fase e neutro (F+N) nas caixas de passagem dos interruptores e painéis de automação, conforme especificado nos requisitos técnicos de cada dispositivo.</li>
-            <li>**Cabeamento:** Utilização de cabos de rede Cat6 e cabos de áudio de alta qualidade onde a sonorização ambiente for prevista.</li>
-            <li>**Acabamento:** O acabamento dos painéis e dispositivos será fornecido na cor ({{ cores.keys()|first or 'Padrão' }}) ou conforme a escolha de cor indicada acima para cada ponto.</li>
-        </ul>
-        
-        <p style="text-align: center; margin-top: 30px;">___________________________________________<br>
-        {{ project.client.name }} (Contratante)</p>
-        
-        <p style="text-align: center; margin-top: 30px;">___________________________________________<br>
-        {{ app_title_custom }} (Consultor Responsável)</p>
-    </div>
+        <div class="section-title">Detalhes por Ambiente</div>
 
+        {% for room_name, items in itens_por_ambiente.items() %}
+            <div class="room-section">
+                <div class="subsection-title" style="color: #0056b3;">
+                    <i class="bi bi-geo-alt-fill"></i> {{ room_name }}
+                </div>
+                
+                {# CORREÇÃO DE FALLBACK: Aplica o filtro default({}, {}) para evitar UndefinedError #}
+                {% if (narratives | default({}))[room_name] %}
+                    <div class="narrative">
+                        <p>{{ (narratives | default({}))[room_name] | safe }}</p>
+                    </div>
+                {% endif %}
+
+                <table class="item-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 10%;">Qtd</th>
+                            <th style="width: 30%;">Item / Nome</th>
+                            <th style="width: 40%;">Descrição Comercial</th>
+                            <th style="width: 20%;">Acabamento</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td>{{ item.quantity }}</td>
+                            <td>{{ item.catalog_item.name }}</td>
+                            <td>{{ item.catalog_item.description_commercial }}</td>
+                            <td>
+                                {{ item.color_name }}
+                                {% if item.color_hex %}
+                                    <span style="display: inline-block; width: 10px; height: 10px; background-color: {{ item.color_hex }}; border: 1px solid #333; vertical-align: middle; margin-left: 5px; border-radius: 2px;"></span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endfor %}
+
+        <div class="footer">
+            Documento gerado por {{ app_title_custom }}. Este memorial descreve as funcionalidades e acabamentos dos dispositivos.
+        </div>
+    </div>
 </body>
 </html>

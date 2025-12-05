@@ -2,20 +2,23 @@ import os
 from flask import Flask, render_template, request, redirect, url_for, make_response, session
 import firebase_admin
 from firebase_admin import credentials, firestore, auth as firebase_auth
-from weasyprint import HTML  # REATIVADO: Para gerar PDFs localmente
+from weasyprint import HTML
 from datetime import datetime
 from functools import wraps
 import re
-# REMOVIDO: import requests e import json (Não são mais necessários com o WeasyPrint)
+from werkzeug.utils import secure_filename # Import para sanitizar nomes de arquivos
+
+# --- CONFIGURAÇÃO DE UPLOAD ---
+# Certifique-se de que esta pasta existe na raiz do seu projeto.
+UPLOAD_FOLDER = 'static/logos'
 
 # --- CONFIGURAÇÃO INICIAL E SECRET KEY ---
 app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # CHAVE SECRETA É OBRIGATÓRIA PARA USAR SESSÕES (necessário para o login)
 app.secret_key = os.environ.get('SECRET_KEY', 'SUA_CHAVE_SECRETA_MUITO_LONGA_E_COMPLEXA')
 USER_SESSION_KEY = 'user_id'
 
-# REMOVIDO: Toda a seção de CONFIGURAÇÃO DA API DE PDF (PDF_API_URL, PDF_API_TOKEN, TEMPLATE_IDs)
-# O WeasyPrint não precisa de API keys externas.
 
 # Certifique-se de que o arquivo firebase_key.json está na mesma pasta
 if os.path.exists("firebase_key.json"):
@@ -119,7 +122,6 @@ SUVINIL_CORAL_COLORS = {
 
 def get_color_name_from_hex(hex_code, color_palette):
     """Tenta encontrar o nome da cor na paleta dado um código HEX. Ignora maiúsculas/minúsculas."""
-    # Garante que o HEX code esteja em maiúsculas para comparação consistente
     hex_code = hex_code.upper()
     for name, hex_value in color_palette.items():
         if hex_value.upper() == hex_code:
@@ -132,48 +134,86 @@ def get_current_user_id():
     """Retorna o UID do usuário atualmente logado."""
     return session.get(USER_SESSION_KEY)
 
+# CORREÇÃO: Função get_current_id não existe, deve usar get_current_user_id()
+def get_current_id():
+    return get_current_user_id()
+
 def login_required(f):
     """Protege as rotas, verifica a sessão e redireciona para o login."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if USER_SESSION_KEY not in session:
-            # Redireciona para a tela de login se não houver ID na sessão
             return redirect(url_for('login', next=request.url))
         return f(*args, **kwargs)
     return decorated_function
 
-# --- CONTEXT PROCESSOR: Injeta configurações do usuário em todos os templates (MANTIDO) ---
+# --- CONTEXT PROCESSOR: Injeta configurações do usuário em todos os templates (ATUALIZADO) ---
 @app.context_processor
 def inject_user_settings():
-    """Busca o título personalizado do usuário ou usa o padrão."""
-    user_id = get_current_user_id()
+    """Busca o título e a URL do logo personalizados do usuário ou usa o padrão."""
+    user_id = get_current_id()
     
-    # Título padrão
     app_title_custom = "Home Automation Technology"
+    app_logo_url = None # Variável para a URL do Logo
     
     if user_id:
-        # Tenta buscar a configuração do Firestore
         settings_doc = db.collection('user_settings').document(user_id).get()
         if settings_doc.exists:
-            custom_title = settings_doc.to_dict().get('app_title')
+            data = settings_doc.to_dict()
+            custom_title = data.get('app_title')
+            
             if custom_title:
                 app_title_custom = custom_title
+            
+            # Busca a URL do logo
+            app_logo_url = data.get('logo_url')
                 
     # Retorna as variáveis que estarão disponíveis em todos os templates
-    return dict(app_title_custom=app_title_custom)
+    return dict(app_title_custom=app_title_custom, app_logo_url=app_logo_url)
 
-# --- ROTAS DE CONFIGURAÇÃO (Título Personalizado) (MANTIDO) ---
+# --- ROTAS DE CONFIGURAÇÃO (Título e Logo Personalizados) (ATUALIZADO) ---
 @app.route('/editar_titulo', methods=['POST'])
 @login_required
 def editar_titulo():
     user_id = get_current_user_id()
     new_title = request.form.get('app_title_new')
     
+    # 1. Certifica que o formulário foi enviado como multipart/form-data
+    if request.method == 'POST':
+        logo_file = request.files.get('logo_file')
+    else:
+        logo_file = None
+    
+    # 1. Tratamento do Upload da Logo
+    if logo_file and logo_file.filename:
+        # Cria a pasta de upload se não existir
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+        
+        # Sanitiza o nome do arquivo para evitar problemas
+        original_filename = secure_filename(logo_file.filename)
+        # Cria um nome de arquivo único e seguro, prefixado pelo ID do usuário
+        # Garante que não haja problemas com path separators (os.path.sep)
+        filename = f"{user_id}_{original_filename.replace(os.path.sep, '_')}"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        
+        try:
+            # Salva o arquivo localmente
+            logo_file.save(filepath)
+            
+            # URL relativa que o Flask e o WeasyPrint podem resolver
+            # Usa o nome do arquivo gerado
+            logo_url = url_for('static', filename=f'logos/{filename}')
+            
+            # Salva a URL no Firestore
+            db.collection('user_settings').document(user_id).set({'logo_url': logo_url}, merge=True)
+        except Exception as e:
+            print(f"Erro ao salvar o logo: {e}")
+            pass # Ignora o erro, apenas o título será atualizado
+    
+    # 2. Tratamento da Mudança de Título
     if new_title:
-        # Salva o novo título na coleção user_settings
         db.collection('user_settings').document(user_id).set({'app_title': new_title}, merge=True)
         
-    # Redireciona para a página anterior (ou index se não houver)
     return redirect(request.referrer or url_for('index'))
 
 
@@ -234,7 +274,7 @@ def get_master_list():
 
         {"name": "Tomada 10A Branca - 1 Módulo (4x2)", "category": "Energia", "description_commercial": desc_tomada_white, "tech_requirement": "Caixa 4x2. Fio 2.5mm."},
         {"name": "Tomada 10A Branca - 2 Módulos (4x2)", "category": "Energia", "description_commercial": "Dupla 10A Branca.", "tech_requirement": "Caixa 4x2."},
-        {"name": "Tomada 10A Branca - 3 Módulos (4x2)", "category": "Energia", "description_commercial": "Tripla 10A Branca.", "tech_requirement": "Caixa 4x2."},
+        {"name": "Tomada 10A Branca - 3 Módulo (4x2)", "category": "Energia", "description_commercial": "Tripla 10A Branca.", "tech_requirement": "Caixa 4x2."},
 
         {"name": "Tomadas 4x4 - 4 Módulos (10A)", "category": "Energia", "description_commercial": "Painel 4 Tomadas 10A.", "tech_requirement": "Caixa 4x4."},
         {"name": "Tomadas 4x4 - 6 Módulos (10A)", "category": "Energia", "description_commercial": "Painel 6 Tomadas 10A.", "tech_requirement": "Caixa 4x4."},
@@ -276,7 +316,7 @@ def seed_database():
             batch_r.set(doc_ref, r)
         batch_r.commit()
 
-# --- INTELIGÊNCIA DE NARRATIVA ---
+# --- INTELIGÊNCIA DE NARRATIVA (MANTIDO) ---
 def gerar_narrativa_ambiente(itens):
     circuitos_luz = 0
     tomadas_comuns = 0
@@ -285,12 +325,10 @@ def gerar_narrativa_ambiente(itens):
     tem_automacao = False
     
     for item in itens:
-        # Verifica se 'catalog_item' existe no objeto do item
         if not hasattr(item, 'catalog_item') or not item.catalog_item:
             continue
 
         nome = item.catalog_item.name.lower()
-        # Garante que a quantidade seja tratada como int
         try:
             qtd = int(item.quantity)
         except (TypeError, ValueError):
@@ -344,22 +382,15 @@ def login():
             return "Erro: Token de autenticação faltando.", 400
 
         try:
-            # 1. Verifica e decodifica o token (Segurança)
             decoded_token = firebase_auth.verify_id_token(id_token)
             uid = decoded_token['uid']
-            
-            # 2. Guarda o UID na sessão do Flask
             session[USER_SESSION_KEY] = uid
-            
-            # 3. CORREÇÃO: Força o redirecionamento para o index (Dashboard)
             return redirect(url_for('index'))
 
         except Exception as e:
-            # Em caso de token expirado ou inválido
             return f"Erro de autenticação: {e}", 401
 
     if USER_SESSION_KEY in session:
-        # Se o usuário já está logado, manda direto para o index
         return redirect(url_for('index'))
         
     return render_template('login.html')
@@ -369,15 +400,13 @@ def logout():
     session.pop(USER_SESSION_KEY, None)
     return redirect(url_for('login'))
 
-
-# --- ROTAS DE GERENCIAMENTO (PROTEGIDAS E FILTRADAS) (MANTIDO) ---
+# --- ROTAS DE GERENCIAMENTO (RESTANTE DO CÓDIGO) ---
 
 @app.route('/')
 @login_required 
 def index():
     user_id = get_current_user_id()
     
-    # FILTRO: Apenas projetos deste usuário, ordenado por data
     projects_ref = db.collection('projects').where('user_id', '==', user_id).order_by('created_at', direction=firestore.Query.DESCENDING).stream()
     projects = []
     for doc in projects_ref:
@@ -393,7 +422,6 @@ def index():
 @login_required 
 def adicionar_ambiente():
     project_id = request.form.get('project_id_redirect')
-    # Adicionando um ID de usuário (Embora o ambiente deva ser global ou do projeto, no modelo atual, ele está sendo tratado como global/pessoal)
     db.collection('ambientes').add({"name": request.form['name'], "user_id": get_current_user_id()})
     if project_id: return redirect(url_for('gerenciar_projeto', project_id=project_id))
     return redirect(url_for('index'))
@@ -466,7 +494,6 @@ def editar_projeto(project_id):
     project_ref = db.collection('projects').document(project_id)
     proj_doc = project_ref.get()
     
-    # SEGURANÇA: Verifica se o projeto existe e pertence ao usuário
     if not proj_doc.exists or proj_doc.to_dict().get('user_id') != get_current_user_id():
         return redirect(url_for('index'))
 
@@ -479,7 +506,7 @@ def editar_projeto(project_id):
         return redirect(url_for('index'))
     
     data = proj_doc.to_dict()
-    project = DictObj({"client_name": data.get('client_name'), "client_address": data.get('client_address'), "client_phone": data.get('client_phone')}, id=proj_doc.id)
+    project = DictObj({"client_name": data.get('client_name'), "address": data.get('client_address'), "phone": data.get('client_phone')}, id=proj_doc.id)
     return render_template('editar_projeto.html', project=project, now=datetime.now())
 
 @app.route('/apagar_projeto/<project_id>')
@@ -498,7 +525,6 @@ def gerenciar_projeto(project_id):
     user_id = get_current_user_id()
     proj_doc = db.collection('projects').document(project_id).get()
     
-    # SEGURANÇA: Redireciona se o projeto não existir ou não pertencer ao usuário
     if not proj_doc.exists or proj_doc.to_dict().get('user_id') != user_id:
         return redirect(url_for('index'))
 
@@ -579,8 +605,6 @@ def gerenciar_projeto(project_id):
             db.collection('projects').document(project_id).collection('items').add(item_data)
         return redirect(url_for('gerenciar_projeto', project_id=project_id))
 
-    # Adiciona a lista de cores ao contexto do template
-    # REMOVIDO: global SUVINIL_CORAL_COLORS
     return render_template('gerenciar_projeto.html', 
         project=project_obj, 
         catalogo=catalogo, 
@@ -590,7 +614,6 @@ def gerenciar_projeto(project_id):
         now=datetime.now()
     )
 
-# --- ROTA: EDITAR ITEM DO PROJETO (MANTIDO) ---
 @app.route('/editar_item_projeto', methods=['POST'])
 @login_required 
 def editar_item_projeto():
@@ -600,11 +623,10 @@ def editar_item_projeto():
     
     item_color = request.form.get('item_color')
     
-    # NOVO: Se for um código HEX, tenta reverter para o nome do preset
     if item_color and re.match(r'^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$', item_color):
         matched_name = get_color_name_from_hex(item_color, SUVINIL_CORAL_COLORS)
         if matched_name:
-            item_color = matched_name # Salva o nome do preset (ex: "Branco Neve Suvinil")
+            item_color = matched_name 
             
     cat_doc = db.collection('catalogo').document(cat_id).get().to_dict()
     
@@ -616,7 +638,7 @@ def editar_item_projeto():
         "item_name": cat_doc['name'],
         "tech_requirement": cat_doc['tech_requirement'],
         "description_commercial": cat_doc['description_commercial'],
-        "item_color": item_color # Atualiza o valor da cor (nome ou HEX)
+        "item_color": item_color
     })
     
     return redirect(url_for('gerenciar_projeto', project_id=project_id))
@@ -626,10 +648,14 @@ def editar_item_projeto():
 @app.route('/projeto/<project_id>/pdf/<tipo>')
 @login_required 
 def gerar_pdf(project_id, tipo):
+    # INICIALIZAÇÃO ATÔMICA E NO TOPO DO FLUXO DE PROCESSAMENTO
+    # Isso garante que as variáveis existam no escopo local antes do uso no 'context'.
+    itens_por_ambiente = {}
+    narrativas = {} 
+
     user_id = get_current_user_id()
     proj_doc = db.collection('projects').document(project_id).get()
     
-    # 1. SEGURANÇA
     if not proj_doc.exists or proj_doc.to_dict().get('user_id') != user_id:
         return redirect(url_for('index'))
 
@@ -639,9 +665,7 @@ def gerar_pdf(project_id, tipo):
     project.client = client_obj
     
     items_ref = db.collection('projects').document(project_id).collection('items').stream()
-    itens_por_ambiente = {}
     
-    # 2. COLETA DE DADOS (Mantida a lógica de cor e agrupamento)
     for doc in items_ref:
         data = doc.to_dict()
         cat_obj = DictObj({
@@ -650,7 +674,6 @@ def gerar_pdf(project_id, tipo):
             "description_commercial": data['description_commercial']
         })
         
-        # Lógica de cor
         color_name = data.get('item_color', 'Branco Neve Suvinil')
         color_hex = SUVINIL_CORAL_COLORS.get(color_name, '#F0F0F0') 
         
@@ -666,30 +689,38 @@ def gerar_pdf(project_id, tipo):
         if room not in itens_por_ambiente: itens_por_ambiente[room] = []
         itens_por_ambiente[room].append(item_obj)
     
-    narrativas = {}
+    # Calcula narrativas APÓS a coleta de todos os itens
     for ambiente, itens in itens_por_ambiente.items():
         narrativas[ambiente] = gerar_narrativa_ambiente(itens)
-
-    # 3. RENDERIZAÇÃO E GERAÇÃO DO PDF (WEASYPRINT)
+    
+    # 1. Obtém o logo_url do contexto (disponível via inject_user_settings)
+    settings_doc = db.collection('user_settings').document(user_id).get()
+    settings = settings_doc.to_dict() if settings_doc.exists else {}
+    logo_url = settings.get('logo_url')
+    
     template = 'relatorios/tecnico.html' if tipo == 'tecnico' else 'relatorios/memorial.html'
     
-    html = render_template(template, 
-                           project=project, 
-                           itens_por_ambiente=itens_por_ambiente, 
-                           narrativas=narrativas, 
-                           data_hoje=datetime.now().strftime("%d/%m/%Y"),
-                           cores=SUVINIL_CORAL_COLORS 
-                          )
+    # Cria o dicionário de contexto explicitamente.
+    context = {}
+    context['project'] = project
+    context['itens_por_ambiente'] = itens_por_ambiente
+    context['narrativas'] = narrativas 
+    context['data_hoje'] = datetime.now().strftime("%d/%m/%Y")
+    context['cores'] = SUVINIL_CORAL_COLORS
+    context['app_logo_url'] = logo_url
+    
+    html = render_template(template, **context)
     
     try:
-        pdf = HTML(string=html).write_pdf()
+        # IMPORTANT: Adiciona base_url para WeasyPrint resolver static files (como a logo)
+        pdf = HTML(string=html, base_url=request.url_root).write_pdf() 
         response = make_response(pdf)
         response.headers['Content-Type'] = 'application/pdf'
         response.headers['Content-Disposition'] = f'inline; filename={tipo}.pdf'
         return response
     except Exception as e:
-        # Erro comum do WeasyPrint se dependências não estiverem instaladas
-        return f"Erro ao gerar PDF com WeasyPrint. Certifique-se de que as dependências do sistema (libpango, libcairo) e o WeasyPrint Python package estão instalados. Detalhe: {str(e)}", 500
+        # Note que se a geração do PDF falhar aqui, o erro não é mais o NameError.
+        return f"Erro ao gerar PDF com WeasyPrint. Detalhe: {str(e)}", 500
 
 
 # ROTA PDF LEVANTAMENTO (WEASYPRINT com correção de duplicação de cômodos)
@@ -699,7 +730,6 @@ def gerar_levantamento(project_id):
     user_id = get_current_user_id()
     proj_doc = db.collection('projects').document(project_id).get()
 
-    # 1. SEGURANÇA
     if not proj_doc.exists or proj_doc.to_dict().get('user_id') != user_id:
         return redirect(url_for('index'))
 
@@ -710,34 +740,29 @@ def gerar_levantamento(project_id):
     items_ref = db.collection('projects').document(project_id).collection('items').stream()
     resumo = {}
     
-    # 2. COLETA E AGRUPAMENTO DE DADOS COM DESDUPLICAÇÃO DE AMBIENTES
     for doc in items_ref:
         data = doc.to_dict()
         name = data['item_name']
         qtde = int(data['quantity'])
         color_name = data.get('item_color', 'Branco Neve Suvinil')
         
-        # Lógica de cor
         color_hex = SUVINIL_CORAL_COLORS.get(color_name, '#F0F0F0') 
         if color_hex == '#F0F0F0' and re.match(r'^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$', color_name):
             color_hex = color_name
         
-        # Chave composta para diferenciar itens pela cor
         key = f"{name} ({color_name})" 
         
         if key not in resumo: 
             resumo[key] = {
                 'nome': name, 
                 'total': 0, 
-                'locais': set(),  # Usamos um SET para garantir unicidade imediata
+                'locais': set(),  
                 'color_name': color_name,
                 'color_hex': color_hex
             }
         resumo[key]['total'] += qtde
-        resumo[key]['locais'].add(data['room_name'].strip()) # Adiciona ao SET
+        resumo[key]['locais'].add(data['room_name'].strip()) 
     
-    # 3. PREPARAÇÃO FINAL DA LISTA (Converte o SET em string para o template)
-    # Precisamos converter o SET de volta para uma lista/dicionário para o Jinja2
     resumo_final = []
     for key, data in resumo.items():
         resumo_final.append({
@@ -745,21 +770,28 @@ def gerar_levantamento(project_id):
             'total': data['total'],
             'color_name': data['color_name'],
             'color_hex': data['color_hex'],
-            # Converte o SET (único) em string separada por vírgula
             'locais_str': ", ".join(sorted(list(data['locais'])))
         })
+    
+    # 1. Obtém o logo_url do contexto (disponível via inject_user_settings)
+    settings_doc = db.collection('user_settings').document(user_id).get()
+    settings = settings_doc.to_dict() if settings_doc.exists else {}
+    logo_url = settings.get('logo_url')
 
-
-    # 4. RENDERIZAÇÃO E GERAÇÃO DO PDF (WEASYPRINT)
-    html = render_template('relatorios/levantamento.html', 
-                           project=project, 
-                           itens_resumidos=resumo_final, # VARIÁVEL CORRIGIDA: Usa um nome mais descritivo
-                           data_hoje=datetime.now().strftime("%d/%m/%Y"),
-                           cores=SUVINIL_CORAL_COLORS
-                          )
+    # Cria o dicionário de contexto explícito para garantir a passagem das variáveis
+    context = {
+        'project': project,
+        'itens_resumidos': resumo_final,
+        'data_hoje': datetime.now().strftime("%d/%m/%Y"),
+        'cores': SUVINIL_CORAL_COLORS,
+        'app_logo_url': logo_url
+    }
+    
+    html = render_template('relatorios/levantamento.html', **context)
     
     try:
-        pdf = HTML(string=html).write_pdf()
+        # IMPORTANT: Adiciona base_url para WeasyPrint resolver static files (como a logo)
+        pdf = HTML(string=html, base_url=request.url_root).write_pdf() 
         response = make_response(pdf)
         response.headers['Content-Type'] = 'application/pdf'
         response.headers['Content-Disposition'] = 'inline; filename=Levantamento.pdf'
@@ -769,5 +801,7 @@ def gerar_levantamento(project_id):
 
 
 if __name__ == '__main__':
+    # Certifica-se de que a pasta de upload existe
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     seed_database()
     app.run(debug=True, port=5001)

@@ -1,246 +1,149 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <title>Relatório Técnico - {{ project.client.name }}</title>
+    <title>Relatório Técnico - {{ app_title_custom }}</title>
     <style>
-        @page {
-            size: A4;
-            margin: 20mm;
-            @top-center { content: "{{ project.client.name }} - Relatório Técnico"; font-size: 8pt; color: #555; }
-            @bottom-center { content: counter(page); font-size: 8pt; color: #555; }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 10pt; color: #333; }
+        .container { 
+            width: 90%; 
+            margin: 20px auto; 
+            position: relative; /* Adicionado para ancorar a posição absoluta da logo */
         }
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 11pt;
-            color: #333;
-        }
-        /* AZUL PROFISSIONAL PARA TÍTULOS (Sóbrio) */
-        h1, h2, h3 {
-            color: #003366; /* Azul Marinho (Profissional) */
-            border-bottom: 2px solid #e0e0e0;
-            padding-bottom: 5px;
-            margin-top: 25px;
-        }
-        h1 { font-size: 18pt; text-align: center; border-bottom: none; }
-        h2 { font-size: 14pt; margin-top: 20px; border-bottom-color: #003366; }
-        h3 { font-size: 12pt; margin-top: 15px; color: #0056b3; /* Azul um pouco mais claro */ border-bottom: 1px solid #cfd8dc; padding-bottom: 3px; }
-
-        /* CABEÇALHO COMPACTO E CENTRALIZADO */
-        .header-info {
-            text-align: center;
-            font-size: 10pt;
-            padding-bottom: 5px;
-            border-bottom: 1px solid #ddd; 
+        .header { 
+            text-align: center; 
+            border-bottom: 2px solid #333; 
+            padding-bottom: 10px; 
             margin-bottom: 20px; 
-            line-height: 1.3;
-        }
-        .header-info p {
-            margin: 0; 
-            padding: 0;
-        }
-        .header-info .consultor {
-            font-size: 9pt;
-            font-style: italic;
-            margin-top: 3px;
+            padding-top: 50px; /* Adicionado padding para dar espaço para a logo no topo */
         }
         
-        .section {
-            margin-bottom: 20px;
-            page-break-inside: avoid;
+        /* Estilo para a Logo no PDF: Posicionamento Top Left */
+        .logo-top-left {
+            position: absolute;
+            top: 0; /* Topo do container */
+            left: 0; /* Canto esquerdo */
+            z-index: 10;
+        }
+        .logo-img {
+            height: 60px; 
         }
 
-        .item-list {
-            margin-top: 8px;
-            margin-bottom: 10px;
-        }
-        .item-list table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 10pt;
-        }
-        .item-list th, .item-list td {
-            border: 1px solid #eee;
-            padding: 6px 8px;
-            text-align: left;
-            vertical-align: top;
-        }
-        .item-list th {
-            background-color: #f5f5f5;
+        .header h1 { color: #000; font-size: 16pt; margin: 0; } 
+        .header h2 { font-size: 12pt; margin: 5px 0 0; color: #555; }
+        
+        .section-title { font-size: 14pt; color: #0056b3; border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-top: 25px; margin-bottom: 15px; }
+        .subsection-title { font-size: 12pt; color: #333; margin-top: 15px; margin-bottom: 5px; }
+        
+        .client-info table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .client-info th, .client-info td { padding: 5px 0; text-align: left; }
+        .client-info th { width: 20%; color: #555; font-weight: normal; }
+        .client-info td { font-weight: bold; }
+        
+        .item-table { width: 100%; border-collapse: collapse; margin-top: 10px; page-break-inside: auto; }
+        .item-table th, .item-table td { border: 1px solid #eee; padding: 5px; text-align: left; }
+        .item-table th { background-color: #f0f0f0; font-weight: bold; }
+        .item-table tr { page-break-inside: avoid; page-break-after: auto; }
+        
+        .narrative p { margin-top: 0; margin-bottom: 15px; line-height: 1.4; }
+        .narrative strong { color: #0056b3; }
+        
+        .footer { border-top: 1px solid #ccc; padding-top: 10px; margin-top: 30px; text-align: center; font-size: 8pt; color: #777; }
+
+        /* Estilo para quebra de página antes do ambiente */
+        .room-section { page-break-before: auto; }
+        
+        /* NOVO ESTILO PARA DESTAQUE TÉCNICO */
+        .highlight-tech {
+            color: #dc3345; /* Vermelho */
             font-weight: bold;
         }
-        .item-row {
-            border-bottom: 1px solid #eee;
-        }
-        .color-sample {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border: 1px solid #aaa;
-            border-radius: 2px;
-            vertical-align: middle;
-            margin-right: 5px;
-        }
-        /* ESTILOS PARA ATENÇÃO/AVISOS CRÍTICOS (VERMELHO) */
-        .tech-note {
-            background-color: #fcebeb; 
-            border-left: 4px solid #dc3545; 
-            padding: 10px;
-            margin-top: 10px;
-            font-size: 10.5pt;
-        }
-        .tech-note strong {
-            color: #dc3545; 
-        }
-        /* Ícone de Atenção (Triângulo) */
+        /* Estilo para ícones de atenção */
         .attention-icon {
-            color: #dc3545;
-            font-size: 14pt;
+            color: #dc3345;
+            font-size: 10pt;
             line-height: 1;
             margin-right: 5px;
             vertical-align: middle;
         }
-        /* Destaque Vermelho e Negrito para Códigos Técnicos */
-        .highlight-tech {
-            color: #dc3345;
-            font-weight: bold;
-            white-space: nowrap; 
-        }
-        /* QUEBRA DE PÁGINA: APENAS NO FINAL DE SEÇÕES MAIORES */
-        .page-break {
-            page-break-before: always;
-        }
     </style>
 </head>
 <body>
-
-    <header>
-        <h1>RELATÓRIO TÉCNICO DE INFRAESTRUTURA</h1>
-        <h2 style="text-align: center;">Projeto de Automação Residencial</h2>
+    <div class="container">
         
-        <div class="header-info">
-            <p>
-                <span style="font-weight: bold;">Cliente:</span> {{ project.client.name }} | 
-                <span style="font-weight: bold;">Endereço:</span> {{ project.client.address }} | 
-                <span style="font-weight: bold;">Telefone:</span> {{ project.client.phone }}
-            </p>
-            <p class="consultor">
-                <span style="font-weight: bold;">Consultor Responsável:</span> {{ app_title_custom }}
-            </p>
+        <!-- NOVO CONTAINER PARA A LOGO: Posicionado no canto superior esquerdo -->
+        <div class="logo-top-left">
+            {% if app_logo_url %}
+                <img src="{{ app_logo_url }}" class="logo-img" alt="Logo da Empresa">
+            {% endif %}
         </div>
-    </header>
 
-    <div class="section">
-        <h2>1. INSTRUÇÕES GERAIS</h2>
-        <p>Este documento é um guia de infraestrutura destinado às equipes de elétrica e construção civil. Ele detalha os requisitos técnicos de passagem de cabos, alimentação elétrica e preparação de caixas para a correta instalação dos dispositivos de automação.</p>
-        
-        <div class="tech-note">
-            <p><span class="attention-icon">&#9888;</span> <strong>ATENÇÃO:</strong> É obrigatório garantir a passagem de **FASE (F)** e **NEUTRO (N)** em todas as caixas 4x2 e 4x4 destinadas aos módulos de automação (interruptores e painéis).</p>
+        <div class="header">
+            <!-- Título principal centralizado (agora sem o logo junto) -->
+            <h1 style="margin: 0;">{{ app_title_custom }}</h1>
+            
+            <h2>Relatório Técnico de Infraestrutura e Requisitos</h2>
+            <p>Data: {{ data_hoje }}</p>
         </div>
-        
-        <p style="text-align: right; font-size: 10pt; margin-top: 15px;">**Data de Emissão:** {{ data_hoje }}</p>
-    </div>
 
-    <h2>2. REQUISITOS DETALHADOS POR AMBIENTE</h2>
-    
-    {% for room, items in itens_por_ambiente.items() %}
-    <div class="section">
-        <h3>2.{{ loop.index }}. {{ room|upper }}</h3>
-
-        <!-- Tabela de Itens (Foco em Requisito Técnico) -->
-        <div class="item-list">
+        <div class="client-info">
+            <div class="section-title">Dados do Projeto</div>
             <table>
-                <thead>
-                    <tr>
-                        <th style="width: 5%;">Qtd</th>
-                        <th style="width: 25%;">Dispositivo</th>
-                        <th style="width: 45%;">Requisito Técnico (Instalação)</th>
-                        <th style="width: 15%;">Acab.</th>
-                        <th style="width: 10%;">Obs</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in items %}
-                    {% set color_hex = item.color_hex %}
-                    {% set color_name = item.color_name %}
-                    
-                    {% set item_name_lower = item.catalog_item.name.lower() %}
-                    {% set tech_req_base_display = item.catalog_item.tech_requirement | default('Verificar alimentação (F+N) e cabos de dados.') %}
-                    {% set tech_req_display = tech_req_base_display %}
-                    
-                    {# LÓGICA DE OVERRIDE PARA DESTAQUE CRÍTICO (Prioriza Mistos e Tomadas, depois Zigbee) #}
-                    {% if 'misto' in item_name_lower or ('tom' in item_name_lower and 'tecla' in item_name_lower) %}
-                        {# 1. Se for MISTO (tomada + interruptor) #}
-                        {% set tech_req_display = tech_req_base_display ~ ' | Fiação Mínima: F+N+T+R...' %}
-                    {% elif 'tomada' in item_name_lower and not 'tecla' in item_name_lower and not 'misto' in item_name_lower %}
-                        {# 2. Se for APENAS TOMADA #}
-                        {% set tech_req_display = tech_req_base_display ~ ' | Fiação Mínima: F+N+T' %}
-                    {% elif 'zigbee' in item_name_lower and ('interruptor' in item_name_lower or 'tecla' in item_name_lower) and not 'misto' in item_name_lower and not 'tomada' in item_name_lower %}
-                        {# 3. Se for INTERRUPTOR ZIGBEE PURO #}
-                        {% set tech_req_display = 'F+N, Não necessita de fios paralelos' %}
-                    {% endif %}
-                            
-                    <tr class="item-row">
-                        <td style="text-align: center;">{{ item.quantity }}</td>
-                        <td>{{ item.catalog_item.name }}</td>
-                        <td>
-                            {% if 'zigbee' in item_name_lower or 'painel' in item_name_lower %}
-                                <span class="attention-icon" style="font-size: 10pt;">&#9888;</span>
-                            {% endif %}
-                            
-                            {% set tech_req = tech_req_display %}
-                            
-                            {# SUBSTITUIÇÕES PARA DESTAQUE EM VERMELHO E NEGRITO (INCLUI A NOVA INSTRUÇÃO) #}
-                            {% set tech_req = tech_req | replace('F+N, Não necessita de fios paralelos', '<span class="highlight-tech">F+N, Não necessita de fios paralelos</span>') %}
-                            {% set tech_req = tech_req | replace('F+N+T+R...', '<span class="highlight-tech">F+N+T+R...</span>') %}
-                            {% set tech_req = tech_req | replace('F+N+T', '<span class="highlight-tech">F+N+T</span>') %}
-                            {% set tech_req = tech_req | replace('F+N+R', '<span class="highlight-tech">F+N+R</span>') %}
-                            {% set tech_req = tech_req | replace('F+N+1 Retorno', '<span class="highlight-tech">F+N+1 Retorno</span>') %}
-                            {% set tech_req = tech_req | replace('F+N+2 Retornos', '<span class="highlight-tech">F+N+2 Retornos</span>') %}
-                            {% set tech_req = tech_req | replace('F+N+3 Retornos', '<span class="highlight-tech">F+N+3 Retornos</span>') %}
-                            {% set tech_req = tech_req | replace('F+N+4 Retornos', '<span class="highlight-tech">F+N+4 Retornos</span>') %}
-                            {% set tech_req = tech_req | replace('F+N+5 Retornos', '<span class="highlight-tech">F+N+5 Retornos</span>') %}
-                            {% set tech_req = tech_req | replace('F+N+6 Retornos', '<span class="highlight-tech">F+N+6 Retornos</span>') %}
-                            {% set tech_req = tech_req | replace('F+N+8 Retornos', '<span class="highlight-tech">F+N+8 Retornos</span>') %}
-                            {# APLICAR DESTAQUE PARA F+N (SOMENTE SE NÃO ESTIVER DENTRO DE OUTRO DESTAQUE MAIOR) #}
-                            {% set tech_req = tech_req | replace('F+N', '<span class="highlight-tech">F+N</span>') %}
-                            
-                            {{ tech_req | safe }}
-                        </td>
-                        <td>
-                            <span class="color-sample" style="background-color: {{ color_hex }};"></span>
-                            {{ color_name }}
-                        </td>
-                        <td>{{ item.obs | default('N/A') }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
+                <tr><th>Cliente:</th><td>{{ project.client.name }}</td><th>Endereço:</th><td>{{ project.client.address }}</td></tr>
+                <tr><th>Telefone:</th><td>{{ project.client.phone }}</td><th>ID do Projeto:</th><td>{{ project.id }}</td></tr>
             </table>
         </div>
+
+        <div class="section-title">Detalhes por Ambiente</div>
+
+        {% for room_name, items in itens_por_ambiente.items() %}
+            <div class="room-section">
+                <div class="subsection-title" style="color: #0056b3;">
+                    {{ room_name }}
+                </div>
+                
+                {# CORREÇÃO DE FALLBACK: Aplica o filtro default({}, {}) para garantir que narratives não seja undefined #}
+                {% if (narratives | default({}))[room_name] %}
+                    <div class="narrative">
+                        <p><strong>Resumo:</strong> {{ (narratives | default({}))[room_name] | safe }}</p>
+                    </div>
+                {% endif %}
+
+                <table class="item-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 10%;">Qtd</th>
+                            <th style="width: 30%;">Item</th>
+                            <th style="width: 60%;">Requisito Técnico (Eletricista / Instalador)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td>{{ item.quantity }}</td>
+                            <td>{{ item.catalog_item.name }}</td>
+                            <td>
+                                {% set tech_req = item.catalog_item.tech_requirement | default('Verificar alimentação e dados.') %}
+                                
+                                {# Adiciona ícone de atenção para dispositivos Zigbee (que requerem atenção especial) #}
+                                {% if 'Zigbee' in item.catalog_item.name or 'Painel' in item.catalog_item.name %}
+                                    <span class="attention-icon">&#9888;</span>
+                                {% endif %}
+
+                                {# Garante destaque em vermelho e negrito (destaque de requisito técnico) #}
+                                <span class="highlight-tech">
+                                    {{ tech_req }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endfor %}
+
+        <div class="footer">
+            Documento gerado por {{ app_title_custom }}. Este relatório detalha a infraestrutura elétrica e de dados necessária.
+        </div>
     </div>
-    {% endfor %}
-
-    <!-- O page-break é mantido aqui, apenas antes da conclusão, para garantir que os ambientes sigam um após o outro. -->
-    <div class="section page-break">
-        <h2>3. CHECKLIST DE INFRAESTRUTURA FINAL</h2>
-        
-        <h3>3.1. Antes do Acabamento:</h3>
-        <ul>
-            <li>Verificar se todos os circuitos de iluminação possuem Neutro (N) na caixa de passagem dos interruptores.</li>
-            <li>Conferir se os pontos de integração (Áudio/Vídeo, Ar Condicionado) possuem a alimentação (F+N) e o cabeamento de comunicação requisitados.</li>
-            <li>Garantir que todas as caixas 4x2 e 4x4 estejam niveladas e sem rebarbas para o encaixe dos painéis de acrílico.</li>
-        </ul>
-        
-        <h3>3.2. Responsabilidade:</h3>
-        <p>A equipe de Elétrica é responsável por garantir que os requisitos técnicos de fiação e cabeamento sejam estritamente seguidos, conforme detalhado na coluna "Requisito Técnico" acima.</p>
-
-
-        <p style="text-align: center; margin-top: 30px;">___________________________________________<br>
-        Engenheiro / Eletricista Responsável (Obra)</p>
-        
-        <p style="text-align: center; margin-top: 30px;">___________________________________________<br>
-        {{ app_title_custom }} (Consultor de Automação)</p>
-    </div>
-
 </body>
 </html>

@@ -5,8 +5,29 @@
     <style>
         /* Estilos de impressão e PDF */
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 10pt; color: #333; }
-        .container { width: 90%; margin: 20px auto; }
-        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+        .container { 
+            width: 90%; 
+            margin: 20px auto; 
+            position: relative; /* Adicionado para ancorar a posição absoluta da logo */
+        }
+        .header { 
+            text-align: center; 
+            border-bottom: 2px solid #333; 
+            padding-bottom: 10px; 
+            margin-bottom: 20px; 
+            padding-top: 50px; /* Adicionado padding para dar espaço para a logo no topo */
+        }
+        
+        /* Estilo para a Logo no PDF: Posicionamento Top Left */
+        .logo-top-left {
+            position: absolute;
+            top: 0; /* Topo do container */
+            left: 0; /* Canto esquerdo */
+            z-index: 10;
+        }
+        .logo-img {
+            height: 60px; 
+        }
         
         /* Título Principal (Nome da Empresa) */
         .header h1 { color: #000; font-size: 16pt; margin: 0; } 
@@ -24,14 +45,28 @@
         .summary-table th { background-color: #0056b3; color: white; font-weight: bold; }
         .total-row { background-color: #f0f0f0; font-weight: bold; }
         
+        /* Classe específica para centralizar texto */
+        .text-center-cell {
+            text-align: center;
+        }
+
         .footer { border-top: 1px solid #ccc; padding-top: 10px; margin-top: 30px; text-align: center; font-size: 8pt; color: #777; }
     </style>
 </head>
 <body>
     <div class="container">
+        
+        <!-- NOVO CONTAINER PARA A LOGO: Posicionado no canto superior esquerdo -->
+        <div class="logo-top-left">
+            {% if app_logo_url %}
+                <img src="{{ app_logo_url }}" class="logo-img" alt="Logo da Empresa">
+            {% endif %}
+        </div>
+        
         <div class="header">
-            <!-- TÍTULO DINÂMICO AQUI -->
-            <h1>{{ app_title_custom }}</h1>
+            <!-- Título principal centralizado (agora sem o logo junto) -->
+            <h1 style="margin: 0;">{{ app_title_custom }}</h1>
+            
             <h2>Levantamento Quantitativo de Dispositivos</h2>
             <p>Data: {{ data_hoje }}</p>
         </div>
@@ -50,33 +85,29 @@
             <thead>
                 <tr>
                     <th style="width: 50%;">Item de Catálogo e Cor</th>
-                    <th style="width: 10%; text-align: center;">Total</th>
+                    <th class="text-center-cell" style="width: 10%;">Total</th>
                     <th style="width: 40%;">Locais de Instalação</th>
                 </tr>
             </thead>
             <tbody>
                 {% set total_geral = namespace(value=0) %}
-                {# CORRIGIDO: Itera sobre a lista 'itens_resumidos' que contém os dicionários de resumo #}
                 {% for item in itens_resumidos %}
                 <tr>
                     <td>
                         {{ item.nome }} ({{ item.color_name }})
                         
-                        {# Acessa 'item.color_hex' pois a variável 'data' não existe mais #}
                         {% if item.color_hex %}
                             <span style="display: inline-block; width: 10px; height: 10px; background-color: {{ item.color_hex }}; border: 1px solid #333; vertical-align: middle; margin-left: 10px; border-radius: 2px;"></span>
                         {% endif %}
                     </td>
-                    {# Acessa 'item.total' #}
-                    <td style="text-align: center;">{{ item.total }}</td>
-                    {# Acessa 'item.locais_str' que já está limpo e formatado no Python #}
+                    <td class="text-center-cell">{{ item.total }}</td>
                     <td>{{ item.locais_str }}</td>
                 </tr>
                 {% set total_geral.value = total_geral.value + item.total %}
                 {% endfor %}
                 <tr class="total-row">
                     <td>Total Geral de Pontos:</td>
-                    <td style="text-align: center;">{{ total_geral.value }}</td>
+                    <td class="text-center-cell">{{ total_geral.value }}</td>
                     <td></td>
                 </tr>
             </tbody>

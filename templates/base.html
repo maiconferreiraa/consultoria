@@ -16,7 +16,6 @@
             background-color: #121212 !important; 
             padding-top: 70px; 
             padding-bottom: 60px;
-            /* NOVO: Remove margens/padding externos do body */
             padding-left: 0; 
             padding-right: 0;
         }
@@ -50,10 +49,14 @@
         /* --- FORÇA LARGURA MÁXIMA PARA 100% --- */
         .container-fluid {
             width: 100% !important; 
-            /* Zera o padding lateral padrão que o Bootstrap 
-               pode manter em container-fluid */
             padding-left: 0 !important;
             padding-right: 0 !important;
+        }
+        /* --- ESTILO PARA LOGO NA NAVBAR --- */
+        .navbar-logo {
+            height: 30px; /* Tamanho da logo na barra de navegação */
+            margin-right: 10px;
+            border-radius: 4px;
         }
         /* -------------------------------------- */
     </style>
@@ -61,14 +64,22 @@
 
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 fixed-top">
-        <div class="container-fluid"> <!-- NOVO: Aplica container-fluid à nav bar -->
+        <div class="container-fluid">
             
             <!-- TÍTULO DINÂMICO E EDITÁVEL -->
-            <a class="navbar-brand fw-bold navbar-title-link" 
+            <a class="navbar-brand fw-bold navbar-title-link d-flex align-items-center" 
                data-bs-toggle="modal" 
                data-bs-target="#modalEditarTitulo" 
-               title="Clique para editar o nome da sua empresa">
-                <i class="bi bi-house-gear-fill"></i> {{ app_title_custom | default('Home Automation Technology') }}
+               title="Clique para editar o nome ou inserir o logo">
+                
+                <!-- EXIBE LOGO SE ESTIVER DISPONÍVEL -->
+                {% if app_logo_url %}
+                    <img src="{{ app_logo_url }}" class="navbar-logo" alt="Logo da Empresa">
+                {% else %}
+                    <i class="bi bi-house-gear-fill me-2"></i> 
+                {% endif %}
+                
+                <span>{{ app_title_custom | default('Home Automation Technology') }}</span>
             </a>
 
             <!-- BOTÃO LOGOUT (SÓ APARECE SE HOUVER SESSÃO ATIVA) -->
@@ -81,12 +92,11 @@
     </nav>
 
     <!-- PONTO DE INJEÇÃO DO CONTEÚDO PRINCIPAL -->
-    <!-- MUDADO: De "container" para "container-fluid" -->
     <div class="container-fluid">
         {% block content %}{% endblock %}
     </div>
 
-    <!-- Modal "Sobre o Sistema" -->
+    <!-- Modal "Sobre o Sistema" (MANTIDO) -->
     <div class="modal fade" id="modalSobre" tabindex="-1" aria-labelledby="modalSobreLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -145,30 +155,44 @@
         </div>
     </div>
 
-    <!-- NOVO MODAL: EDITAR TÍTULO DA APLICAÇÃO -->
+    <!-- NOVO MODAL: EDITAR TÍTULO DA APLICAÇÃO (ATUALIZADO PARA UPLOAD) -->
     {% if session.get('user_id') %}
     <div class="modal fade" id="modalEditarTitulo" tabindex="-1" aria-labelledby="modalEditarTituloLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header border-secondary">
                     <h5 class="modal-title text-white" id="modalEditarTituloLabel">
-                        <i class="bi bi-pencil-square me-2"></i> Personalizar Título
+                        <i class="bi bi-pencil-square me-2"></i> Personalizar Título e Logo
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form action="{{ url_for('editar_titulo') }}" method="POST">
+                <!-- FORMULÁRIO ATUALIZADO: Adicionado enctype="multipart/form-data" para upload de arquivo -->
+                <form action="{{ url_for('editar_titulo') }}" method="POST" enctype="multipart/form-data">
                     <div class="modal-body text-white">
-                        <p class="text-muted small">Este será o título da aplicação visível na barra superior e no navegador.</p>
-                        <label for="app_title_new" class="form-label">Novo Nome da Empresa/Sistema</label>
-                        <input type="text" 
-                               name="app_title_new" 
-                               id="app_title_new" 
-                               class="form-control" 
-                               value="{{ app_title_custom | default('Home Automation Technology') }}"
-                               required>
+                        
+                        <div class="mb-3">
+                            <label for="app_title_new" class="form-label">Novo Nome da Empresa/Sistema</label>
+                            <input type="text" 
+                                   name="app_title_new" 
+                                   id="app_title_new" 
+                                   class="form-control" 
+                                   value="{{ app_title_custom | default('Home Automation Technology') }}"
+                                   required>
+                        </div>
+                        
+                        <div class="mb-3 border-top border-secondary pt-3">
+                            <label for="logo_file" class="form-label">Inserir Logo (PNG ou JPG)</label>
+                            <input class="form-control" type="file" id="logo_file" name="logo_file" accept=".png, .jpg, .jpeg">
+                            {% if app_logo_url %}
+                            <small class="text-success">Logo atual carregada.</small>
+                            {% else %}
+                            <small class="text-muted">A logo aparecerá na barra de navegação e em todos os relatórios PDF.</small>
+                            {% endif %}
+                        </div>
+
                     </div>
                     <div class="modal-footer border-secondary">
-                        <button type="submit" class="btn btn-primary">Salvar Título</button>
+                        <button type="submit" class="btn btn-primary">Salvar Alterações</button>
                     </div>
                 </form>
             </div>
@@ -176,9 +200,9 @@
     </div>
     {% endif %}
     
-    <!-- Rodapé FIXO (fixed-bottom) -->
+    <!-- Rodapé FIXO (fixed-bottom) (MANTIDO) -->
     <footer class="bg-dark border-top border-secondary py-3 fixed-bottom">
-        <div class="container-fluid d-flex justify-content-between align-items-center"> <!-- NOVO: Aplica container-fluid aqui também -->
+        <div class="container-fluid d-flex justify-content-between align-items-center">
             <small class="text-muted">&copy; {{ now.year if now is defined else 2025 }} Home Automation | Versão 1.0</small>
             
             <a href="#" class="text-muted small text-decoration-none" 
