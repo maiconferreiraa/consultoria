@@ -72,10 +72,18 @@
                data-bs-target="#modalEditarTitulo" 
                title="Clique para editar o nome ou inserir o logo">
                 
-                <!-- EXIBE LOGO SE ESTIVER DISPONÍVEL -->
+                <!-- EXIBE LOGO SE ESTIVER DISPONÍVEL (COM CORREÇÃO DE ONERROR) -->
                 {% if app_logo_url %}
-                    <img src="{{ app_logo_url }}" class="navbar-logo" alt="Logo da Empresa">
+                    <img src="{{ app_logo_url }}" 
+                         class="navbar-logo" 
+                         alt="Logo da Empresa"
+                         onerror="this.onerror=null; this.src=''; this.style.display='none'; this.nextElementSibling.style.display='inline';"
+                         style="display: inline;">
+                    
+                    <!-- Fallback Icon: Visível apenas se a imagem falhar -->
+                    <i class="bi bi-house-gear-fill me-2" style="display: none;"></i> 
                 {% else %}
+                    <!-- Ícone Padrão: Visível se app_logo_url for nulo ou vazio -->
                     <i class="bi bi-house-gear-fill me-2"></i> 
                 {% endif %}
                 
