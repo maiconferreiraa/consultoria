@@ -6,11 +6,12 @@ from weasyprint import HTML
 from datetime import datetime
 from functools import wraps
 import re
-from werkzeug.utils import secure_filename # Import para sanitizar nomes de arquivos
+from werkzeug.utils import secure_filename 
+import base64
+import io 
 
-# --- CONFIGURAÇÃO DE UPLOAD ---
-# Certifique-se de que esta pasta existe na raiz do seu projeto.
-UPLOAD_FOLDER = 'static/logos'
+# --- CONFIGURAÇÃO DE UPLOAD (Apenas para referência, a imagem será salva como Base64) ---
+UPLOAD_FOLDER = 'static/logos' 
 
 # --- CONFIGURAÇÃO INICIAL E SECRET KEY ---
 app = Flask(__name__)
@@ -134,7 +135,6 @@ def get_current_user_id():
     """Retorna o UID do usuário atualmente logado."""
     return session.get(USER_SESSION_KEY)
 
-# CORREÇÃO: Função get_current_id não existe, deve usar get_current_user_id()
 def get_current_id():
     return get_current_user_id()
 
@@ -147,14 +147,14 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- CONTEXT PROCESSOR: Injeta configurações do usuário em todos os templates (ATUALIZADO) ---
+# --- CONTEXT PROCESSOR: Injeta configurações do usuário em todos os templates (MODIFICADO PARA BASE64) ---
 @app.context_processor
 def inject_user_settings():
-    """Busca o título e a URL do logo personalizados do usuário ou usa o padrão."""
+    """Busca o título e a URL da logo (agora Data URI Base64) personalizados do usuário ou usa o padrão."""
     user_id = get_current_id()
     
     app_title_custom = "Home Automation Technology"
-    app_logo_url = None # Variável para a URL do Logo
+    app_logo_data_uri = None # MODIFICADO: Agora armazena a Data URI Base64
     
     if user_id:
         settings_doc = db.collection('user_settings').document(user_id).get()
@@ -165,59 +165,66 @@ def inject_user_settings():
             if custom_title:
                 app_title_custom = custom_title
             
-            # Busca a URL do logo
-            app_logo_url = data.get('logo_url')
+            # Busca a URI Base64 e o MimeType
+            base64_data = data.get('logo_base64')
+            mime_type = data.get('logo_mime_type')
+            
+            if base64_data and mime_type:
+                # Constrói a Data URI: data:<mime_type>;base64,<base64_string>
+                app_logo_data_uri = f"data:{mime_type};base64,{base64_data}"
                 
-    # Retorna as variáveis que estarão disponíveis em todos os templates
-    return dict(app_title_custom=app_title_custom, app_logo_url=app_logo_url)
+    # Retorna as variáveis. O template usará app_logo_url (que é a Data URI)
+    return dict(app_title_custom=app_title_custom, app_logo_url=app_logo_data_uri) 
 
-# --- ROTAS DE CONFIGURAÇÃO (Título e Logo Personalizados) (ATUALIZADO) ---
+# --- ROTAS DE CONFIGURAÇÃO (Título e Logo Personalizados) (MODIFICADO PARA BASE64) ---
 @app.route('/editar_titulo', methods=['POST'])
 @login_required
 def editar_titulo():
     user_id = get_current_user_id()
     new_title = request.form.get('app_title_new')
     
-    # 1. Certifica que o formulário foi enviado como multipart/form-data
-    if request.method == 'POST':
-        logo_file = request.files.get('logo_file')
-    else:
-        logo_file = None
+    logo_file = request.files.get('logo_file')
     
-    # 1. Tratamento do Upload da Logo
+    update_data = {}
+
+    # 1. Tratamento do Upload da Logo: CONVERSÃO PARA BASE64
     if logo_file and logo_file.filename:
-        # Cria a pasta de upload se não existir
-        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-        
-        # Sanitiza o nome do arquivo para evitar problemas
-        original_filename = secure_filename(logo_file.filename)
-        # Cria um nome de arquivo único e seguro, prefixado pelo ID do usuário
-        # Garante que não haja problemas com path separators (os.path.sep)
-        filename = f"{user_id}_{original_filename.replace(os.path.sep, '_')}"
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        
         try:
-            # Salva o arquivo localmente
-            logo_file.save(filepath)
+            # Lê o conteúdo do arquivo
+            file_bytes = logo_file.read()
+            # Codifica para Base64
+            base64_encoded = base64.b64encode(file_bytes).decode('utf-8')
             
-            # URL relativa que o Flask e o WeasyPrint podem resolver
-            # Usa o nome do arquivo gerado
-            logo_url = url_for('static', filename=f'logos/{filename}')
+            # Obtém o MIME Type para construir a Data URI
+            # Tenta inferir o tipo a partir da extensão ou usa o mimetype do objeto FileStorage
+            mime_type = logo_file.mimetype 
+            if not mime_type:
+                if logo_file.filename.lower().endswith(('.png')):
+                    mime_type = 'image/png'
+                elif logo_file.filename.lower().endswith(('.jpg', '.jpeg')):
+                    mime_type = 'image/jpeg'
+                else:
+                    mime_type = 'application/octet-stream' # Fallback seguro
             
-            # Salva a URL no Firestore
-            db.collection('user_settings').document(user_id).set({'logo_url': logo_url}, merge=True)
+            # Armazena a Base64 e o MIME Type no Firestore
+            update_data['logo_base64'] = base64_encoded
+            update_data['logo_mime_type'] = mime_type
+
         except Exception as e:
-            print(f"Erro ao salvar o logo: {e}")
-            pass # Ignora o erro, apenas o título será atualizado
+            print(f"Erro ao processar o logo para Base64: {e}")
     
     # 2. Tratamento da Mudança de Título
     if new_title:
-        db.collection('user_settings').document(user_id).set({'app_title': new_title}, merge=True)
+        update_data['app_title'] = new_title
+        
+    # 3. Atualiza o Firestore com as novas configurações
+    if update_data:
+        db.collection('user_settings').document(user_id).set(update_data, merge=True)
         
     return redirect(request.referrer or url_for('index'))
 
 
-# --- LISTAS MESTRES (MANTIDAS IGUAIS) ---
+# --- LISTAS MESTRES ---
 def get_master_rooms():
     return [
         {"name": "Sala de Estar"}, {"name": "Sala de Jantar"}, {"name": "Cozinha"},
@@ -316,7 +323,7 @@ def seed_database():
             batch_r.set(doc_ref, r)
         batch_r.commit()
 
-# --- INTELIGÊNCIA DE NARRATIVA (MANTIDO) ---
+# --- INTELIGÊNCIA DE NARRATIVA ---
 def gerar_narrativa_ambiente(itens):
     circuitos_luz = 0
     tomadas_comuns = 0
@@ -372,7 +379,7 @@ def gerar_narrativa_ambiente(itens):
         
     return " ".join(frases)
 
-# --- ROTAS DE AUTENTICAÇÃO (MANTIDO) ---
+# --- ROTAS DE AUTENTICAÇÃO ---
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -400,7 +407,7 @@ def logout():
     session.pop(USER_SESSION_KEY, None)
     return redirect(url_for('login'))
 
-# --- ROTAS DE GERENCIAMENTO (RESTANTE DO CÓDIGO) ---
+# --- ROTAS DE GERENCIAMENTO ---
 
 @app.route('/')
 @login_required 
@@ -643,13 +650,11 @@ def editar_item_projeto():
     
     return redirect(url_for('gerenciar_projeto', project_id=project_id))
 
-# --- PDFS (REATIVADO VIA WEASYPRINT) ---
-
+# --- PDFS (WEASYPRINT) ---
 @app.route('/projeto/<project_id>/pdf/<tipo>')
 @login_required 
 def gerar_pdf(project_id, tipo):
-    # INICIALIZAÇÃO ATÔMICA E NO TOPO DO FLUXO DE PROCESSAMENTO
-    # Isso garante que as variáveis existam no escopo local antes do uso no 'context'.
+    # Inicializa as variáveis de escopo no início (CORREÇÃO DE NameError)
     itens_por_ambiente = {}
     narrativas = {} 
 
@@ -693,10 +698,10 @@ def gerar_pdf(project_id, tipo):
     for ambiente, itens in itens_por_ambiente.items():
         narrativas[ambiente] = gerar_narrativa_ambiente(itens)
     
-    # 1. Obtém o logo_url do contexto (disponível via inject_user_settings)
-    settings_doc = db.collection('user_settings').document(user_id).get()
-    settings = settings_doc.to_dict() if settings_doc.exists else {}
-    logo_url = settings.get('logo_url')
+    # 1. Obtém a DATA URI Base64 do contexto (já injetada pelo context_processor)
+    settings = inject_user_settings()
+    logo_data_uri = settings.get('app_logo_url')
+    app_title_custom = settings.get('app_title_custom')
     
     template = 'relatorios/tecnico.html' if tipo == 'tecnico' else 'relatorios/memorial.html'
     
@@ -707,23 +712,25 @@ def gerar_pdf(project_id, tipo):
     context['narrativas'] = narrativas 
     context['data_hoje'] = datetime.now().strftime("%d/%m/%Y")
     context['cores'] = SUVINIL_CORAL_COLORS
-    context['app_logo_url'] = logo_url
+    
+    # MODIFICADO: Passa a Data URI, não o caminho local
+    context['app_logo_url'] = logo_data_uri
+    context['app_title_custom'] = app_title_custom
     
     html = render_template(template, **context)
     
     try:
-        # IMPORTANT: Adiciona base_url para WeasyPrint resolver static files (como a logo)
+        # A URL base agora é irrelevante para a logo, mas é mantida por segurança
         pdf = HTML(string=html, base_url=request.url_root).write_pdf() 
         response = make_response(pdf)
         response.headers['Content-Type'] = 'application/pdf'
         response.headers['Content-Disposition'] = f'inline; filename={tipo}.pdf'
         return response
     except Exception as e:
-        # Note que se a geração do PDF falhar aqui, o erro não é mais o NameError.
         return f"Erro ao gerar PDF com WeasyPrint. Detalhe: {str(e)}", 500
 
 
-# ROTA PDF LEVANTAMENTO (WEASYPRINT com correção de duplicação de cômodos)
+# ROTA PDF LEVANTAMENTO (WEASYPRINT)
 @app.route('/projeto/<project_id>/pdf/levantamento')
 @login_required 
 def gerar_levantamento(project_id):
@@ -773,10 +780,10 @@ def gerar_levantamento(project_id):
             'locais_str': ", ".join(sorted(list(data['locais'])))
         })
     
-    # 1. Obtém o logo_url do contexto (disponível via inject_user_settings)
-    settings_doc = db.collection('user_settings').document(user_id).get()
-    settings = settings_doc.to_dict() if settings_doc.exists else {}
-    logo_url = settings.get('logo_url')
+    # 1. Obtém a DATA URI Base64 do contexto (já injetada pelo context_processor)
+    settings = inject_user_settings()
+    logo_data_uri = settings.get('app_logo_url')
+    app_title_custom = settings.get('app_title_custom')
 
     # Cria o dicionário de contexto explícito para garantir a passagem das variáveis
     context = {
@@ -784,13 +791,14 @@ def gerar_levantamento(project_id):
         'itens_resumidos': resumo_final,
         'data_hoje': datetime.now().strftime("%d/%m/%Y"),
         'cores': SUVINIL_CORAL_COLORS,
-        'app_logo_url': logo_url
+        'app_logo_url': logo_data_uri,
+        'app_title_custom': app_title_custom
     }
     
     html = render_template('relatorios/levantamento.html', **context)
     
     try:
-        # IMPORTANT: Adiciona base_url para WeasyPrint resolver static files (como a logo)
+        # A URL base agora é irrelevante para a logo, mas é mantida por segurança
         pdf = HTML(string=html, base_url=request.url_root).write_pdf() 
         response = make_response(pdf)
         response.headers['Content-Type'] = 'application/pdf'
@@ -801,7 +809,7 @@ def gerar_levantamento(project_id):
 
 
 if __name__ == '__main__':
-    # Certifica-se de que a pasta de upload existe
+    # Certifica-se de que a pasta de upload existe (Ainda necessária para o Flask)
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     seed_database()
     app.run(debug=True, port=5001)
