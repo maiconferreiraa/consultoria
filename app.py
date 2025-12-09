@@ -39,7 +39,7 @@ class DictObj:
                 setattr(self, key, value)
 
 # --- CONSTANTES DE OPÇÕES ---
-DEFAULT_TOUCH_MODELS = ["Quadrado", "Redondo", "Linear"]
+DEFAULT_TOUCH_MODELS = ["quadrado", "redondo", "linear"]
 
 
 # --- CONFIGURAÇÃO DE CORES SUVINIL & CORAL (PALETA AMPLIADA E ESSENCIAL) ---
@@ -796,29 +796,36 @@ def gerar_levantamento(project_id):
     
     for doc in items_ref:
         data = doc.to_dict()
-        name = data['item_name']
+        
+        # Coleta e limpa os dados para a chave de agregação
+        name = data['item_name'].strip().lower() # Limpa o nome
         qtde = int(data['quantity'])
-        color_name = data.get('item_color', 'Branco Neve Suvinil')
+        color_name_raw = data.get('item_color', 'Branco Neve Suvinil')
         
-        color_hex = SUVINIL_CORAL_COLORS.get(color_name, '#F0F0F0') 
-        if color_hex == '#F0F0F0' and re.match(r'^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$', color_name):
-            color_hex = color_name
+        color_name = color_name_raw.strip().lower() # Limpa o nome da cor
         
-        # A chave de resumo inclui Modelo do Touch e Logo para que itens diferentes sejam separados
-        model_touch = data.get('model_touch', 'quadrado')
+        color_hex = SUVINIL_CORAL_COLORS.get(color_name_raw, '#F0F0F0') 
+        if color_hex == '#F0F0F0' and re.match(r'^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$', color_name_raw):
+            color_hex = color_name_raw
+        
+        # A chave de resumo inclui Modelo do Touch e Logo
+        model_touch_raw = data.get('model_touch', 'quadrado')
+        model_touch = model_touch_raw.strip().lower() # Limpa o modelo do touch
+        
         logo_inserir = data.get('logo_inserir', False)
         
+        # CHAVE DE AGREGAÇÃO - AGORA CONSISTENTE
         key = f"{name} ({color_name}) ({model_touch}) (Logo: {logo_inserir})" 
         
         if key not in resumo: 
             resumo[key] = {
-                'nome': name, 
+                'nome': data['item_name'], # Mantém o nome original para exibição
                 'total': 0, 
                 'locais': set(),  
-                'color_name': color_name,
+                'color_name': color_name_raw, # Mantém o nome da cor original para exibição
                 'color_hex': color_hex,
                 'logo_inserir': logo_inserir, 
-                'model_touch': model_touch
+                'model_touch': model_touch_raw # Mantém o modelo do touch original para exibição
             }
         resumo[key]['total'] += qtde
         resumo[key]['locais'].add(data['room_name'].strip()) 
