@@ -1,121 +1,141 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Levantamento de Dispositivos - {{ app_title_custom }}</title>
+    <title>Levantamento de Compras - {{ app_title_custom }}</title>
     <style>
-        /* Estilos de impressão e PDF */
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 10pt; color: #333; }
         .container { 
             width: 90%; 
             margin: 20px auto; 
-            position: relative; /* Adicionado para ancorar a posição absoluta da logo */
+            position: relative; 
         }
         .header { 
             text-align: center; 
             border-bottom: 2px solid #333; 
             padding-bottom: 10px; 
             margin-bottom: 20px; 
-            padding-top: 50px; /* Adicionado padding para dar espaço para a logo no topo */
+            padding-top: 50px; 
         }
         
-        /* Estilo para a Logo no PDF: Posicionamento Top Left */
         .logo-top-left {
             position: absolute;
-            top: 0; /* Topo do container */
-            left: 0; /* Canto esquerdo */
+            top: 0; 
+            left: 0; 
             z-index: 10;
         }
         .logo-img {
-            height: 65px; 
+            height: 40px; 
         }
-        
-        /* Título Principal (Nome da Empresa) */
+
         .header h1 { color: #000; font-size: 16pt; margin: 0; } 
         .header h2 { font-size: 12pt; margin: 5px 0 0; color: #555; }
         
-        .section-title { font-size: 14pt; color: #333; border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-top: 25px; margin-bottom: 15px; }
+        .section-title { font-size: 14pt; color: #0056b3; border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-top: 25px; margin-bottom: 15px; }
+        .subsection-title { font-size: 12pt; color: #333; margin-top: 15px; margin-bottom: 5px; }
         
-        .client-info table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .client-info th, .client-info td { padding: 5px 0; text-align: left; }
-        .client-info th { width: 20%; color: #555; font-weight: normal; }
-        .client-info td { font-weight: bold; }
+        .item-table { width: 100%; border-collapse: collapse; margin-top: 10px; page-break-inside: auto; }
+        .item-table th, .item-table td { border: 1px solid #eee; padding: 8px; text-align: left; }
+        .item-table th { background-color: #0056b3; color: white; font-weight: bold; }
+        .item-table td { background-color: #f9f9f9; }
         
-        .summary-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .summary-table th, .summary-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        .summary-table th { background-color: #0056b3; color: white; font-weight: bold; }
-        .total-row { background-color: #f0f0f0; font-weight: bold; }
-        
-        /* Classe específica para centralizar texto */
-        .text-center-cell {
-            text-align: center;
-        }
-
         .footer { border-top: 1px solid #ccc; padding-top: 10px; margin-top: 30px; text-align: center; font-size: 8pt; color: #777; }
+        
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .badge-color {
+            display: inline-block; 
+            width: 10px; 
+            height: 10px; 
+            border: 1px solid #333; 
+            vertical-align: middle; 
+            margin-left: 5px; 
+            border-radius: 2px;
+        }
+        .badge-logo {
+            color: #0056b3; /* Cor primária para o SIM */
+            font-weight: bold;
+        }
+        .text-small { font-size: 8pt; color: #666; }
     </style>
 </head>
 <body>
     <div class="container">
         
-        <!-- NOVO CONTAINER PARA A LOGO: Posicionado no canto superior esquerdo -->
         <div class="logo-top-left">
             {% if app_logo_url %}
-                <!-- A URL AGORA É A DATA URI BASE64 EMBUTIDA -->
                 <img src="{{ app_logo_url }}" class="logo-img" alt="">
             {% endif %}
         </div>
-        
+
         <div class="header">
-            <!-- Título principal centralizado (agora sem o logo junto) -->
             <h1 style="margin: 0;">{{ app_title_custom }}</h1>
             
-            <h2>Levantamento Quantitativo de Dispositivos</h2>
+            <h2>Relatório de Levantamento de Compras</h2>
             <p>Data: {{ data_hoje }}</p>
         </div>
 
         <div class="client-info">
             <div class="section-title">Dados do Projeto</div>
-            <table>
-                <tr><th>Cliente:</th><td>{{ project.client.name }}</td><th>Endereço:</th><td>{{ project.client.address }}</td></tr>
-                <tr><th>Telefone:</th><td>{{ project.client.phone }}</td><th>ID do Projeto:</th><td>{{ project.id }}</td></tr>
+            <table style="width: 100%;">
+                <tr><th style="width: 20%;">Projeto ID:</th><td>{{ project.id }}</td></tr>
+                <tr><th>Cliente:</th><td>{{ project.client.name }}</td></tr>
+                
+                <!-- CAMPO TELEFONE REMOVIDO AQUI -->
+                
+                <tr><th>Endereço:</th><td>{{ project.client.address }}</td></tr>
             </table>
         </div>
 
-        <div class="section-title">Resumo Total de Itens (Agrupado por Cor/Acabamento)</div>
+        <div class="section-title">Resumo por Item e Acabamento</div>
 
-        <table class="summary-table">
+        <table class="item-table">
             <thead>
                 <tr>
-                    <th style="width: 50%;">Item de Catálogo e Cor</th>
-                    <th class="text-center-cell" style="width: 10%;">Total</th>
-                    <th style="width: 40%;">Locais de Instalação</th>
+                    <th style="width: 25%;">Item</th>
+                    <th style="width: 12%;">Acabamento</th>
+                    <th style="width: 25%;">Locais Utilizados</th>
+                    <!-- NOVAS COLUNAS DESTACADAS -->
+                    <th style="width: 12%;" class="text-center">Modelo Touch</th>
+                    <th style="width: 10%;" class="text-center">Logo?</th>
+                    <th style="width: 8%;" class="text-center">TOTAL</th>
                 </tr>
             </thead>
             <tbody>
-                {% set total_geral = namespace(value=0) %}
                 {% for item in itens_resumidos %}
                 <tr>
+                    <td>{{ item.nome }}</td>
                     <td>
-                        {{ item.nome }} ({{ item.color_name }})
-                        
-                        {% if item.color_hex %}
-                            <span style="display: inline-block; width: 10px; height: 10px; background-color: {{ item.color_hex }}; border: 1px solid #333; vertical-align: middle; margin-left: 10px; border-radius: 2px;"></span>
+                        {{ item.color_name }}
+                        <span class="badge-color" style="background-color: {{ item.color_hex }};"></span>
+                    </td>
+                    <td><span class="text-small">{{ item.locais_str }}</span></td>
+                    
+                    <!-- NOVO: MODELO DO TOUCH -->
+                    <td class="text-center">
+                        {% if item.model_touch and item.model_touch != 'Não Aplicável' %}
+                            <span style="font-weight: bold;">{{ item.model_touch | capitalize }}</span>
+                        {% else %}
+                            N/A
                         {% endif %}
                     </td>
-                    <td class="text-center-cell">{{ item.total }}</td>
-                    <td>{{ item.locais_str }}</td>
+                    
+                    <!-- NOVO: LOGO SIM/NÃO -->
+                    <td class="text-center">
+                        {% if item.logo_inserir %}
+                            <span class="badge-logo">SIM</span>
+                        {% else %}
+                            NÃO
+                        {% endif %}
+                    </td>
+                    
+                    <td class="text-center" style="font-weight: bold;">{{ item.total }}</td>
                 </tr>
-                {% set total_geral.value = total_geral.value + item.total %}
                 {% endfor %}
-                <tr class="total-row">
-                    <td>Total Geral de Pontos:</td>
-                    <td class="text-center-cell">{{ total_geral.value }}</td>
-                    <td></td>
-                </tr>
             </tbody>
         </table>
 
         <div class="footer">
-            Documento gerado por {{ app_title_custom }}. Este relatório deve ser usado para cotação e controle de estoque.
+            Este é um relatório de compras interno. Todos os totais são cumulativos.
         </div>
     </div>
 </body>

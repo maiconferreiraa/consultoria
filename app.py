@@ -38,6 +38,10 @@ class DictObj:
             for key, value in data.items():
                 setattr(self, key, value)
 
+# --- CONSTANTES DE OPÇÕES ---
+DEFAULT_TOUCH_MODELS = ["Quadrado", "Redondo", "Linear"]
+
+
 # --- CONFIGURAÇÃO DE CORES SUVINIL & CORAL (PALETA AMPLIADA E ESSENCIAL) ---
 # LISTA EXPANDIDA COM OS NOMES E CÓDIGOS HEX MAIS POPULARES E ESSENCIAIS.
 # HEX codes são aproximados e baseados em referências populares da indústria.
@@ -114,9 +118,9 @@ SUVINIL_CORAL_COLORS = {
     "Madeira Mogno": "#C04000",
     "Aço Escovado": "#A9A9A9",
     "Alumínio Fosco": "#BDBDBD",
-    "Prata Metálico": "#C0C0C0", # Adicionado (C0C0C0 é um prata padrão)
-    "Ouro Metálico": "#D4AF37",  # Adicionado
-    "Dourado Brilhante": "#FFD700", # Adicionado
+    "Prata Metálico": "#C0C0C0", 
+    "Ouro Metálico": "#D4AF37",  
+    "Dourado Brilhante": "#FFD700", 
 }
 
 # --- FUNÇÃO DE REVERSE LOOKUP (MANTIDA) ---
@@ -154,7 +158,7 @@ def inject_user_settings():
     user_id = get_current_id()
     
     # --- NOVO PADRÃO: Mensagem de chamada para ação ---
-    app_title_custom = "Nome da sua Empresa | Clica Aqui" 
+    app_title_custom = "Clique aqui e mude o nome da sua empresa" 
     app_logo_data_uri = None
     
     if user_id:
@@ -252,53 +256,53 @@ def get_master_list():
     desc_jacuzzi = "Spa & Relaxamento. Prepare seu momento de descanso remotamente. Ative a hidromassagem e ajuste a temperatura ideal para que sua Jacuzzi esteja perfeita à sua espera ao chegar."
 
     return [
-        {"name": "Automação de Ar Condicionado", "category": "Integração", "description_commercial": desc_ar, "tech_requirement": "Ponto de energia para Módulo IR ou Wi-Fi Integrado."},
-        {"name": "Automação de TV / Vídeo", "category": "Integração", "description_commercial": desc_tv, "tech_requirement": "Ponto de energia para Central de Automação/IR Próximo à TV."},
-        {"name": "Sonorização Ambiente (Zoneamento)", "category": "Integração", "description_commercial": desc_som, "tech_requirement": "Previsão de caixas no forro e cabeamento até o Amplificador."},
-        {"name": "Home Cinema (Cena Integrada)", "category": "Integração", "description_commercial": desc_cinema, "tech_requirement": "Integração Lógica (Requer TV + Som + Iluminação conectados)."},
-        {"name": "Automação de Piscina (Bomba/Luz)", "category": "Integração", "description_commercial": desc_piscina, "tech_requirement": "Módulo Relé na casa de máquinas (Wi-Fi/Zigbee) + Contatora se necessário."},
-        {"name": "Automação de Jacuzzi/Spa", "category": "Integração", "description_commercial": desc_jacuzzi, "tech_requirement": "Módulo de Alta Potência ou Contatora na alimentação da Jacuzzi."},
+        {"name": "Automação de Ar Condicionado", "category": "Integração", "description_commercial": desc_ar, "tech_requirement": "Ponto de energia para Módulo IR ou Wi-Fi Integrado.", "model_touch": "Não Aplicável"},
+        {"name": "Automação de TV / Vídeo", "category": "Integração", "description_commercial": desc_tv, "tech_requirement": "Ponto de energia para Central de Automação/IR Próximo à TV.", "model_touch": "Não Aplicável"},
+        {"name": "Sonorização Ambiente (Zoneamento)", "category": "Integração", "description_commercial": desc_som, "tech_requirement": "Previsão de caixas no forro e cabeamento até o Amplificador.", "model_touch": "Não Aplicável"},
+        {"name": "Home Cinema (Cena Integrada)", "category": "Integração", "description_commercial": desc_cinema, "tech_requirement": "Integração Lógica (Requer TV + Som + Iluminação conectados).", "model_touch": "Não Aplicável"},
+        {"name": "Automação de Piscina (Bomba/Luz)", "category": "Integração", "description_commercial": desc_piscina, "tech_requirement": "Módulo Relé na casa de máquinas (Wi-Fi/Zigbee) + Contatora se necessário.", "model_touch": "Não Aplicável"},
+        {"name": "Automação de Jacuzzi/Spa", "category": "Integração", "description_commercial": desc_jacuzzi, "tech_requirement": "Módulo de Alta Potência ou Contatora na alimentação da Jacuzzi.", "model_touch": "Não Aplicável"},
 
-        {"name": "Zigbee 1 Tecla (4x2)", "category": "Iluminação", "description_commercial": desc_zigbee, "tech_requirement": "Caixa 4x2. F+N+1 Retorno."},
-        {"name": "Zigbee 2 Teclas (4x2)", "category": "Iluminação", "description_commercial": desc_zigbee, "tech_requirement": "Caixa 4x2. F+N+2 Retornos."},
-        {"name": "Zigbee 3 Teclas (4x2)", "category": "Iluminação", "description_commercial": desc_zigbee, "tech_requirement": "Caixa 4x2. F+N+3 Retornos."},
-        {"name": "Zigbee 4 Teclas (4x2)", "category": "Iluminação", "description_commercial": desc_zigbee, "tech_requirement": "Caixa 4x2. F+N+4 Retornos. (Alta Densidade)."},
+        {"name": "Zigbee 1 Tecla (4x2)", "category": "Iluminação", "description_commercial": desc_zigbee, "tech_requirement": "Caixa 4x2. F+N+1 Retorno.", "model_touch": "quadrado"},
+        {"name": "Zigbee 2 Teclas (4x2)", "category": "Iluminação", "description_commercial": desc_zigbee, "tech_requirement": "Caixa 4x2. F+N+2 Retornos.", "model_touch": "quadrado"},
+        {"name": "Zigbee 3 Teclas (4x2)", "category": "Iluminação", "description_commercial": desc_zigbee, "tech_requirement": "Caixa 4x2. F+N+3 Retornos.", "model_touch": "quadrado"},
+        {"name": "Zigbee 4 Teclas (4x2)", "category": "Iluminação", "description_commercial": desc_zigbee, "tech_requirement": "Caixa 4x2. F+N+4 Retornos. (Alta Densidade).", "model_touch": "quadrado"},
 
-        {"name": "Zigbee 1 Tecla (4x4)", "category": "Iluminação", "description_commercial": desc_zigbee_4x4, "tech_requirement": "Caixa 4x4. F+N+1 Retorno."},
-        {"name": "Zigbee 2 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_zigbee_4x4, "tech_requirement": "Caixa 4x4. F+N+2 Retornos."},
-        {"name": "Zigbee 3 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_zigbee_4x4, "tech_requirement": "Caixa 4x4. F+N+3 Retornos."},
-        {"name": "Zigbee 4 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_zigbee_4x4, "tech_requirement": "Caixa 4x4. F+N+4 Retornos."},
-        {"name": "Zigbee 5 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_zigbee_4x4, "tech_requirement": "Caixa 4x4. F+N+5 Retornos."},
-        {"name": "Zigbee 6 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_zigbee_4x4, "tech_requirement": "Caixa 4x4. F+N+6 Retornos."},
-        {"name": "Zigbee 8 Teclas (4x4)", "category": "Iluminação", "description_commercial": "Painel Master 4x4 8 Zonas. Acrílico.", "tech_requirement": "Caixa 4x4. F+N+8 Retornos."},
+        {"name": "Zigbee 1 Tecla (4x4)", "category": "Iluminação", "description_commercial": desc_zigbee_4x4, "tech_requirement": "Caixa 4x4. F+N+1 Retorno.", "model_touch": "quadrado"},
+        {"name": "Zigbee 2 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_zigbee_4x4, "tech_requirement": "Caixa 4x4. F+N+2 Retornos.", "model_touch": "quadrado"},
+        {"name": "Zigbee 3 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_zigbee_4x4, "tech_requirement": "Caixa 4x4. F+N+3 Retornos.", "model_touch": "quadrado"},
+        {"name": "Zigbee 4 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_zigbee_4x4, "tech_requirement": "Caixa 4x4. F+N+4 Retornos.", "model_touch": "quadrado"},
+        {"name": "Zigbee 5 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_zigbee_4x4, "tech_requirement": "Caixa 4x4. F+N+5 Retornos.", "model_touch": "quadrado"},
+        {"name": "Zigbee 6 Teclas (4x4)", "category": "Iluminação", "description_commercial": desc_zigbee_4x4, "tech_requirement": "Caixa 4x4. F+N+6 Retornos.", "model_touch": "quadrado"},
+        {"name": "Zigbee 8 Teclas (4x4)", "category": "Iluminação", "description_commercial": "Painel Master 4x4 8 Zonas. Acrílico.", "tech_requirement": "Caixa 4x4. F+N+8 Retornos.", "model_touch": "quadrado"},
 
-        {"name": "Tomada 20A Vermelha - 1 Módulo (4x2)", "category": "Energia", "description_commercial": desc_tomada_red, "tech_requirement": "Caixa 4x2. Fio 4mm. Circuito Específico."},
-        {"name": "Tomada 20A Vermelha - 2 Módulos (4x2)", "category": "Energia", "description_commercial": "Dupla 20A Vermelha.", "tech_requirement": "Caixa 4x2. Fio 4mm."},
-        {"name": "Tomada 20A Vermelha - 3 Módulos (4x2)", "category": "Energia", "description_commercial": "Tripla 20A Vermelha.", "tech_requirement": "Caixa 4x2."},
-        {"name": "Conjunto: 1 Tom 20A Vermelha + 1 Tom 10A (4x2)", "category": "Energia", "description_commercial": "Misto: 1 Vermelha (20A) + 1 Branca (10A).", "tech_requirement": "Caixa 4x2."},
+        {"name": "Tomada 20A Vermelha - 1 Módulo (4x2)", "category": "Energia", "description_commercial": desc_tomada_red, "tech_requirement": "Caixa 4x2. Fio 4mm. Circuito Específico.", "model_touch": "Não Aplicável"},
+        {"name": "Tomada 20A Vermelha - 2 Módulos (4x2)", "category": "Energia", "description_commercial": "Dupla 20A Vermelha.", "tech_requirement": "Caixa 4x2. Fio 4mm.", "model_touch": "Não Aplicável"},
+        {"name": "Tomada 20A Vermelha - 3 Módulos (4x2)", "category": "Energia", "description_commercial": "Tripla 20A Vermelha.", "tech_requirement": "Caixa 4x2.", "model_touch": "Não Aplicável"},
+        {"name": "Conjunto: 1 Tom 20A Vermelha + 1 Tom 10A (4x2)", "category": "Energia", "description_commercial": "Misto: 1 Vermelha (20A) + 1 Branca (10A).", "tech_requirement": "Caixa 4x2.", "model_touch": "Não Aplicável"},
 
-        {"name": "Tomada 20A Branca - 1 Módulo (4x2)", "category": "Energia", "description_commercial": "20A Branca Pino Grosso.", "tech_requirement": "Caixa 4x2. Fio 4mm."},
-        {"name": "Tomada 20A Branca - 2 Módulos (4x2)", "category": "Energia", "description_commercial": "Dupla 20A Branca.", "tech_requirement": "Caixa 4x2. Fio 4mm."},
-        {"name": "Tomada 20A Branca - 3 Módulos (4x2)", "category": "Energia", "description_commercial": "Tripla 20A Branca.", "tech_requirement": "Caixa 4x2."},
+        {"name": "Tomada 20A Branca - 1 Módulo (4x2)", "category": "Energia", "description_commercial": "20A Branca Pino Grosso.", "tech_requirement": "Caixa 4x2. Fio 4mm.", "model_touch": "Não Aplicável"},
+        {"name": "Tomada 20A Branca - 2 Módulos (4x2)", "category": "Energia", "description_commercial": "Dupla 20A Branca.", "tech_requirement": "Caixa 4x2. Fio 4mm.", "model_touch": "Não Aplicável"},
+        {"name": "Tomada 20A Branca - 3 Módulos (4x2)", "category": "Energia", "description_commercial": "Tripla 20A Branca.", "tech_requirement": "Caixa 4x2.", "model_touch": "Não Aplicável"},
 
-        {"name": "Tomada 10A Branca - 1 Módulo (4x2)", "category": "Energia", "description_commercial": desc_tomada_white, "tech_requirement": "Caixa 4x2. Fio 2.5mm."},
-        {"name": "Tomada 10A Branca - 2 Módulos (4x2)", "category": "Energia", "description_commercial": "Dupla 10A Branca.", "tech_requirement": "Caixa 4x2."},
-        {"name": "Tomada 10A Branca - 3 Módulo (4x2)", "category": "Energia", "description_commercial": "Tripla 10A Branca.", "tech_requirement": "Caixa 4x2."},
+        {"name": "Tomada 10A Branca - 1 Módulo (4x2)", "category": "Energia", "description_commercial": desc_tomada_white, "tech_requirement": "Caixa 4x2. Fio 2.5mm.", "model_touch": "Não Aplicável"},
+        {"name": "Tomada 10A Branca - 2 Módulos (4x2)", "category": "Energia", "description_commercial": "Dupla 10A Branca.", "tech_requirement": "Caixa 4x2.", "model_touch": "Não Aplicável"},
+        {"name": "Tomada 10A Branca - 3 Módulo (4x2)", "category": "Energia", "description_commercial": "Tripla 10A Branca.", "tech_requirement": "Caixa 4x2.", "model_touch": "Não Aplicável"},
 
-        {"name": "Tomadas 4x4 - 4 Módulos (10A)", "category": "Energia", "description_commercial": "Painel 4 Tomadas 10A.", "tech_requirement": "Caixa 4x4."},
-        {"name": "Tomadas 4x4 - 6 Módulos (10A)", "category": "Energia", "description_commercial": "Painel 6 Tomadas 10A.", "tech_requirement": "Caixa 4x4."},
-        {"name": "Tomadas 4x4 - 4 Módulos (20A)", "category": "Energia", "description_commercial": "Painel 4 Tomadas 20A.", "tech_requirement": "Caixa 4x4."},
+        {"name": "Tomadas 4x4 - 4 Módulos (10A)", "category": "Energia", "description_commercial": "Painel 4 Tomadas 10A.", "tech_requirement": "Caixa 4x4.", "model_touch": "Não Aplicável"},
+        {"name": "Tomadas 4x4 - 6 Módulos (10A)", "category": "Energia", "description_commercial": "Painel 6 Tomadas 10A.", "tech_requirement": "Caixa 4x4.", "model_touch": "Não Aplicável"},
+        {"name": "Tomadas 4x4 - 4 Módulos (20A)", "category": "Energia", "description_commercial": "Painel 4 Tomadas 20A.", "tech_requirement": "Caixa 4x4.", "model_touch": "Não Aplicável"},
         
-        {"name": "Misto 4x2: 1 Tom + 1 Tecla", "category": "Misto", "description_commercial": "Híbrido Acrílico.", "tech_requirement": "Caixa 4x2. Separar Circuitos."},
-        {"name": "Misto 4x2: 1 Tom + 2 Teclas", "category": "Misto", "description_commercial": "Híbrido Acrílico.", "tech_requirement": "Caixa 4x2. Separar Circuitos."},
-        {"name": "Misto 4x4: 1 Tom / 1 Tecla", "category": "Misto", "description_commercial": "Painel Misto 4x4.", "tech_requirement": "Caixa 4x4."},
-        {"name": "Misto 4x4: 1 Tom / 5 Teclas", "category": "Misto", "description_commercial": "Painel Alta Densidade (1 Tom + 5 Luz).", "tech_requirement": "Caixa 4x4."},
+        {"name": "Misto 4x2: 1 Tom + 1 Tecla", "category": "Misto", "description_commercial": "Híbrido Acrílico.", "tech_requirement": "Caixa 4x2. Separar Circuitos.", "model_touch": "Não Aplicável"},
+        {"name": "Misto 4x2: 1 Tom + 2 Teclas", "category": "Misto", "description_commercial": "Híbrido Acrílico.", "tech_requirement": "Caixa 4x2. Separar Circuitos.", "model_touch": "Não Aplicável"},
+        {"name": "Misto 4x4: 1 Tom / 1 Tecla", "category": "Misto", "description_commercial": "Painel Misto 4x4.", "tech_requirement": "Caixa 4x4.", "model_touch": "Não Aplicável"},
+        {"name": "Misto 4x4: 1 Tom / 5 Teclas", "category": "Misto", "description_commercial": "Painel Alta Densidade (1 Tom + 5 Luz).", "tech_requirement": "Caixa 4x4.", "model_touch": "Não Aplicável"},
         
-        {"name": "TV + Internet (4x2)", "category": "Dados", "description_commercial": "RJ45 + Coaxial.", "tech_requirement": "Tubulação Dados."},
-        {"name": "Ponto Internet RJ45 (4x2)", "category": "Dados", "description_commercial": "Rede CAT6.", "tech_requirement": "Cabo CAT6."},
-        {"name": "Tampa Cega 4x2", "category": "Infra", "description_commercial": desc_infra, "tech_requirement": "Caixa 4x2."},
-        {"name": "Tampa Cega 4x4", "category": "Infra", "description_commercial": desc_infra, "tech_requirement": "Caixa 4x4."},
-        {"name": "Saída de Fio (Furo)", "category": "Infra", "description_commercial": "Conector Wago."},
+        {"name": "TV + Internet (4x2)", "category": "Dados", "description_commercial": "RJ45 + Coaxial.", "tech_requirement": "Tubulação Dados.", "model_touch": "Não Aplicável"},
+        {"name": "Ponto Internet RJ45 (4x2)", "category": "Dados", "description_commercial": "Rede CAT6.", "tech_requirement": "Cabo CAT6.", "model_touch": "Não Aplicável"},
+        {"name": "Tampa Cega 4x2", "category": "Infra", "description_commercial": desc_infra, "tech_requirement": "Caixa 4x2.", "model_touch": "Não Aplicável"},
+        {"name": "Tampa Cega 4x4", "category": "Infra", "description_commercial": desc_infra, "tech_requirement": "Caixa 4x4.", "model_touch": "Não Aplicável"},
+        {"name": "Saída de Fio (Furo)", "category": "Infra", "description_commercial": "Conector Wago.", "model_touch": "Não Aplicável"},
     ]
 
 # --- POPULAÇÃO INICIAL (SEED) ---
@@ -454,9 +458,16 @@ def excluir_ambiente(room_id):
 @login_required 
 def adicionar_item_catalogo():
     project_id = request.form.get('project_id_redirect')
+    
+    # NOVO CAMPO: Modelo do Touch
+    model_touch = request.form.get('model_touch_new', 'quadrado') 
+    
     novo_item = {
-        "name": request.form['name'], "category": request.form['category'],
-        "description_commercial": request.form['description_commercial'], "tech_requirement": request.form['tech_requirement'],
+        "name": request.form['name'], 
+        "category": request.form['category'],
+        "description_commercial": request.form['description_commercial'], 
+        "tech_requirement": request.form['tech_requirement'],
+        "model_touch": model_touch, # Salva o modelo do touch
         "user_id": get_current_user_id()
     }
     db.collection('catalogo').add(novo_item)
@@ -468,9 +479,16 @@ def adicionar_item_catalogo():
 def editar_item_catalogo():
     project_id = request.form.get('project_id_redirect')
     item_id = request.form.get('item_id')
+
+    # NOVO CAMPO: Modelo do Touch
+    model_touch = request.form.get('model_touch_new', 'quadrado') 
+
     dados = {
-        "name": request.form['name'], "category": request.form['category'],
-        "description_commercial": request.form['description_commercial'], "tech_requirement": request.form['tech_requirement']
+        "name": request.form['name'], 
+        "category": request.form['category'],
+        "description_commercial": request.form['description_commercial'], 
+        "tech_requirement": request.form['tech_requirement'],
+        "model_touch": model_touch, # Salva o modelo do touch
     }
     db.collection('catalogo').document(item_id).update(dados)
     if project_id: return redirect(url_for('gerenciar_projeto', project_id=project_id))
@@ -552,7 +570,10 @@ def gerenciar_projeto(project_id):
     # Mescla as duas listas
     catalogo = global_catalogo + user_catalogo
     
-    # --- 2. Lista de Ambientes: DUAS CONSULTAS ---
+    # 2. Adiciona os modelos de touch padrão para o contexto (facilitar a criação de novos itens)
+    project_obj.touch_models = DEFAULT_TOUCH_MODELS 
+
+    # --- 3. Lista de Ambientes: DUAS CONSULTAS ---
     global_room_ref = db.collection('ambientes').order_by('name').stream()
     global_ambientes = [DictObj(doc.to_dict(), id=doc.id) for doc in global_room_ref]
     
@@ -562,7 +583,7 @@ def gerenciar_projeto(project_id):
     # Mescla as duas listas.
     ambientes = global_ambientes + user_ambientes
     
-    # 3. Itens do Projeto
+    # 4. Itens do Projeto
     items_ref = db.collection('projects').document(project_id).collection('items').stream()
     project_items = []
     itens_por_ambiente = {} 
@@ -572,7 +593,8 @@ def gerenciar_projeto(project_id):
         cat_item_obj = DictObj({
             "name": i_data.get('item_name'), 
             "tech_requirement": i_data.get('tech_requirement'), 
-            "description_commercial": i_data.get('description_commercial')
+            "description_commercial": i_data.get('description_commercial'),
+            "model_touch": i_data.get('model_touch'), # Inclui o modelo do touch do catálogo (ou o que foi salvo no item)
         })
         item_obj = DictObj(i_data, id=doc.id)
         item_obj.catalog_item = cat_item_obj
@@ -591,16 +613,24 @@ def gerenciar_projeto(project_id):
             db.collection('projects').document(project_id).collection('items').document(request.form['delete_item_id']).delete()
         else:
             cat_id = request.form['catalog_item_id']
-            # Obtém o nome/HEX da cor (agora pode ser do select ou do campo de texto livre)
             item_color = request.form.get('item_color')
             
-            # NOVO: Se for um código HEX, tenta reverter para o nome do preset
+            # NOVO CAMPO: Inserir Logo (SIM/NÃO)
+            logo_inserir = request.form.get('logo_inserir') == 'SIM' # Mapeia 'SIM' para True
+            
+            # NOVO CAMPO: Modelo do Touch (se foi sobrescrito no projeto)
+            model_touch_override = request.form.get('model_touch_override')
+
             if item_color and re.match(r'^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$', item_color):
                 matched_name = get_color_name_from_hex(item_color, SUVINIL_CORAL_COLORS)
                 if matched_name:
-                    item_color = matched_name # Salva o nome do preset (ex: "Branco Neve Suvinil")
+                    item_color = matched_name 
             
             cat_doc = db.collection('catalogo').document(cat_id).get().to_dict()
+
+            # Define o modelo do touch: usa o override do projeto se existir, senão usa o do catálogo
+            final_model_touch = model_touch_override if model_touch_override else cat_doc.get('model_touch', 'quadrado')
+
             item_data = {
                 "room_name": request.form['room_name'],
                 "quantity": int(request.form['quantity']),
@@ -609,7 +639,9 @@ def gerenciar_projeto(project_id):
                 "item_name": cat_doc['name'],
                 "tech_requirement": cat_doc['tech_requirement'],
                 "description_commercial": cat_doc['description_commercial'],
-                "item_color": item_color # Salva o nome ou o HEX não reconhecido
+                "item_color": item_color,
+                "logo_inserir": logo_inserir,          # NOVO: Inserir Logo (True/False)
+                "model_touch": final_model_touch,    # NOVO: Modelo do Touch
             }
             db.collection('projects').document(project_id).collection('items').add(item_data)
         return redirect(url_for('gerenciar_projeto', project_id=project_id))
@@ -618,7 +650,7 @@ def gerenciar_projeto(project_id):
         project=project_obj, 
         catalogo=catalogo, 
         ambientes=ambientes, 
-        cores=SUVINIL_CORAL_COLORS, # Passa as cores
+        cores=SUVINIL_CORAL_COLORS, 
         itens_por_ambiente=itens_por_ambiente, 
         now=datetime.now()
     )
@@ -632,12 +664,21 @@ def editar_item_projeto():
     
     item_color = request.form.get('item_color')
     
+    # NOVO CAMPO: Inserir Logo (SIM/NÃO)
+    logo_inserir = request.form.get('logo_inserir') == 'SIM' # Mapeia 'SIM' para True
+    
+    # NOVO CAMPO: Modelo do Touch (sobrescrito no projeto)
+    model_touch_override = request.form.get('model_touch_override')
+
     if item_color and re.match(r'^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$', item_color):
         matched_name = get_color_name_from_hex(item_color, SUVINIL_CORAL_COLORS)
         if matched_name:
             item_color = matched_name 
             
     cat_doc = db.collection('catalogo').document(cat_id).get().to_dict()
+
+    # Define o modelo do touch: usa o override do projeto se existir, senão usa o do catálogo
+    final_model_touch = model_touch_override if model_touch_override else cat_doc.get('model_touch', 'quadrado')
     
     db.collection('projects').document(project_id).collection('items').document(item_id).update({
         "room_name": request.form['room_name'],
@@ -647,7 +688,9 @@ def editar_item_projeto():
         "item_name": cat_doc['name'],
         "tech_requirement": cat_doc['tech_requirement'],
         "description_commercial": cat_doc['description_commercial'],
-        "item_color": item_color
+        "item_color": item_color,
+        "logo_inserir": logo_inserir,          # NOVO: Inserir Logo (True/False)
+        "model_touch": final_model_touch,    # NOVO: Modelo do Touch
     })
     
     return redirect(url_for('gerenciar_projeto', project_id=project_id))
@@ -678,7 +721,8 @@ def gerar_pdf(project_id, tipo):
         cat_obj = DictObj({
             "name": data['item_name'], 
             "tech_requirement": data['tech_requirement'], 
-            "description_commercial": data['description_commercial']
+            "description_commercial": data['description_commercial'],
+            "model_touch": data.get('model_touch', 'quadrado'), # NOVO: Modelo Touch
         })
         
         color_name = data.get('item_color', 'Branco Neve Suvinil')
@@ -691,6 +735,7 @@ def gerar_pdf(project_id, tipo):
         item_obj.catalog_item = cat_obj
         item_obj.color_name = color_name
         item_obj.color_hex = color_hex
+        item_obj.logo_inserir = data.get('logo_inserir', False) # NOVO: Logo Sim/Não
         
         room = data['room_name']
         if room not in itens_por_ambiente: itens_por_ambiente[room] = []
@@ -759,7 +804,11 @@ def gerar_levantamento(project_id):
         if color_hex == '#F0F0F0' and re.match(r'^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$', color_name):
             color_hex = color_name
         
-        key = f"{name} ({color_name})" 
+        # A chave de resumo inclui Modelo do Touch e Logo para que itens diferentes sejam separados
+        model_touch = data.get('model_touch', 'quadrado')
+        logo_inserir = data.get('logo_inserir', False)
+        
+        key = f"{name} ({color_name}) ({model_touch}) (Logo: {logo_inserir})" 
         
         if key not in resumo: 
             resumo[key] = {
@@ -767,7 +816,9 @@ def gerar_levantamento(project_id):
                 'total': 0, 
                 'locais': set(),  
                 'color_name': color_name,
-                'color_hex': color_hex
+                'color_hex': color_hex,
+                'logo_inserir': logo_inserir, 
+                'model_touch': model_touch
             }
         resumo[key]['total'] += qtde
         resumo[key]['locais'].add(data['room_name'].strip()) 
@@ -779,7 +830,9 @@ def gerar_levantamento(project_id):
             'total': data['total'],
             'color_name': data['color_name'],
             'color_hex': data['color_hex'],
-            'locais_str': ", ".join(sorted(list(data['locais'])))
+            'locais_str': ", ".join(sorted(list(data['locais']))),
+            'logo_inserir': data['logo_inserir'],
+            'model_touch': data['model_touch']
         })
     
     # 1. Obtém a DATA URI Base64 do contexto (já injetada pelo context_processor)

@@ -7,21 +7,21 @@
         .container { 
             width: 90%; 
             margin: 20px auto; 
-            position: relative; /* Adicionado para ancorar a posição absoluta da logo */
+            position: relative; 
         }
         .header { 
             text-align: center; 
             border-bottom: 2px solid #333; 
             padding-bottom: 10px; 
             margin-bottom: 20px; 
-            padding-top: 50px; /* Adicionado padding para dar espaço para a logo no topo */
+            padding-top: 50px; 
         }
         
         /* Estilo para a Logo no PDF: Posicionamento Top Left */
         .logo-top-left {
             position: absolute;
-            top: 0; /* Topo do container */
-            left: 0; /* Canto esquerdo */
+            top: 0; 
+            left: 0; 
             z-index: 10;
         }
         .logo-img {
@@ -45,8 +45,34 @@
         .item-table th { background-color: #f0f0f0; font-weight: bold; }
         .item-table tr { page-break-inside: avoid; page-break-after: auto; }
         
-        .narrative p { margin-top: 0; margin-bottom: 15px; line-height: 1.4; }
-        .narrative strong { color: #0056b3; }
+        /* NOVO DESIGN PARA A NARRATIVA INTELIGENTE */
+        .narrative-box {
+            background-color: #f0f8ff; /* Fundo azul claro para destaque */
+            border-left: 5px solid #0056b3; /* Barra vertical na cor principal */
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-style: italic;
+            line-height: 1.5;
+            color: #444;
+        }
+        .narrative-box .narrative-content {
+            overflow: hidden; /* Para limpar o float do ícone */
+        }
+        .narrative-box .icon {
+            color: #0056b3;
+            font-size: 14pt;
+            margin-right: 10px;
+            float: left;
+        }
+        .narrative-box p { 
+            margin: 0;
+        }
+        .narrative-box strong { 
+            color: #003d73; /* Azul escuro, mais legível no contexto da caixa */
+            font-style: normal;
+        }
+        /* FIM NOVO DESIGN */
         
         .footer { border-top: 1px solid #ccc; padding-top: 10px; margin-top: 30px; text-align: center; font-size: 8pt; color: #777; }
 
@@ -89,10 +115,14 @@
                     <i class="bi bi-geo-alt-fill"></i> {{ room_name }}
                 </div>
                 
-                {# CORREÇÃO DE FALLBACK: Aplica o filtro default({}, {}) para evitar UndefinedError #}
-                {% if (narratives | default({}))[room_name] %}
-                    <div class="narrative">
-                        <p>{{ (narratives | default({}))[room_name] | safe }}</p>
+                {# CORREÇÃO: Usando a variável 'narrativas' conforme definido no app.py e aplicando o novo design #}
+                {% if (narrativas | default({}))[room_name] %}
+                    <div class="narrative-box">
+                        <!-- Ícone de Destaque -->
+                        <span class="icon">&#9889;</span> 
+                        <div class="narrative-content">
+                            <p>{{ (narrativas | default({}))[room_name] | safe }}</p>
+                        </div>
                     </div>
                 {% endif %}
 

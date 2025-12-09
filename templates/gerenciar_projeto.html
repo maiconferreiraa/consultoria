@@ -105,6 +105,22 @@
                     </div>
                     <div class="mb-3"><label class="form-label text-white">Descrição (Memorial)</label><textarea name="description_commercial" class="form-control" rows="4" required></textarea></div>
                     <div class="mb-3"><label class="form-label text-white">Req. Técnico</label><input type="text" name="tech_requirement" class="form-control"></div>
+                    
+                    <!-- NOVO CAMPO: MODELO DO TOUCH -->
+                    <div class="mb-3">
+                        <label class="form-label text-white">Modelo do Touch</label>
+                        <input type="text" name="model_touch_new" class="form-control" 
+                               list="defaultTouchModelsList" 
+                               placeholder="Ex: Quadrado, Redondo, ou cadastre novo">
+                        <!-- DATALIST PARA SUGESTÕES (Disponível em todo o escopo do template) -->
+                        <datalist id="defaultTouchModelsList">
+                            {% for model in project.touch_models %}
+                                <option value="{{ model }}">
+                            {% endfor %}
+                        </datalist>
+                    </div>
+                    <!-- FIM NOVO CAMPO -->
+
                 </div>
                 <div class="modal-footer border-secondary"><button type="submit" class="btn btn-success">Salvar</button></div>
             </form>
@@ -125,13 +141,14 @@
                         <tr>
                             <td>{{ item.name }}</td><td>{{ item.category }}</td><td><small>{{ item.description_commercial[:50] }}...</small></td>
                             <td class="text-end">
-                                <!-- Passando os dados para o ModalEditarItem via data-* attributes -->
+                                <!-- Passando os dados para o ModalEditarItem via data-* attributes, incluindo model_touch -->
                                 <button class="btn btn-sm btn-outline-warning border-0 btn-edit-catalogo" 
                                         data-id="{{ item.id }}"
                                         data-name="{{ item.name }}"
                                         data-category="{{ item.category }}"
                                         data-desc="{{ item.description_commercial }}"
                                         data-tech="{{ item.tech_requirement }}"
+                                        data-touch="{{ item.model_touch | default('quadrado') }}"
                                         title="Editar Item do Catálogo"
                                         data-bs-toggle="modal" 
                                         data-bs-target="#modalEditarItem">
@@ -160,7 +177,15 @@
                     <input type="text" name="name" id="edit_name" class="form-control mb-3" required>
                     <select name="category" id="edit_category" class="form-select mb-3"><option value="Iluminação">Iluminação</option><option value="Energia">Energia</option><option value="Integração">Integração</option><option value="Misto">Misto</option><option value="Dados">Dados</option><option value="Infra">Infra</option></select>
                     <textarea name="description_commercial" id="edit_desc" class="form-control mb-3" rows="4"></textarea>
-                    <input type="text" name="tech_requirement" id="edit_tech" class="form-control">
+                    <input type="text" name="tech_requirement" id="edit_tech" class="form-control mb-3">
+                    
+                    <!-- CAMPO DE EDIÇÃO: MODELO DO TOUCH -->
+                    <div class="mb-3">
+                        <label class="form-label text-white">Modelo do Touch</label>
+                        <input type="text" name="model_touch_new" id="edit_model_touch" class="form-control" list="defaultTouchModelsList" placeholder="Ex: Quadrado, Redondo, ou cadastre novo">
+                    </div>
+                    <!-- FIM CAMPO DE EDIÇÃO -->
+
                 </div>
                 <div class="modal-footer border-secondary"><button type="submit" class="btn btn-warning">Salvar</button></div>
             </form>
@@ -265,6 +290,26 @@
                         <label class="form-label fw-bold">Qtd</label>
                         <input type="number" name="quantity" id="proj_edit_qty_{{ item.id }}" class="form-control text-center" min="1" value="{{ item.quantity }}" required>
                     </div>
+
+                    <!-- NOVO CAMPO: INSERIR LOGO -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Inserir Logo da Empresa?</label>
+                        <select name="logo_inserir" class="form-select">
+                            <option value="NAO" {% if not item.logo_inserir %}selected{% endif %}>NÃO</option>
+                            <option value="SIM" {% if item.logo_inserir %}selected{% endif %}>SIM</option>
+                        </select>
+                    </div>
+                    
+                    <!-- NOVO CAMPO: MODELO DO TOUCH -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Modelo do Touch (Opção)</label>
+                        <input type="text" name="model_touch_override" 
+                               class="form-control" 
+                               list="defaultTouchModelsList" 
+                               placeholder="Padrão: {{ item.catalog_item.model_touch | default('Quadrado') }}" 
+                               value="{{ item.model_touch | default('') }}">
+                    </div>
+
                     <div class="mb-3">
                         <label class="form-label fw-bold">Obs</label>
                         <input type="text" name="obs" id="proj_edit_obs_{{ item.id }}" class="form-control" value="{{ item.obs }}">
@@ -310,12 +355,11 @@
     <div class="tab-pane fade show active" id="cadastro">
         <div class="card mb-4">
             <div class="card-body p-3">
-                <!-- FORMULÁRIO: Aplicando col-md-12 para forçar quebra de linha no tablet (empilhamento vertical) -->
-                <form method="POST" class="row g-3">
+                <!-- FORMULÁRIO DE ADIÇÃO DE ITENS -->
+                <form method="POST" class="row g-3 align-items-end">
                     
-                    <!-- AMBIENTE: col-12 em mobile/tablet, col-lg-3 em desktop -->
-                    <!-- FORÇADO A OCUPAR 100% (col-md-12) NO TABLET PARA GARANTIR NOVA LINHA -->
-                    <div class="col-12 col-md-12 col-lg-3">
+                    <!-- AMBIENTE: col-lg-2 -->
+                    <div class="col-12 col-md-6 col-lg-2">
                         <label class="form-label small text-muted fw-bold">Ambiente</label>
                         <div class="input-group">
                             <select name="room_name" class="form-select" required>
@@ -329,9 +373,8 @@
                         </div>
                     </div>
 
-                    <!-- DISPOSITIVO (ITEM): col-12 em mobile/tablet, col-lg-3 em desktop -->
-                    <!-- FORÇADO A OCUPAR 100% (col-md-12) NO TABLET PARA GARANTIR NOVA LINHA -->
-                    <div class="col-12 col-md-12 col-lg-3">
+                    <!-- DISPOSITIVO (ITEM): col-lg-3 -->
+                    <div class="col-12 col-md-6 col-lg-3">
                         <label class="form-label small text-muted fw-bold">Dispositivo</label>
                         <div class="input-group">
                             <select name="catalog_item_id" id="item_catalog_select" class="form-select" required>
@@ -345,8 +388,8 @@
                         </div>
                     </div>
                     
-                    <!-- COR (ACABAMENTO): FORÇADO EM col-12/col-md-12 para aparecer na sua própria linha -->
-                    <div class="col-12 col-md-12 col-lg-3">
+                    <!-- COR (ACABAMENTO): col-lg-2 -->
+                    <div class="col-12 col-md-6 col-lg-2">
                         <label class="form-label small text-muted fw-bold">Cor (Acabamento)</label>
                         <div class="input-group">
                             <!-- Select de Presets -->
@@ -380,19 +423,38 @@
                                   style="width: 2.5rem; background-color: {{ first_hex }}; border: 1px solid #444; border-radius: 0 0.25rem 0.25rem 0;"></span>
                         </div>
                     </div>
+                    
+                    <!-- NOVO CAMPO: MODELO DO TOUCH (NOVO) -->
+                    <div class="col-12 col-md-6 col-lg-2">
+                        <label class="form-label small text-muted fw-bold">Modelo Touch</label>
+                        <input type="text" name="model_touch_override" 
+                               class="form-control" 
+                               list="defaultTouchModelsList" 
+                               placeholder="Padrão do Catálogo"
+                               value="">
+                    </div>
+                    
+                    <!-- NOVO CAMPO: LOGO INSERIR -->
+                    <div class="col-12 col-md-3 col-lg-1">
+                        <label class="form-label small text-muted fw-bold">Inserir Logo?</label>
+                        <select name="logo_inserir" class="form-select">
+                            <option value="NAO">NÃO</option>
+                            <option value="SIM">SIM</option>
+                        </select>
+                    </div>
 
-                    <!-- QUANTIDADE: col-6 para mobile/tablet (divide a linha), col-lg-1 em desktop -->
-                    <div class="col-6 col-md-6 col-lg-1">
+                    <!-- QUANTIDADE: col-lg-1 -->
+                    <div class="col-6 col-md-3 col-lg-1">
                         <label class="form-label small text-muted fw-bold">Qtd</label>
                         <input type="number" name="quantity" value="1" min="1" class="form-control text-center">
                     </div>
 
-                    <!-- BOTÃO ADICIONAR: col-6 para mobile/tablet (divide a linha), col-lg-2 em desktop -->
-                    <div class="col-6 col-md-6 col-lg-2 d-grid">
-                        <label class="d-none d-lg-block">&nbsp;</label>
+                    <!-- BOTÃO ADICIONAR: col-lg-1 -->
+                    <div class="col-6 col-md-6 col-lg-1 d-grid">
                         <button type="submit" class="btn btn-primary">Add</button>
                     </div>
                     
+                    <!-- OBSERVAÇÃO -->
                     <div class="col-12"><input type="text" name="obs" class="form-control" placeholder="Obs: Localização específica, detalhes extras..."></div>
                 </form>
             </div>
@@ -406,7 +468,13 @@
                         {% for item in project.items %}
                         <tr>
                             <td class="fw-bold text-primary">{{ item.room_name }}</td>
-                            <td>{{ item.catalog_item.name }}</td>
+                            <td>
+                                {{ item.catalog_item.name }}
+                                {% if item.logo_inserir %}
+                                    <i class="bi bi-star-fill text-warning ms-1" title="Logo da Empresa Inserida"></i>
+                                {% endif %}
+                                <small class="text-info d-block">{{ item.model_touch }}</small>
+                            </td>
                             
                             <!-- Coluna COR -->
                             {% set item_color_val = item.item_color | default('Branco Neve Suvinil') %}
@@ -502,12 +570,19 @@
         const category = button.getAttribute('data-category');
         const desc = button.getAttribute('data-desc');
         const tech = button.getAttribute('data-tech');
+        const touch = button.getAttribute('data-touch'); // Valor do modelo do touch
         
         document.getElementById('edit_item_id').value = id;
         document.getElementById('edit_name').value = name;
         document.getElementById('edit_category').value = category; 
         document.getElementById('edit_desc').value = desc;
         document.getElementById('edit_tech').value = tech;
+        
+        // CORREÇÃO AQUI: Garante que o input do modelo do touch seja preenchido
+        const editTouchInput = document.getElementById('edit_model_touch');
+        if (editTouchInput) {
+             editTouchInput.value = touch || ''; // Define o valor, ou string vazia se for nulo
+        }
     }
     
     function prepararExclusaoItemProjeto(itemId, itemName) {
