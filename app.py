@@ -158,7 +158,7 @@ def inject_user_settings():
     user_id = get_current_id()
     
     # --- NOVO PADRÃO: Mensagem de chamada para ação ---
-    app_title_custom = "Clique aqui e mude o nome da sua empresa" 
+    app_title_custom = "Clique aqui |Logo |Empresa" 
     app_logo_data_uri = None
     
     if user_id:
