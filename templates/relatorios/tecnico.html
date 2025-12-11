@@ -3,30 +3,44 @@
 <head>
     <title>Relatório Técnico - {{ app_title_custom }}</title>
     <style>
+        @page { size: A4; margin: 2cm; } /* Margem de 2cm para melhor impressão */
+        
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 10pt; color: #333; }
         .container { 
             width: 90%; 
-            margin: 20px auto; 
-            position: relative; /* Adicionado para ancorar a posição absoluta da logo */
-        }
-        .header { 
-            text-align: center; 
-            border-bottom: 2px solid #333; 
-            padding-bottom: 10px; 
-            margin-bottom: 20px; 
-            padding-top: 50px; /* Adicionado padding para dar espaço para a logo no topo */
+            margin: 0 auto; /* Ajuste para centralizar no corpo do PDF */
+            position: relative;
         }
         
-        /* Estilo para a Logo no PDF: Posicionamento Top Left */
+        /* Estilo do cabeçalho de página fixo (WeasyPrint) */
+        .page-header {
+            position: running(header);
+            width: 100%;
+            height: 1.5cm;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #ccc;
+            /* REMOVIDO: text-align: center; */
+            position: relative; /* Garante que elementos absolutos dentro dele funcionem */
+        }
+
+        /* O H E A D E R P R I N C I P A L (que contém o logo e títulos) */
+        
+        .header { 
+            text-align: center; 
+            padding-bottom: 10px; 
+            margin-bottom: 20px; 
+        }
+        
+        /* Estilo para a Logo no PDF: Posicionamento Top Left (dentro do Page Header) */
         .logo-top-left {
             position: absolute;
-            top: 0; /* Topo do container */
-            left: 0; /* Canto esquerdo */
+            top: 5px; /* Ajuste para o topo real do cabeçalho */
+            left: 0; 
             z-index: 10;
         }
         .logo-img {
-            height: 65px; 
-            /* Esta regra de CSS é mantida para garantir a altura correta no PDF */
+            height: 65px; /* Ajuste para a altura do cabeçalho de página */
+            vertical-align: middle;
         }
 
         .header h1 { color: #000; font-size: 16pt; margin: 0; } 
@@ -53,7 +67,7 @@
         /* Estilo para quebra de página antes do ambiente */
         .room-section { page-break-before: auto; }
         
-        /* NOVO ESTILO PARA DESTAQUE TÉCNICO */
+        /* ESTILO DE DESTAQUE: APENAS PARA REQUISITO TÉCNICO E ÍCONES */
         .highlight-tech {
             color: #dc3345; /* Vermelho */
             font-weight: bold;
@@ -66,25 +80,56 @@
             margin-right: 5px;
             vertical-align: middle;
         }
+        /* ESTILO DA OBSERVAÇÃO: PRETO E NEGITO (USANDO O PAI BODY) */
+        .obs-normal {
+            font-weight: bold;
+            /* A cor será herdada do <body> (preto #333) */
+        }
+
+        /* Definição do Page Header no CSS */
+        @page {
+            @top-center {
+                content: element(header);
+            }
+            @bottom-center {
+                content: "Documento gerado por {{ app_title_custom }} | Página " counter(page) " de " counter(pages);
+                font-size: 8pt;
+                color: #777;
+            }
+        }
+        
+        /* NOVO: Estilo para alinhar o texto do cabeçalho ao centro, agora que o pai não tem alinhamento */
+        .header-text-container {
+             text-align: center;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
+    
+    <!-- Novo elemento Header para ser usado no @page top-center -->
+    <!-- REMOVIDO o style="text-align: center;" do page-header -->
+    <div class="page-header">
         
-        <!-- NOVO CONTAINER PARA A LOGO: Posicionado no canto superior esquerdo -->
+        <!-- LOGO (POSICIONADA ABSOLUTAMENTE NO CANTO ESQUERDO) -->
         <div class="logo-top-left">
             {% if app_logo_url %}
-                <!-- A URL AGORA É A DATA URI BASE64 EMBUTIDA -->
-                <img src="{{ app_logo_url }}" class="logo-img" alt="">
+                <img src="{{ app_logo_url }}" class="logo-img" alt="Logo">
             {% endif %}
         </div>
+        
+        <!-- TEXTO CENTRALIZADO (envolvido para centralizar o texto) -->
+        <div class="header-text-container">
+            <h1 style="color: #000; font-size: 14pt; margin: 0;">{{ app_title_custom }}</h1>
+            <h2 style="font-size: 10pt; color: #555; margin: 2px 0 0;">Relatório Técnico de Infraestrutura</h2>
+        </div>
+    </div>
 
-        <div class="header">
-            <!-- Título principal centralizado (agora sem o logo junto) -->
-            <h1 style="margin: 0;">{{ app_title_custom }}</h1>
-            
-            <h2>Relatório Técnico de Infraestrutura e Requisitos</h2>
-            <p>Data: {{ data_hoje }}</p>
+    <div class="container">
+        
+        <!-- HEADER (APENAS CONTEÚDO VISÍVEL NA PRIMEIRA PÁGINA) -->
+        <div class="header" style="border-bottom: 2px solid #0056b3; padding-bottom: 10px; margin-top: 20px;">
+            <h1 style="color: #0056b3; font-size: 18pt;">ROTEIRO TÉCNICO DE INSTALAÇÃO</h1>
+            <p style="margin: 5px 0 0; color: #777;">Data da Geração: {{ data_hoje }}</p>
         </div>
 
         <div class="client-info">
@@ -103,37 +148,43 @@
                     {{ room_name }}
                 </div>
                 
-                {# CORREÇÃO DE FALLBACK: Aplica o filtro default({}, {}) para garantir que narratives não seja undefined #}
-                {% if (narratives | default({}))[room_name] %}
-                    <div class="narrative">
-                        <p><strong>Resumo:</strong> {{ (narratives | default({}))[room_name] | safe }}</p>
-                    </div>
-                {% endif %}
+                {# REMOVIDO: Bloco condicional da narrativa/resumo #}
 
                 <table class="item-table">
                     <thead>
                         <tr>
-                            <th style="width: 10%;">Qtd</th>
-                            <th style="width: 30%;">Item</th>
-                            <th style="width: 60%;">Requisito Técnico (Eletricista / Instalador)</th>
+                            <th style="width: 8%;">Qtd</th>
+                            <th style="width: 25%;">Item</th>
+                            <th style="width: 35%;">Requisito Técnico (Eletricista)</th>
+                            <th style="width: 32%;">Observação Específica</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for item in items %}
                         <tr>
                             <td>{{ item.quantity }}</td>
-                            <td>{{ item.catalog_item.name }}</td>
+                            <td>
+                                <strong>{{ item.catalog_item.name }}</strong>
+                                <br><small style="color: #777;">{{ item.model_touch | default('N/A') }}</small>
+                            </td>
                             <td>
                                 {% set tech_req = item.catalog_item.tech_requirement | default('Verificar alimentação e dados.') %}
                                 
-                                {# Adiciona ícone de atenção para dispositivos Zigbee (que requerem atenção especial) #}
-                                {% if 'Zigbee' in item.catalog_item.name or 'Painel' in item.catalog_item.name %}
+                                {# Aplica ícone de atenção para dispositivos de automação #}
+                                {% if 'Zigbee' in item.catalog_item.name or 'Painel' in item.catalog_item.name or 'Integração' in item.catalog_item.category %}
                                     <span class="attention-icon">&#9888;</span>
                                 {% endif %}
 
-                                {# Garante destaque em vermelho e negrito (destaque de requisito técnico) #}
+                                {# Destaque em vermelho e negrito (Requisito Técnico) #}
                                 <span class="highlight-tech">
                                     {{ tech_req }}
+                                </span>
+                            </td>
+                            
+                            <!-- CAMPO: OBSERVAÇÃO ESPECÍFICA (PRETO E NEGITO) -->
+                            <td>
+                                <span class="obs-normal">
+                                    {{ item.obs | default('N/A') }}
                                 </span>
                             </td>
                         </tr>
@@ -143,9 +194,9 @@
             </div>
         {% endfor %}
 
-        <div class="footer">
-            Documento gerado por {{ app_title_custom }}. Este relatório detalha a infraestrutura elétrica e de dados necessária.
-        </div>
     </div>
+    
+    <!-- O rodapé foi movido para a regra @page bottom-center -->
+    
 </body>
 </html>
