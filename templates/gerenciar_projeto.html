@@ -2,6 +2,29 @@
 {% extends "base.html" %}
 
 {% block content %}
+<!-- Bloco de Mensagem de Sucesso (para edição de cliente ou item) -->
+{% if success_message %}
+<div id="success-alert" class="alert alert-success alert-dismissible fade show" role="alert" style="position: fixed; top: 10px; right: 10px; z-index: 1050; min-width: 300px;">
+    <strong>Sucesso!</strong> {{ success_message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+<script>
+    // Função para auto-ocultar a mensagem após 2 segundos
+    document.addEventListener('DOMContentLoaded', function() {
+        const alertElement = document.getElementById('success-alert');
+        if (alertElement) {
+            // Fecha o alerta automaticamente após 2000ms (2 segundos)
+            setTimeout(() => {
+                // Usa a API do Bootstrap para fechar o alerta (necessário que o bootstrap.bundle.min.js esteja carregado)
+                const bootstrapAlert = bootstrap.Alert.getOrCreateInstance(alertElement);
+                bootstrapAlert.close();
+            }, 4000);
+        }
+    });
+</script>
+{% endif %}
+<!-- Fim do Bloco de Mensagem de Sucesso -->
+
 <head>
     <!-- CSS padrão: Apenas mantendo o table-responsive para evitar overflow horizontal -->
     <style>

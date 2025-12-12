@@ -10,28 +10,38 @@
             </div>
             
             <div class="card-body p-4 p-md-5">
-                <form method="POST">
+                <!-- O action POST é para a rota 'editar_projeto' no app.py -->
+                <form action="{{ url_for('editar_projeto', project_id=project.id) }}" method="POST">
                     
                     <div class="mb-4">
                         <label class="form-label text-uppercase small fw-bold text-muted">Nome do Cliente</label>
-                        <input type="text" name="cliente" value="{{ project.client_name }}" class="form-control form-control-lg border-secondary" required>
+                        <!-- CORREÇÃO DE VALOR (Garante que o valor atual seja carregado ou use string vazia) -->
+                        <input type="text" name="cliente" 
+                               value="{{ project.client_name | default('') }}" 
+                               class="form-control form-control-lg border-secondary" required>
                     </div>
 
                     <div class="mb-4">
                         <label class="form-label text-uppercase small fw-bold text-muted">Telefone</label>
-                        <input type="text" name="telefone" value="{{ project.client_phone }}" class="form-control form-control-lg border-secondary">
+                        <!-- CORREÇÃO DE VALOR (Garante que o valor atual seja carregado ou use string vazia) -->
+                        <input type="text" name="telefone" 
+                               value="{{ project.client_phone | default('') }}" 
+                               class="form-control form-control-lg border-secondary">
                     </div>
 
                     <div class="mb-5">
                         <label class="form-label text-uppercase small fw-bold text-muted">Endereço</label>
-                        <input type="text" name="endereco" value="{{ project.client_address }}" class="form-control form-control-lg border-secondary" required>
+                        <!-- CORREÇÃO DE VALOR (Garante que o valor atual seja carregado ou use string vazia) -->
+                        <input type="text" name="endereco" 
+                               value="{{ project.client_address | default('') }}" 
+                               class="form-control form-control-lg border-secondary" required>
                     </div>
 
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-warning btn-lg text-dark fw-bold">
                             <i class="bi bi-save"></i> Salvar Alterações
                         </button>
-                        <a href="{{ url_for('index') }}" class="btn btn-outline-light btn-lg">
+                        <a href="{{ url_for('gerenciar_projeto', project_id=project.id) }}" class="btn btn-outline-light btn-lg">
                             Cancelar
                         </a>
                     </div>
