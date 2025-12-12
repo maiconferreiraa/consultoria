@@ -1,202 +1,195 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Relatório Técnico - {{ app_title_custom }}</title>
-    <style>
-        @page { size: A4; margin: 2cm; } /* Margem de 2cm para melhor impressão */
-        
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 10pt; color: #333; }
-        .container { 
-            width: 90%; 
-            margin: 0 auto; /* Ajuste para centralizar no corpo do PDF */
-            position: relative;
-        }
-        
-        /* Estilo do cabeçalho de página fixo (WeasyPrint) */
-        .page-header {
-            position: running(header);
-            width: 100%;
-            height: 1.5cm;
-            padding-bottom: 5px;
-            border-bottom: 1px solid #ccc;
-            /* REMOVIDO: text-align: center; */
-            position: relative; /* Garante que elementos absolutos dentro dele funcionem */
-        }
+<title>Relatório Técnico - {{ app_title_custom }}</title>
+<style>
+@page { size: A4; margin: 2cm; } /* Margem de 2cm para melhor impressão */
+body { font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 10pt; color: #333; }
+.container {
+width: 90%;
+margin: 0 auto; /* Ajuste para centralizar no corpo do PDF */
+position: relative;
+}
+/* Estilo do cabeçalho de página fixo (WeasyPrint) */
+.page-header {
+position: running(header);
+width: 100%;
+height: 1.5cm;
+padding-bottom: 5px;
+/* LINHA RESTAURADA */
 
-        /* O H E A D E R P R I N C I P A L (que contém o logo e títulos) */
-        
-        .header { 
-            text-align: center; 
-            padding-bottom: 10px; 
-            margin-bottom: 20px; 
-        }
-        
-        /* Estilo para a Logo no PDF: Posicionamento Top Left (dentro do Page Header) */
-        .logo-top-left {
-            position: absolute;
-            top: 5px; /* Ajuste para o topo real do cabeçalho */
-            left: 0; 
-            z-index: 10;
-        }
-        .logo-img {
-            height: 65px; /* Ajuste para a altura do cabeçalho de página */
-            vertical-align: middle;
-        }
+/* REMOVIDO: text-align: center; */
+position: relative; /* Garante que elementos absolutos dentro dele funcionem */
+}
 
-        .header h1 { color: #000; font-size: 16pt; margin: 0; } 
-        .header h2 { font-size: 12pt; margin: 5px 0 0; color: #555; }
-        
-        .section-title { font-size: 14pt; color: #0056b3; border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-top: 25px; margin-bottom: 15px; }
-        .subsection-title { font-size: 12pt; color: #333; margin-top: 15px; margin-bottom: 5px; }
-        
-        .client-info table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .client-info th, .client-info td { padding: 5px 0; text-align: left; }
-        .client-info th { width: 20%; color: #555; font-weight: normal; }
-        .client-info td { font-weight: bold; }
-        
-        .item-table { width: 100%; border-collapse: collapse; margin-top: 10px; page-break-inside: auto; }
-        .item-table th, .item-table td { border: 1px solid #eee; padding: 5px; text-align: left; }
-        .item-table th { background-color: #f0f0f0; font-weight: bold; }
-        .item-table tr { page-break-inside: avoid; page-break-after: auto; }
-        
-        .narrative p { margin-top: 0; margin-bottom: 15px; line-height: 1.4; }
-        .narrative strong { color: #0056b3; }
-        
-        .footer { border-top: 1px solid #ccc; padding-top: 10px; margin-top: 30px; text-align: center; font-size: 8pt; color: #777; }
+/* O H E A D E R P R I N C I P A L (que contém o logo e títulos) */
+.header {
+text-align: center;
+padding-bottom: 10px;
+margin-bottom: 20px;
+}
+/* Estilo para a Logo no PDF: Posicionamento Top Left (dentro do Page Header) */
+.logo-top-left {
+position: absolute;
+top: 5px; /* Ajuste para o topo real do cabeçalho */
+left: 0;
+z-index: 10;
+}
+.logo-img {
+height: 65px; /* Ajuste para a altura do cabeçalho de página */
+vertical-align: middle;
+}
 
-        /* Estilo para quebra de página antes do ambiente */
-        .room-section { page-break-before: auto; }
-        
-        /* ESTILO DE DESTAQUE: APENAS PARA REQUISITO TÉCNICO E ÍCONES */
-        .highlight-tech {
-            color: #dc3345; /* Vermelho */
-            font-weight: bold;
-        }
-        /* Estilo para ícones de atenção */
-        .attention-icon {
-            color: #dc3345;
-            font-size: 10pt;
-            line-height: 1;
-            margin-right: 5px;
-            vertical-align: middle;
-        }
-        /* ESTILO DA OBSERVAÇÃO: PRETO E NEGITO (USANDO O PAI BODY) */
-        .obs-normal {
-            font-weight: bold;
-            /* A cor será herdada do <body> (preto #333) */
-        }
+.header h1 { color: #000; font-size: 16pt; margin: 0; }
+.header h2 { font-size: 12pt; margin: 5px 0 0; color: #555; }
 
-        /* Definição do Page Header no CSS */
-        @page {
-            @top-center {
-                content: element(header);
-            }
-            @bottom-center {
-                content: "Documento gerado por {{ app_title_custom }} | Página " counter(page) " de " counter(pages);
-                font-size: 8pt;
-                color: #777;
-            }
-        }
-        
-        /* NOVO: Estilo para alinhar o texto do cabeçalho ao centro, agora que o pai não tem alinhamento */
-        .header-text-container {
-             text-align: center;
-        }
-    </style>
+/* LINHA RESTAURADA */
+.section-title { 
+    font-size: 14pt; 
+    color: #0056b3; 
+    border-bottom: 1px solid #ccc; 
+    padding-bottom: 5px; 
+    margin-top: 25px; 
+    margin-bottom: 15px; 
+}
+
+.subsection-title { font-size: 12pt; color: #333; margin-top: 15px; margin-bottom: 5px; }
+.client-info table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+.client-info th, .client-info td { padding: 5px 0; text-align: left; }
+.client-info th { width: 20%; color: #555; font-weight: normal; }
+.client-info td { font-weight: bold; }
+.item-table { width: 100%; border-collapse: collapse; margin-top: 10px; page-break-inside: auto; }
+.item-table th, .item-table td { border: 1px solid #eee; padding: 5px; text-align: left; }
+.item-table th { background-color: #f0f0f0; font-weight: bold; }
+.item-table tr { page-break-inside: avoid; page-break-after: auto; }
+.narrative p { margin-top: 0; margin-bottom: 15px; line-height: 1.4; }
+.narrative strong { color: #0056b3; }
+
+/* CORREÇÃO: Removida a borda superior da classe .footer */
+.footer { border-top: none; padding-top: 10px; margin-top: 30px; text-align: center; font-size: 8pt; color: #777; }
+
+/* Estilo para quebra de página antes do ambiente */
+.room-section { page-break-before: auto; }
+/* ESTILO DE DESTAQUE: APENAS PARA REQUISITO TÉCNICO E ÍCONES */
+.highlight-tech {
+color: #dc3345; /* Vermelho */
+font-weight: bold;
+}
+/* Estilo para ícones de atenção */
+.attention-icon {
+color: #dc3345;
+font-size: 10pt;
+line-height: 1;
+margin-right: 5px;
+vertical-align: middle;
+}
+/* ESTILO DA OBSERVAÇÃO: PRETO E NEGITO (USANDO O PAI BODY) */
+.obs-normal {
+font-weight: bold;
+/* A cor será herdada do <body> (preto #333) */
+}
+
+/* Definição do Page Header no CSS */
+@page {
+@top-center {
+content: element(header);
+}
+@bottom-center {
+content: "Documento gerado por {{ app_title_custom }} | Página " counter(page) " de " counter(pages);
+font-size: 8pt;
+color: #777;
+}
+}
+/* NOVO: Estilo para alinhar o texto do cabeçalho ao centro, agora que o pai não tem alinhamento */
+.header-text-container {
+text-align: center;
+}
+</style>
 </head>
 <body>
-    
-    <!-- Novo elemento Header para ser usado no @page top-center -->
-    <!-- REMOVIDO o style="text-align: center;" do page-header -->
-    <div class="page-header">
-        
-        <!-- LOGO (POSICIONADA ABSOLUTAMENTE NO CANTO ESQUERDO) -->
-        <div class="logo-top-left">
-            {% if app_logo_url %}
-                <img src="{{ app_logo_url }}" class="logo-img" alt="Logo">
-            {% endif %}
-        </div>
-        
-        <!-- TEXTO CENTRALIZADO (envolvido para centralizar o texto) -->
-        <div class="header-text-container">
-            <h1 style="color: #000; font-size: 14pt; margin: 0;">{{ app_title_custom }}</h1>
-            <h2 style="font-size: 10pt; color: #555; margin: 2px 0 0;">Relatório Técnico de Infraestrutura</h2>
-        </div>
-    </div>
+<!-- Novo elemento Header para ser usado no @page top-center -->
+<!-- REMOVIDO o style="text-align: center;" do page-header -->
+<div class="page-header">
+<!-- LOGO (POSICIONADA ABSOLUTAMENTE NO CANTO ESQUERDO) -->
+<div class="logo-top-left">
+{% if app_logo_url %}
+<img src="{{ app_logo_url }}" class="logo-img" alt="Logo">
+{% endif %}
+</div>
+<!-- TEXTO CENTRALIZADO (envolvido para centralizar o texto) -->
+<div class="header-text-container">
+<h1 style="color: #000; font-size: 14pt; margin: 0;">{{ app_title_custom }}</h1>
+<h2 style="font-size: 10pt; color: #555; margin: 2px 0 0;">Relatório Técnico de Infraestrutura</h2>
+</div>
+</div>
 
-    <div class="container">
-        
-        <!-- HEADER (APENAS CONTEÚDO VISÍVEL NA PRIMEIRA PÁGINA) -->
-        <div class="header" style="border-bottom: 2px solid #0056b3; padding-bottom: 10px; margin-top: 20px;">
-            <h1 style="color: #0056b3; font-size: 18pt;">ROTEIRO TÉCNICO DE INSTALAÇÃO</h1>
-            <p style="margin: 5px 0 0; color: #777;">Data da Geração: {{ data_hoje }}</p>
-        </div>
+<div class="container">
+<!-- HEADER (APENAS CONTEÚDO VISÍVEL NA PRIMEIRA PÁGINA) -->
+<div class="header" style="border-bottom: 2px solid #0056b3; padding-bottom: 10px; margin-top: 20px;">
+<h1 style="color: #0056b3; font-size: 18pt;">ROTEIRO TÉCNICO DE INSTALAÇÃO</h1>
+<p style="margin: 5px 0 0; color: #777;">Data da Geração: {{ data_hoje }}</p>
+</div>
 
-        <div class="client-info">
-            <div class="section-title">Dados do Projeto</div>
-            <table>
-                <tr><th>Cliente:</th><td>{{ project.client.name }}</td><th>Endereço:</th><td>{{ project.client.address }}</td></tr>
-                <tr><th>Telefone:</th><td>{{ project.client.phone }}</td><th>ID do Projeto:</th><td>{{ project.id }}</td></tr>
-            </table>
-        </div>
+<div class="client-info">
+<div class="section-title">Dados do Projeto</div>
+<table>
+<tr><th>Cliente:</th><td>{{ project.client.name }}</td><th>Endereço:</th><td>{{ project.client.address }}</td></tr>
+<tr><th>Telefone:</th><td>{{ project.client.phone }}</td><th>ID do Projeto:</th><td>{{ project.id }}</td></tr>
+</table>
+</div>
 
-        <div class="section-title">Detalhes por Ambiente</div>
+<div class="section-title">Detalhes por Ambiente</div>
 
-        {% for room_name, items in itens_por_ambiente.items() %}
-            <div class="room-section">
-                <div class="subsection-title" style="color: #0056b3;">
-                    {{ room_name }}
-                </div>
-                
-                {# REMOVIDO: Bloco condicional da narrativa/resumo #}
+{% for room_name, items in itens_por_ambiente.items() %}
+<div class="room-section">
+<div class="subsection-title" style="color: #0056b3;">
+{{ room_name }}
+</div>
+{# REMOVIDO: Bloco condicional da narrativa/resumo #}
 
-                <table class="item-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 8%;">Qtd</th>
-                            <th style="width: 25%;">Item</th>
-                            <th style="width: 35%;">Requisito Técnico (Eletricista)</th>
-                            <th style="width: 32%;">Observação Específica</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in items %}
-                        <tr>
-                            <td>{{ item.quantity }}</td>
-                            <td>
-                                <strong>{{ item.catalog_item.name }}</strong>
-                                <br><small style="color: #777;">{{ item.model_touch | default('N/A') }}</small>
-                            </td>
-                            <td>
-                                {% set tech_req = item.catalog_item.tech_requirement | default('Verificar alimentação e dados.') %}
-                                
-                                {# Aplica ícone de atenção para dispositivos de automação #}
-                                {% if 'Zigbee' in item.catalog_item.name or 'Painel' in item.catalog_item.name or 'Integração' in item.catalog_item.category %}
-                                    <span class="attention-icon">&#9888;</span>
-                                {% endif %}
+<table class="item-table">
+<thead>
+<tr>
+<th style="width: 8%;">Qtd</th>
+<th style="width: 25%;">Item</th>
+<th style="width: 35%;">Requisito Técnico (Eletricista)</th>
+<th style="width: 32%;">Observação Específica</th>
+</tr>
+</thead>
+<tbody>
+{% for item in items %}
+<tr>
+<td>{{ item.quantity }}</td>
+<td>
+<strong>{{ item.catalog_item.name }}</strong>
+<br><small style="color: #777;">{{ item.model_touch | default('N/A') }}</small>
+</td>
+<td>
+{% set tech_req = item.catalog_item.tech_requirement | default('Verificar alimentação e dados.') %}
+{# Aplica ícone de atenção para dispositivos de automação #}
+{% if 'Zigbee' in item.catalog_item.name or 'Painel' in item.catalog_item.name or 'Integração' in item.catalog_item.category %}
+<span class="attention-icon">&#9888;</span>
+{% endif %}
 
-                                {# Destaque em vermelho e negrito (Requisito Técnico) #}
-                                <span class="highlight-tech">
-                                    {{ tech_req }}
-                                </span>
-                            </td>
-                            
-                            <!-- CAMPO: OBSERVAÇÃO ESPECÍFICA (PRETO E NEGITO) -->
-                            <td>
-                                <span class="obs-normal">
-                                    {{ item.obs | default('N/A') }}
-                                </span>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% endfor %}
+{# Destaque em vermelho e negrito (Requisito Técnico) #}
+<span class="highlight-tech">
+{{ tech_req }}
+</span>
+</td>
+<!-- CAMPO: OBSERVAÇÃO ESPECÍFICA (PRETO E NEGITO) -->
+<td>
+<span class="obs-normal">
+{{ item.obs | default('N/A') }}
+</span>
+</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% endfor %}
 
-    </div>
-    
-    <!-- O rodapé foi movido para a regra @page bottom-center -->
-    
+</div>
+<!-- O rodapé foi movido para a regra @page bottom-center -->
 </body>
 </html>
