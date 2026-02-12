@@ -2,7 +2,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- Bloco de Mensagem de Sucesso (Restaurado e Reforçado) -->
+<!-- Bloco de Mensagem de Sucesso (Reforçado) -->
 {% if success_message %}
 <div id="success-alert" class="alert alert-success alert-dismissible fade show shadow-lg" role="alert" 
      style="position: fixed; top: 80px; right: 20px; z-index: 9999; min-width: 300px; border-left: 5px solid #198754;">
@@ -15,19 +15,6 @@
     </div>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
 </div>
-
-<script>
-    // Garante que a mensagem desapareça após 3 segundos usando a API robusta do Bootstrap
-    document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(function() {
-            const alertElement = document.getElementById('success-alert');
-            if (alertElement) {
-                const bsAlert = bootstrap.Alert.getOrCreateInstance(alertElement);
-                bsAlert.close();
-            }
-        }, 3000);
-    });
-</script>
 {% endif %}
 
 <style>
@@ -400,6 +387,16 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // --- LÓGICA DE FECHAMENTO AUTOMÁTICO DO ALERTA ---
+        // Reforçada para rodar sempre após o carregamento da página
+        const alertElement = document.getElementById('success-alert');
+        if (alertElement && typeof bootstrap !== 'undefined') {
+            setTimeout(function() {
+                const bsAlert = bootstrap.Alert.getOrCreateInstance(alertElement);
+                bsAlert.close();
+            }, 3000);
+        }
+
         // --- PREENCHIMENTO DE MODAIS DE EDIÇÃO ---
         document.querySelectorAll('.btn-edit-ambiente').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -420,6 +417,8 @@
         });
 
         const SuvinilColors = { {% for name, hex in cores.items() %}"{{ name }}": "{{ hex }}",{% endfor %} };
+        
+        // CORREÇÃO: startswith (Python) -> startsWith (JavaScript)
         function updateColorPreview(colorValue, previewId) {
             const preview = document.getElementById(previewId);
             if (!preview) return;
@@ -427,7 +426,6 @@
             preview.style.backgroundColor = hex;
         }
 
-        // CORREÇÃO: Usar o filtro tojson para evitar erros de sintaxe JS com aspas e caracteres especiais
         const itens = [
             {% for item in items %}
             { 
