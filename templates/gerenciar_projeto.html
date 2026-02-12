@@ -2,191 +2,111 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- Bloco de Mensagem de Sucesso (para edição de cliente ou item) -->
+<!-- Bloco de Mensagem de Sucesso (Restaurado e Reforçado) -->
 {% if success_message %}
-<div id="success-alert" class="alert alert-success alert-dismissible fade show" role="alert" style="position: fixed; top: 10px; right: 10px; z-index: 1050; min-width: 300px;">
-    <strong>Sucesso!</strong> {{ success_message }}
+<div id="success-alert" class="alert alert-success alert-dismissible fade show shadow-lg" role="alert" 
+     style="position: fixed; top: 80px; right: 20px; z-index: 9999; min-width: 300px; border-left: 5px solid #198754;">
+    <div class="d-flex align-items-center">
+        <i class="bi bi-check-circle-fill fs-4 me-3"></i>
+        <div>
+            <strong class="d-block">Sucesso!</strong>
+            <span>{{ success_message }}</span>
+        </div>
+    </div>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
 </div>
+
 <script>
-    // Função para auto-ocultar a mensagem após 4 segundos
+    // Garante que a mensagem desapareça após 3 segundos usando a API robusta do Bootstrap
     document.addEventListener('DOMContentLoaded', function() {
-        const alertElement = document.getElementById('success-alert');
-        if (alertElement) {
-            // Fecha o alerta automaticamente após 4000ms (4 segundos)
-            setTimeout(() => {
-                // Usa a API do Bootstrap para fechar o alerta (necessário que o bootstrap.bundle.min.js esteja carregado)
-                const bootstrapAlert = bootstrap.Alert.getOrCreateInstance(alertElement);
-                bootstrapAlert.close();
-            }, 4000); // AJUSTADO PARA 4 SEGUNDOS
-        }
+        setTimeout(function() {
+            const alertElement = document.getElementById('success-alert');
+            if (alertElement) {
+                const bsAlert = bootstrap.Alert.getOrCreateInstance(alertElement);
+                bsAlert.close();
+            }
+        }, 3000);
     });
 </script>
 {% endif %}
-<!-- Fim do Bloco de Mensagem de Sucesso -->
 
-<head>
-    <style>
-        /* CSS para rotação suave do ícone */
-        .collapse-icon {
-            transition: transform 0.3s ease;
-        }
-        .collapse-icon.collapsed {
-            transform: rotate(-90deg);
-        }
-    </style>
-    <!-- CSS padrão: Apenas mantendo o table-responsive para evitar overflow horizontal -->
-    <style>
-        /* Garantindo que a tabela não cause overflow horizontal em telas pequenas */
-        .table-responsive {
-            width: 100%;
-            overflow-x: auto;
-        }
-        /* Garantindo que o container use a largura total disponível */
-        .container-fluid {
-            padding-left: 10px;
-            padding-right: 10px;
-        }
-    </style>
-</head>
+<style>
+    .collapse-icon { transition: transform 0.3s ease; }
+    .collapse-icon.collapsed { transform: rotate(-90deg); }
+    .table-responsive { width: 100%; overflow-x: auto; }
+    .container-fluid { padding-left: 10px; padding-right: 10px; }
+    .input-price { font-weight: bold; color: #198754 !important; }
+    .color-selector-custom { display: none; }
+    .color-preview-box { 
+        width: 38px; 
+        height: 38px; 
+        border: 1px solid #444; 
+        border-radius: 4px; 
+        background-color: #F0F0F0; 
+        transition: background-color 0.2s;
+        flex-shrink: 0;
+    }
+    .table tbody tr td { vertical-align: middle; }
+</style>
 
-<!-- CONTAINER FLUID: Para utilizar a largura máxima disponível -->
 <div class="container-fluid" id="main-content-container"> 
 
-<!-- MODAIS DE CRUD DE AMBIENTES -->
-<!-- Modal Novo Ambiente -->
+<!-- --- MODAIS DE GESTÃO DE AMBIENTES --- -->
 <div class="modal fade" id="modalNovoAmbiente" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content bg-dark border-secondary">
-            <div class="modal-header border-secondary"><h5 class="modal-title text-white">Novo Cômodo</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-            <form action="{{ url_for('adicionar_ambiente') }}" method="POST">
-                <div class="modal-body">
-                    <input type="hidden" name="project_id_redirect" value="{{ project.id }}">
-                    <label class="text-white">Nome do Cômodo</label>
-                    <input type="text" name="name" class="form-control" placeholder="Ex: Adega" required>
-                </div>
-                <div class="modal-footer border-secondary"><button type="submit" class="btn btn-success">Salvar</button></div>
-            </form>
-        </div>
-    </div>
+    <div class="modal-dialog"><div class="modal-content bg-dark border-secondary"><div class="modal-header border-secondary"><h5 class="modal-title text-white">Novo Cômodo</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><form action="{{ url_for('adicionar_ambiente') }}" method="POST"><div class="modal-body"><input type="hidden" name="project_id_redirect" value="{{ project.id }}"><label class="text-white">Nome do Cômodo</label><input type="text" name="name" class="form-control" required></div><div class="modal-footer border-secondary"><button type="submit" class="btn btn-success">Salvar</button></div></form></div></div>
 </div>
 
-<!-- Modal Gerenciar Ambientes -->
 <div class="modal fade" id="modalGerenciarAmbientes" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-scrollable">
-        <div class="modal-content bg-dark border-secondary">
-            <div class="modal-header border-secondary"><h5 class="modal-title text-white">Gerenciar Cômodos</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body p-0">
-                <table class="table table-dark table-striped mb-0">
-                    <thead><tr><th>Nome</th><th class="text-end">Ações</th></tr></thead>
-                    <tbody>
-                        {% for room in ambientes %}
-                        <tr>
-                            <td>{{ room.name }}</td>
-                            <td class="text-end">
-                                <!-- Passando os dados para o ModalEditarAmbiente via data-* attributes -->
-                                <button class="btn btn-sm btn-outline-warning border-0 btn-edit-ambiente" 
-                                        data-id="{{ room.id }}"
-                                        data-name="{{ room.name }}"
-                                        title="Editar Cômodo"
-                                        data-bs-toggle="modal" 
-                                        data-bs-target="#modalEditarAmbiente">
-                                    <i class="bi bi-pencil-fill"></i>
-                                </button>
-                                <a href="{{ url_for('excluir_ambiente', room_id=room.id) }}" class="btn btn-sm btn-outline-danger border-0" onclick="return confirm('Tem certeza?')" title="Excluir Cômodo"><i class="bi bi-trash-fill"></i></a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+    <div class="modal-dialog modal-dialog-scrollable"><div class="modal-content bg-dark border-secondary"><div class="modal-header border-secondary"><h5 class="modal-title text-white">Gerenciar Cômodos</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body p-0"><table class="table table-dark table-striped mb-0"><thead><tr><th>Nome</th><th class="text-end">Ações</th></tr></thead><tbody>{% for room in ambientes %}<tr><td>{{ room.name }}</td><td class="text-end"><button class="btn btn-sm btn-outline-warning border-0 btn-edit-ambiente" data-id="{{ room.id }}" data-name="{{ room.name }}" data-bs-toggle="modal" data-bs-target="#modalEditarAmbiente"><i class="bi bi-pencil-fill"></i></button><a href="{{ url_for('excluir_ambiente', room_id=room.id) }}" class="btn btn-sm btn-outline-danger border-0" onclick="return confirm('Tem certeza?')"><i class="bi bi-trash-fill"></i></a></td></tr>{% endfor %}</tbody></table></div></div></div>
 </div>
 
-<!-- Modal Editar Ambiente -->
 <div class="modal fade" id="modalEditarAmbiente" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content bg-dark border-warning">
-            <div class="modal-header border-warning bg-warning text-dark"><h5 class="modal-title">Editar Nome</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <form action="{{ url_for('editar_ambiente') }}" method="POST">
-                <div class="modal-body text-white">
-                    <input type="hidden" name="project_id_redirect" value="{{ project.id }}">
-                    <input type="hidden" name="room_id" id="edit_room_id">
-                    <label>Nome</label>
-                    <input type="text" name="name" id="edit_room_name" class="form-control" required>
-                </div>
-                <div class="modal-footer border-secondary"><button type="submit" class="btn btn-warning">Salvar</button></div>
-            </form>
-        </div>
-    </div>
+    <div class="modal-dialog"><div class="modal-content bg-dark border-warning"><div class="modal-header border-warning bg-warning text-dark"><h5 class="modal-title">Editar Nome</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><form action="{{ url_for('editar_ambiente') }}" method="POST"><div class="modal-body text-white"><input type="hidden" name="room_id" id="edit_room_id"><label>Novo Nome</label><input type="text" name="name" id="edit_room_name" class="form-control" required></div><div class="modal-footer border-secondary"><button type="submit" class="btn btn-warning">Salvar</button></div></form></div></div>
 </div>
 
-<!-- MODAIS DE CRUD DE ITENS DO CATÁLOGO -->
-<!-- Modal Novo Item -->
-<div class="modal fade" id="modalNovoItem" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+<!-- --- MODAIS DE GESTÃO DE CATÁLOGO --- -->
+<div class="modal fade" id="modalNovoItemCatalogo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
         <div class="modal-content bg-dark border-secondary">
             <div class="modal-header border-secondary"><h5 class="modal-title text-white">Novo Item no Catálogo</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
             <form action="{{ url_for('adicionar_item_catalogo') }}" method="POST">
-                <div class="modal-body">
-                    <input type="hidden" name="project_id_redirect" value="{{ project.id }}">
-                    <div class="row">
-                        <div class="col-md-6 mb-3"><label class="form-label text-white">Nome</label><input type="text" name="name" class="form-control" required></div>
-                        <div class="col-md-6 mb-3"><label class="form-label text-white">Categoria</label><select name="category" class="form-select"><option value="Iluminação">Iluminação</option><option value="Energia">Energia</option><option value="Integração">Integração</option><option value="Misto">Misto</option><option value="Dados">Dados</option><option value="Infra">Infra</option></select></div>
-                    </div>
-                    <div class="mb-3"><label class="form-label text-white">Descrição (Memorial)</label><textarea name="description_commercial" class="form-control" rows="4" required></textarea></div>
-                    <div class="mb-3"><label class="form-label text-white">Req. Técnico</label><input type="text" name="tech_requirement" class="form-control"></div>
-                    
-                    <!-- NOVO CAMPO: MODELO DO TOUCH -->
-                    <div class="mb-3">
-                        <label class="form-label text-white">Modelo do Touch</label>
-                        <input type="text" name="model_touch_new" class="form-control" 
-                               list="defaultTouchModelsList" 
-                               placeholder="Ex: Quadrado, Redondo, ou cadastre novo">
-                        <!-- DATALIST PARA SUGESTÕES (Disponível em todo o escopo do template) -->
-                        <datalist id="defaultTouchModelsList">
-                            {% for model in project.touch_models %}
-                                <option value="{{ model }}">
-                            {% endfor %}
-                        </datalist>
-                    </div>
-                    <!-- FIM NOVO CAMPO -->
-
+                <div class="modal-body text-white">
+                    <div class="mb-3"><label>Nome do Dispositivo</label><input type="text" name="name" class="form-control" required></div>
+                    <div class="mb-3"><label>Categoria</label><select name="category" class="form-select"><option value="Iluminação">Iluminação</option><option value="Climatização">Climatização</option><option value="Audiovisual">Audiovisual</option><option value="Segurança">Segurança</option><option value="Outros">Outros</option></select></div>
+                    <div class="mb-3"><label>Descrição Comercial</label><textarea name="description_commercial" class="form-control" rows="2"></textarea></div>
+                    <div class="mb-3"><label>Requisito Técnico</label><textarea name="tech_requirement" class="form-control" rows="2"></textarea></div>
+                    <div class="mb-3"><label>Modelo Touch Padrão</label><select name="model_touch_new" class="form-select"><option value="quadrado">Quadrado</option><option value="redondo">Redondo</option><option value="horizontal">Horizontal</option></select></div>
                 </div>
-                <div class="modal-footer border-secondary"><button type="submit" class="btn btn-success">Salvar</button></div>
+                <div class="modal-footer border-secondary"><button type="submit" class="btn btn-success">Adicionar ao Catálogo</button></div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- Modal Gerenciar Catálogo -->
 <div class="modal fade" id="modalGerenciarCatalogo" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content bg-dark border-secondary">
-            <div class="modal-header border-secondary"><h5 class="modal-title text-white">Gerenciar Catálogo</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-header border-secondary text-white"><h5 class="modal-title">Gerenciar Catálogo Geral</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
             <div class="modal-body p-0">
                 <table class="table table-dark table-striped mb-0">
-                    <thead><tr><th>Nome</th><th>Cat.</th><th>Desc.</th><th class="text-end">Ações</th></tr></thead>
+                    <thead><tr><th>Dispositivo</th><th>Categoria</th><th class="text-end">Ações</th></tr></thead>
                     <tbody>
-                        {% for item in catalogo %}
+                        {% for c_item in catalogo %}
                         <tr>
-                            <td>{{ item.name }}</td><td>{{ item.category }}</td><td><small>{{ item.description_commercial[:50] }}...</small></td>
+                            <td>{{ c_item.name }}</td>
+                            <td><span class="badge bg-secondary">{{ c_item.category }}</span></td>
                             <td class="text-end">
-                                <!-- Passando os dados para o ModalEditarItem via data-* attributes, incluindo model_touch -->
                                 <button class="btn btn-sm btn-outline-warning border-0 btn-edit-catalogo" 
-                                        data-id="{{ item.id }}"
-                                        data-name="{{ item.name }}"
-                                        data-category="{{ item.category }}"
-                                        data-desc="{{ item.description_commercial }}"
-                                        data-tech="{{ item.tech_requirement }}"
-                                        data-touch="{{ item.model_touch | default('quadrado') }}"
-                                        title="Editar Item do Catálogo"
-                                        data-bs-toggle="modal" 
-                                        data-bs-target="#modalEditarItem">
+                                        data-id="{{ c_item.id }}" 
+                                        data-name="{{ c_item.name }}" 
+                                        data-category="{{ c_item.category }}"
+                                        data-desc="{{ c_item.description_commercial }}"
+                                        data-tech="{{ c_item.tech_requirement }}"
+                                        data-touch="{{ c_item.model_touch }}"
+                                        data-bs-toggle="modal" data-bs-target="#modalEditarItemCatalogo">
                                     <i class="bi bi-pencil-fill"></i>
                                 </button>
-                                <a href="{{ url_for('excluir_item_catalogo', item_id=item.id) }}" class="btn btn-sm btn-outline-danger border-0" onclick="return confirm('Tem certeza?')" title="Excluir Item do Catálogo"><i class="bi bi-trash-fill"></i></a>
+                                <a href="{{ url_for('excluir_item_catalogo', item_id=c_item.id) }}" class="btn btn-sm btn-outline-danger border-0" onclick="return confirm('Excluir do catálogo permanentemente?')"><i class="bi bi-trash-fill"></i></a>
                             </td>
                         </tr>
                         {% endfor %}
@@ -197,59 +117,32 @@
     </div>
 </div>
 
-<!-- Modal Editar Item Catálogo -->
-<div class="modal fade" id="modalEditarItem" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+<div class="modal fade" id="modalEditarItemCatalogo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
         <div class="modal-content bg-dark border-warning">
-            <div class="modal-header border-warning bg-warning text-dark"><h5 class="modal-title">Editar Item Catálogo</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-header border-warning bg-warning text-dark"><h5 class="modal-title">Editar Item do Catálogo</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
             <form action="{{ url_for('editar_item_catalogo') }}" method="POST">
                 <div class="modal-body text-white">
-                    <input type="hidden" name="project_id_redirect" value="{{ project.id }}">
-                    <input type="hidden" name="item_id" id="edit_item_id">
-                    <input type="text" name="name" id="edit_name" class="form-control mb-3" required>
-                    <select name="category" id="edit_category" class="form-select mb-3"><option value="Iluminação">Iluminação</option><option value="Energia">Energia</option><option value="Integração">Integração</option><option value="Misto">Misto</option><option value="Dados">Dados</option><option value="Infra">Infra</option></select>
-                    <textarea name="description_commercial" id="edit_desc" class="form-control mb-3" rows="4"></textarea>
-                    <input type="text" name="tech_requirement" id="edit_tech" class="form-control mb-3">
-                    
-                    <!-- CAMPO DE EDIÇÃO: MODELO DO TOUCH -->
-                    <div class="mb-3">
-                        <label class="form-label text-white">Modelo do Touch</label>
-                        <input type="text" name="model_touch_new" id="edit_model_touch" class="form-control" list="defaultTouchModelsList" placeholder="Ex: Quadrado, Redondo, ou cadastre novo">
-                    </div>
-                    <!-- FIM CAMPO DE EDIÇÃO -->
-
+                    <input type="hidden" name="item_id" id="edit_cat_id">
+                    <div class="mb-3"><label>Nome</label><input type="text" name="name" id="edit_cat_name" class="form-control" required></div>
+                    <div class="mb-3"><label>Categoria</label><select name="category" id="edit_cat_category" class="form-select"><option value="Iluminação">Iluminação</option><option value="Climatização">Climatização</option><option value="Audiovisual">Audiovisual</option><option value="Segurança">Segurança</option><option value="Outros">Outros</option></select></div>
+                    <div class="mb-3"><label>Descrição Comercial</label><textarea name="description_commercial" id="edit_cat_desc" class="form-control" rows="2"></textarea></div>
+                    <div class="mb-3"><label>Requisito Técnico</label><textarea name="tech_requirement" id="edit_cat_tech" class="form-control" rows="2"></textarea></div>
+                    <div class="mb-3"><label>Modelo Touch</label><select name="model_touch_new" id="edit_cat_touch" class="form-select"><option value="quadrado">Quadrado</option><option value="redondo">Redondo</option><option value="horizontal">Horizontal</option></select></div>
                 </div>
-                <div class="modal-footer border-secondary"><button type="submit" class="btn btn-warning">Salvar</button></div>
+                <div class="modal-footer border-secondary"><button type="submit" class="btn btn-warning">Salvar Alterações</button></div>
             </form>
         </div>
     </div>
 </div>
 
-
-<!-- MODAIS DE EDIÇÃO/EXCLUSÃO DE ITEM DO PROJETO -->
-<!-- Modal Excluir Item Projeto (Simples, usa formulário POST) -->
-<div class="modal fade" id="modalExcluirItemProjeto" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content bg-dark border-danger">
-            <div class="modal-header border-danger bg-danger text-white"><h5 class="modal-title">Confirmar Exclusão</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-            <form action="{{ url_for('gerenciar_projeto', project_id=project.id) }}" method="POST">
-                <div class="modal-body text-white">
-                    <p>Tem certeza que deseja remover o item <strong id="delete_item_name_display"></strong>?</p>
-                    <input type="hidden" name="delete_item_id" id="delete_item_id">
-                </div>
-                <div class="modal-footer border-secondary"><button type="submit" class="btn btn-danger">Excluir</button></div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Editar Item Projeto (O MAIS IMPORTANTE) -->
-{% for item in project.items %}
+<!-- --- MODAIS DE EDIÇÃO DE ITENS DO PROJETO --- -->
+{% for item in items %}
 <div class="modal fade" id="modalEditarItemProjeto-{{ item.id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content bg-dark border-primary">
             <div class="modal-header border-primary bg-primary bg-opacity-10">
-                <h5 class="modal-title text-primary"><i class="bi bi-pencil-square"></i> Editar Item do Projeto</h5>
+                <h5 class="modal-title text-primary"><i class="bi bi-pencil-square"></i> Editar Item</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form action="{{ url_for('editar_item_projeto') }}" method="POST">
@@ -259,7 +152,7 @@
                     
                     <div class="mb-3">
                         <label class="form-label fw-bold">Ambiente</label>
-                        <select name="room_name" id="proj_edit_room_{{ item.id }}" class="form-select" required>
+                        <select name="room_name" class="form-select">
                             {% for room in ambientes %}
                                 <option value="{{ room.name }}" {% if room.name == item.room_name %}selected{% endif %}>{{ room.name }}</option>
                             {% endfor %}
@@ -267,295 +160,208 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Dispositivo</label>
-                        <select name="catalog_item_id" id="proj_edit_catalog_id_{{ item.id }}" class="form-select" required>
-                            {% for cat_item in catalogo %}
-                                <option value="{{ cat_item.id }}" {% if cat_item.id == item.catalog_item_id %}selected{% endif %}>{{ cat_item.name }}</option>
-                            {% endfor %}
-                        </select>
+                        <label class="form-label fw-bold">Cor / Acabamento</label>
+                        <div class="d-flex gap-2">
+                            <div class="flex-grow-1">
+                                <div class="input-group">
+                                    <select id="item_color_edit_preset_{{ item.id }}" class="form-select color-selector-preset" 
+                                            data-target-id="item_color_edit_submit_{{ item.id }}" 
+                                            data-custom-id="item_color_edit_custom_{{ item.id }}"
+                                            data-preview-id="color-preview-edit-{{ item.id }}">
+                                        <option value="custom">Outra Cor / HEX</option>
+                                        {% for name, hex in cores.items() %}
+                                            <option value="{{ name }}" {% if name == item.item_color %}selected{% endif %}>{{ name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <input type="text" id="item_color_edit_custom_{{ item.id }}" class="form-control color-selector-custom" placeholder="#HEX ou Nome" value="{{ item.item_color }}">
+                                    <input type="hidden" name="item_color" id="item_color_edit_submit_{{ item.id }}" value="{{ item.item_color }}">
+                                </div>
+                            </div>
+                            <div id="color-preview-edit-{{ item.id }}" class="color-preview-box" style="background-color: {{ cores.get(item.item_color, item.item_color if item.item_color.startswith('#') else '#F0F0F0') }};"></div>
+                        </div>
                     </div>
 
-                    <!-- CAMPO DE COR REESTRUTURADO PARA EDIÇÃO -->
-                    <div class="mb-3 row">
-                        <div class="col-12">
-                            <label class="form-label fw-bold">Cor Suvinil/Coral</label>
-                            <div class="input-group">
-                                <!-- Select de Presets -->
-                                <select id="item_color_edit_preset_{{ item.id }}" 
-                                        class="form-select color-selector-preset" 
-                                        data-target-id="item_color_edit_submit_{{ item.id }}" 
-                                        data-custom-id="item_color_edit_custom_{{ item.id }}">
-                                    <option value="" disabled>Selecione a cor</option>
-                                    <option value="custom" class="bg-dark text-white">Outra Cor / HEX livre</option>
-                                    {% for name, hex in cores.items() %}
-                                        <option value="{{ name }}" data-hex="{{ hex }}" 
-                                                {% if name == item.item_color or hex == item.item_color %}selected{% endif %}>
-                                            {{ name }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                                
-                                <!-- Input de Texto Livre (Opcional, inicialmente oculto) -->
-                                <input type="text" 
-                                       id="item_color_edit_custom_{{ item.id }}" 
-                                       class="form-control color-selector-custom"
-                                       placeholder="#HEX (ex: #008880) ou Nome Comum" 
-                                       value="{{ '' if item.item_color in cores.keys() else item.item_color }}"
-                                       style="display:none;" />
-
-                                <!-- Hidden input for submission (Salva o valor real) -->
-                                <input type="hidden" name="item_color" 
-                                       id="item_color_edit_submit_{{ item.id }}" 
-                                       value="{{ item.item_color }}">
-
-                                <!-- Preview -->
-                                {% set current_val = cores.get(item.item_color, item.item_color) %}
-                                {% set current_hex = current_val if current_val.startswith('#') else cores.get(item.item_color, '#F0F0F0') %}
-                                <span class="input-group-text p-0" 
-                                      id="color-preview-edit-{{ item.id }}" 
-                                      style="width: 2.5rem; background-color: {{ current_hex }}; border: 1px solid #444; border-radius: 0 0.25rem 0.25rem 0;"></span>
-                            </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Modelo Touch</label>
+                            <select name="model_touch_override" class="form-select">
+                                <option value="quadrado" {% if item.model_touch == 'quadrado' %}selected{% endif %}>Quadrado</option>
+                                <option value="redondo" {% if item.model_touch == 'redondo' %}selected{% endif %}>Redondo</option>
+                                <option value="horizontal" {% if item.model_touch == 'horizontal' %}selected{% endif %}>Horizontal</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Gravar Logo?</label>
+                            <select name="logo_inserir" class="form-select">
+                                <option value="NAO" {% if not item.logo_inserir %}selected{% endif %}>Não</option>
+                                <option value="SIM" {% if item.logo_inserir %}selected{% endif %}>Sim</option>
+                            </select>
                         </div>
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Qtd</label>
-                        <input type="number" name="quantity" id="proj_edit_qty_{{ item.id }}" class="form-control text-center" min="1" value="{{ item.quantity }}" required>
-                    </div>
-
-                    <!-- NOVO CAMPO: INSERIR LOGO -->
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Inserir Logo da Empresa?</label>
-                        <select name="logo_inserir" class="form-select">
-                            <option value="NAO" {% if not item.logo_inserir %}selected{% endif %}>NÃO</option>
-                            <option value="SIM" {% if item.logo_inserir %}selected{% endif %}>SIM</option>
-                        </select>
-                    </div>
-                    
-                    <!-- NOVO CAMPO: MODELO DO TOUCH -->
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Modelo do Touch (Opção)</label>
-                        <input type="text" name="model_touch_override" 
-                               class="form-control" 
-                               list="defaultTouchModelsList" 
-                               placeholder="Padrão: {{ item.catalog_item.model_touch | default('Quadrado') }}" 
-                               value="{{ item.model_touch | default('') }}">
+                        <label class="form-label fw-bold">Quantidade</label>
+                        <input type="number" name="quantity" class="form-control text-center" value="{{ item.quantity }}" required>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Obs</label>
-                        <input type="text" name="obs" id="proj_edit_obs_{{ item.id }}" class="form-control" value="{{ item.obs }}">
+                        <label class="form-label fw-bold">Observação</label>
+                        <input type="text" name="obs" class="form-control" value="{{ item.obs }}">
                     </div>
                 </div>
-                <div class="modal-footer border-secondary"><button type="submit" class="btn btn-primary">Salvar</button></div>
+                <div class="modal-footer border-secondary">
+                    <button type="submit" class="btn btn-primary w-100">Salvar Alterações</button>
+                </div>
             </form>
         </div>
     </div>
 </div>
 {% endfor %}
 
-
-<!-- CABEÇALHO PADRÃO: Usando a largura total (container-fluid) -->
+<!-- CABEÇALHO DO PROJETO -->
 <div class="row mb-4 align-items-center"> 
-    <div class="col-12 col-md-7 mb-3 mb-md-0 d-flex align-items-center">
-        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary me-3" title="Voltar para Projetos"><i class="bi bi-arrow-left"></i></a>
-        <div><h3 class="mb-0">{{ project.client.name }}</h3><small class="text-muted">{{ project.client.address }}</small></div>
-    </div>
-    <!-- COLUNA DO BOTÃO RELATÓRIOS: Garante que o botão fique visível em col-12 -->
-    <div class="col-12 col-md-5 text-center text-md-end">
-        <div class="dropdown">
-            <!-- Botão de Alto Contraste (btn-warning) -->
-            <button class="btn btn-warning dropdown-toggle" data-bs-toggle="dropdown" title="Gerar Propostas em PDF"><i class="bi bi-printer"></i> Relatórios</button>
-            <ul class="dropdown-menu dropdown-menu-end shadow">
-                <li><a class="dropdown-item" target="_blank" href="{{ url_for('gerar_pdf', project_id=project.id, tipo='memorial') }}">📄 Memorial</a></li>
-                <li><a class="dropdown-item" target="_blank" href="{{ url_for('gerar_pdf', project_id=project.id, tipo='tecnico') }}">🛠️ Técnico</a></li>
-                <li><a class="dropdown-item" target="_blank" href="{{ url_for('gerar_levantamento', project_id=project.id) }}">📦 Compras</a></li>
-            </ul>
-        </div>
-    </div>
+    <div class="col-12 col-md-7 mb-3 mb-md-0 d-flex align-items-center"><a href="{{ url_for('index') }}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a><div><h3 class="mb-0">{{ project.client.name }}</h3><small class="text-muted">{{ project.client.address }}</small></div></div>
+    <div class="col-12 col-md-5 text-center text-md-end"><div class="dropdown"><button class="btn btn-warning dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-printer"></i> Relatórios</button><ul class="dropdown-menu dropdown-menu-end shadow"><li><a class="dropdown-item" target="_blank" href="{{ url_for('gerar_pdf', project_id=project.id, tipo='memorial') }}">📄 Memorial Descritivo</a></li><li><a class="dropdown-item" target="_blank" href="{{ url_for('gerar_pdf', project_id=project.id, tipo='tecnico') }}">🛠️ Roteiro Técnico</a></li><li><a class="dropdown-item" target="_blank" href="{{ url_for('gerar_levantamento', project_id=project.id) }}">📦 Lista de Compras</a></li><li><hr class="dropdown-divider"></li><li><a class="dropdown-item fw-bold text-primary" target="_blank" href="{{ url_for('gerar_pdf', project_id=project.id, tipo='orcamento') }}">💰 Orçamento</a></li></ul></div></div>
 </div>
 
-
-<ul class="nav nav-tabs mb-3 nav-fill" id="myTab" role="tablist">
+<!-- ABAS -->
+<ul class="nav nav-tabs mb-3 nav-fill" id="projectTabs" role="tablist">
     <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#cadastro"><i class="bi bi-plus-circle"></i> Itens</button></li>
+    <li class="nav-item"><button class="nav-link text-success fw-bold" data-bs-toggle="tab" data-bs-target="#orcamento"><i class="bi bi-currency-dollar"></i> Orçamento</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#resumo"><i class="bi bi-graph-up"></i> Resumo</button></li>
 </ul>
 
 <div class="tab-content">
+    
+    <!-- ABA 1: CADASTRO -->
     <div class="tab-pane fade show active" id="cadastro">
-        
-        <!-- NOVO CARD WRAPPER PARA O FORMULÁRIO COLAPSÁVEL -->
         <div class="card mb-4">
             <div class="card-header bg-dark border-secondary p-3">
-                <!-- Toggle Button -->
-                <button class="btn btn-link text-white text-decoration-none w-100 text-start d-flex justify-content-between align-items-center" 
-                        type="button" 
-                        data-bs-toggle="collapse" 
-                        data-bs-target="#collapseFormCadastro" 
-                        aria-expanded="true" 
-                        aria-controls="collapseFormCadastro">
-                    <h5 class="mb-0 text-white">
-                        <i class="bi bi-plus-circle me-2"></i> Adicionar Novos Itens
-                    </h5>
-                    <!-- ÍCONE DE SETA: usa o estado 'show' padrão para começar aberto -->
-                    <i class="bi bi-chevron-down collapse-icon" id="cadastro-icon"></i>
+                <button class="btn btn-link text-white text-decoration-none w-100 text-start d-flex justify-content-between align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFormCadastro">
+                    <h5 class="mb-0 text-white"><i class="bi bi-plus-circle me-2"></i> Adicionar Novos Itens</h5>
+                    <i class="bi bi-chevron-down collapse-icon"></i>
                 </button>
             </div>
-            
-            <!-- CONTEÚDO COLAPSÁVEL: Começa ABERTO (show) -->
             <div class="collapse show" id="collapseFormCadastro">
                 <div class="card-body p-3">
-                    <!-- FORMULÁRIO DE ADIÇÃO DE ITENS -->
                     <form method="POST" class="row g-3 align-items-end">
-                        
-                        <!-- AMBIENTE: col-lg-2 -->
                         <div class="col-12 col-md-6 col-lg-2">
                             <label class="form-label small text-muted fw-bold">Ambiente</label>
                             <div class="input-group">
                                 <select name="room_name" class="form-select" required>
-                                    <option value="" selected disabled>Selecione...</option>
+                                    <option value="" disabled selected>Escolha...</option>
                                     {% for room in ambientes %}
                                         <option value="{{ room.name }}">{{ room.name }}</option>
                                     {% endfor %}
                                 </select>
-                                <button class="btn btn-outline-success" type="button" data-bs-toggle="modal" data-bs-target="#modalNovoAmbiente" title="Adicionar Novo Cômodo"><i class="bi bi-plus-lg"></i></button>
-                                <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#modalGerenciarAmbientes" title="Gerenciar Lista de Cômodos"><i class="bi bi-gear-fill"></i></button>
+                                <button class="btn btn-outline-success" type="button" data-bs-toggle="modal" data-bs-target="#modalNovoAmbiente"><i class="bi bi-plus-lg"></i></button>
+                                <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#modalGerenciarAmbientes"><i class="bi bi-gear-fill"></i></button>
                             </div>
                         </div>
-
-                        <!-- DISPOSITIVO (ITEM): col-lg-3 -->
-                        <div class="col-12 col-md-6 col-lg-3">
+                        <div class="col-12 col-md-6 col-lg-2">
                             <label class="form-label small text-muted fw-bold">Dispositivo</label>
                             <div class="input-group">
-                                <select name="catalog_item_id" id="item_catalog_select" class="form-select" required>
-                                    <option value="" selected disabled>Selecione...</option>
+                                <select name="catalog_item_id" class="form-select" required>
+                                    <option value="" disabled selected>Escolha...</option>
                                     {% for item in catalogo %}
                                         <option value="{{ item.id }}">{{ item.name }}</option>
                                     {% endfor %}
                                 </select>
-                                <button class="btn btn-outline-success" type="button" data-bs-toggle="modal" data-bs-target="#modalNovoItem" title="Adicionar Novo Item ao Catálogo"><i class="bi bi-plus-lg"></i></button>
-                                <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#modalGerenciarCatalogo" title="Gerenciar Itens do Catálogo"><i class="bi bi-gear-fill"></i></button>
+                                <button class="btn btn-outline-success" type="button" data-bs-toggle="modal" data-bs-target="#modalNovoItemCatalogo"><i class="bi bi-plus-lg"></i></button>
+                                <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#modalGerenciarCatalogo"><i class="bi bi-gear-fill"></i></button>
                             </div>
                         </div>
                         
-                        <!-- COR (ACABAMENTO): col-lg-2 -->
                         <div class="col-12 col-md-6 col-lg-2">
-                            <label class="form-label small text-muted fw-bold">Cor (Acabamento)</label>
-                            <div class="input-group">
-                                <!-- Select de Presets -->
-                                <select id="item_color_add_preset" 
-                                        class="form-select color-selector-preset"
-                                        data-target-id="item_color_add_submit" 
-                                        data-custom-id="item_color_add_custom">
-                                    <option value="" selected disabled>Selecione a cor</option>
-                                    <option value="custom" class="bg-dark text-white">Outra Cor / HEX livre</option>
-                                    {% for name, hex in cores.items() %}
-                                        <option value="{{ name }}" data-hex="{{ hex }}">{{ name }}</option>
-                                    {% endfor %}
-                                </select>
-
-                                <!-- Input de Texto Livre (Opcional, inicialmente oculto) -->
-                                <input type="text" 
-                                       id="item_color_add_custom" 
-                                       class="form-control color-selector-custom"
-                                       placeholder="#HEX (ex: #008880) ou Nome Comum" 
-                                       style="display:none;" />
-
-                                <!-- Hidden input for submission (Salva o valor real) -->
-                                <input type="hidden" name="item_color" 
-                                       id="item_color_add_submit" 
-                                       value="{{ cores.keys()|first or 'Branco Neve Suvinil' }}">
-                                
-                                <!-- Preview -->
-                                {% set first_hex = cores.values() | first | default('#F0F0F0') %}
-                                <span class="input-group-text p-0" 
-                                      id="color-preview-main" 
-                                      style="width: 2.5rem; background-color: {{ first_hex }}; border: 1px solid #444; border-radius: 0 0.25rem 0.25rem 0;"></span>
+                            <label class="form-label small text-muted fw-bold">Cor / Acabamento</label>
+                            <div class="d-flex gap-2">
+                                <div class="flex-grow-1">
+                                    <div class="input-group">
+                                        <select id="item_color_add_preset" class="form-select color-selector-preset" data-target-id="item_color_add_submit" data-custom-id="item_color_add_custom" data-preview-id="color-preview-add">
+                                            <option value="" disabled selected>Escolha...</option>
+                                            <option value="custom">Personalizada</option>
+                                            {% for name, hex in cores.items() %}
+                                                <option value="{{ name }}">{{ name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <input type="text" id="item_color_add_custom" class="form-control color-selector-custom" placeholder="#HEX ou Nome">
+                                        <input type="hidden" name="item_color" id="item_color_add_submit">
+                                    </div>
+                                </div>
+                                <div id="color-preview-add" class="color-preview-box"></div>
                             </div>
                         </div>
-                        
-                        <!-- NOVO CAMPO: MODELO DO TOUCH (NOVO) -->
-                        <div class="col-12 col-md-6 col-lg-2">
+
+                        <!-- CAMPOS RESTAURADOS NA BARRA DE CADASTRO -->
+                        <div class="col-6 col-md-6 col-lg-2">
                             <label class="form-label small text-muted fw-bold">Modelo Touch</label>
-                            <input type="text" name="model_touch_override" 
-                                   class="form-control" 
-                                   list="defaultTouchModelsList" 
-                                   placeholder="Padrão do Catálogo"
-                                   value="">
-                        </div>
-                        
-                        <!-- NOVO CAMPO: LOGO INSERIR -->
-                        <div class="col-12 col-md-3 col-lg-1">
-                            <label class="form-label small text-muted fw-bold">Inserir Logo?</label>
-                            <select name="logo_inserir" class="form-select">
-                                <option value="NAO">NÃO</option>
-                                <option value="SIM">SIM</option>
+                            <select name="model_touch_override" class="form-select">
+                                <option value="quadrado">Quadrado</option>
+                                <option value="redondo">Redondo</option>
+                                <option value="horizontal">Horizontal</option>
                             </select>
                         </div>
 
-                        <!-- QUANTIDADE: col-lg-1 -->
+                        <div class="col-6 col-md-6 col-lg-1">
+                            <label class="form-label small text-muted fw-bold">Logo?</label>
+                            <select name="logo_inserir" class="form-select">
+                                <option value="NAO">Não</option>
+                                <option value="SIM">Sim</option>
+                            </select>
+                        </div>
+
                         <div class="col-6 col-md-3 col-lg-1">
                             <label class="form-label small text-muted fw-bold">Qtd</label>
                             <input type="number" name="quantity" value="1" min="1" class="form-control text-center">
                         </div>
-
-                        <!-- BOTÃO ADICIONAR: col-lg-1 -->
-                        <div class="col-6 col-md-6 col-lg-1 d-grid">
-                            <button type="submit" class="btn btn-primary">Add</button>
+                        <div class="col-6 col-md-3 col-lg-2 d-grid">
+                            <button type="submit" class="btn btn-primary">Adicionar</button>
                         </div>
-                        
-                        <!-- OBSERVAÇÃO -->
-                        <div class="col-12"><input type="text" name="obs" class="form-control" placeholder="Obs: Localização específica, detalhes extras..."></div>
+                        <div class="col-12">
+                            <input type="text" name="obs" class="form-control" placeholder="Observação técnica ou comercial para este item...">
+                        </div>
                     </form>
                 </div>
             </div>
-            <!-- FIM DO CONTEÚDO COLAPSÁVEL -->
         </div>
-        <!-- FIM DO CARD WRAPPER -->
-
 
         <div class="card">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light"><tr><th>Ambiente</th><th>Item</th><th>Cor</th><th>Qtd</th><th>Obs</th><th class="text-center">Ação</th></tr></thead>
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 15%;">Ambiente</th>
+                            <th style="width: 20%;">Item</th>
+                            <th style="width: 5%;" class="text-center">Qtd</th>
+                            <th style="width: 25%;">Observação</th> 
+                            <th style="width: 12%;">Cor</th> 
+                            <th style="width: 8%;" class="text-center">Touch</th>
+                            <th style="width: 15%;" class="text-center">Ações</th>
+                        </tr>
+                    </thead>
                     <tbody>
-                        {% for item in project.items %}
+                        {% for item in items %}
                         <tr>
                             <td class="fw-bold text-primary">{{ item.room_name }}</td>
                             <td>
-                                {{ item.catalog_item.name }}
+                                {{ item.item_name }}
                                 {% if item.logo_inserir %}
-                                    <i class="bi bi-star-fill text-warning ms-1" title="Logo da Empresa Inserida"></i>
+                                    <span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">LOGO</span>
                                 {% endif %}
-                                <small class="text-info d-block">{{ item.model_touch }}</small>
                             </td>
-                            
-                            <!-- Coluna COR -->
-                            {% set item_color_val = item.item_color | default('Branco Neve Suvinil') %}
-                            {% set color_hex = cores.get(item_color_val, item_color_val) %}
-                            {% if not color_hex.startswith('#') %}
-                                {% set color_hex = '#F0F0F0' %}
-                            {% endif %}
-
-                            <td>
-                                <span style="display: inline-block; width: 15px; height: 15px; background-color: {{ color_hex }}; border: 1px solid #444; vertical-align: middle; margin-right: 5px; border-radius: 3px;"></span>
-                                <small class="text-muted">{{ item_color_val }}</small>
-                            </td>
-
                             <td class="text-center"><span class="badge bg-dark">{{ item.quantity }}</span></td>
-                            <td class="small text-muted">{{ item.obs | default('N/A') }}</td>
+                            <td><small class="text-muted">{{ item.obs | default('N/A') }}</small></td>
+                            <td>
+                                {% set color_hex = cores.get(item.item_color, item.item_color if item.item_color.startswith('#') else '#F0F0F0') %}
+                                <span style="display: inline-block; width: 15px; height: 15px; background-color: {{ color_hex }}; border: 1px solid #444; border-radius: 3px; vertical-align: middle; margin-right: 5px;"></span>
+                                <small>{{ item.item_color }}</small>
+                            </td>
                             <td class="text-center">
-                                <button class="btn btn-sm btn-outline-warning border-0 me-1" 
-                                        data-bs-toggle="modal" 
-                                        data-bs-target="#modalEditarItemProjeto-{{ item.id }}"
-                                        title="Editar Item">
-                                    <i class="bi bi-pencil-fill"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger border-0" 
-                                        onclick="prepararExclusaoItemProjeto('{{ item.id }}', '{{ item.catalog_item.name }} em {{ item.room_name }}')" 
-                                        title="Excluir Item">
-                                    <i class="bi bi-trash-fill"></i>
-                                </button>
+                                <span class="badge bg-secondary border border-light opacity-75" style="font-size: 0.7rem; text-transform: uppercase;">{{ item.model_touch | default('quad') }}</span>
+                            </td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-outline-warning border-0 me-1" data-bs-toggle="modal" data-bs-target="#modalEditarItemProjeto-{{ item.id }}"><i class="bi bi-pencil-fill"></i></button>
+                                <form method="POST" style="display:inline;"><input type="hidden" name="delete_item_id" value="{{ item.id }}"><button type="submit" class="btn btn-sm btn-outline-danger border-0" onclick="return confirm('Excluir?')"><i class="bi bi-trash-fill"></i></button></form>
                             </td>
                         </tr>
                         {% endfor %}
@@ -564,250 +370,120 @@
             </div>
         </div>
     </div>
+
+    <!-- ABA 2: ORÇAMENTO (AGRUPADO) -->
+    <div class="tab-pane fade" id="orcamento">
+        <form action="{{ url_for('salvar_precos_projeto', project_id=project.id) }}" method="POST">
+            <div class="card shadow-sm border-success">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center"><h5 class="mb-0"><i class="bi bi-cash-coin"></i> Gestão de Preços Agrupada</h5><button type="submit" class="btn btn-light btn-sm fw-bold">Salvar Orçamento</button></div>
+                <div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th style="width: 25%;">Item / Acabamento</th><th style="width: 15%;">Locais</th><th class="text-center" style="width: 10%;">Qtd Total</th><th style="width: 20%;">Observações</th><th style="width: 15%;">Unitário (R$)</th><th class="text-end" style="width: 15%;">Total</th></tr></thead><tbody>
+                {% for item in consolidated_items %}
+                <tr>
+                    <td><strong>{{ item.item_name }}</strong><div class="d-flex align-items-center">{% set hex = cores.get(item.item_color, item.item_color if item.item_color.startswith('#') else '#F0F0F0') %}<span style="display: inline-block; width: 12px; height: 12px; background-color: {{ hex }}; border: 1px solid #444; border-radius: 2px; margin-right: 5px;"></span><small class="text-muted">{{ item.item_color }}</small></div></td>
+                    <td><small class="text-muted">{{ item.room_name }}</small></td>
+                    <td class="text-center fw-bold">{{ item.quantity }}</td>
+                    <td><small class="text-muted fst-italic">{{ item.obs | default('Sem notas') }}</small></td>
+                    <td><div class="input-group input-group-sm"><span class="input-group-text">R$</span><input type="text" name="price_group_{{ item.item_name }}_{{ item.item_color }}" value="{{ item.unit_price }}" class="form-control input-price"></div></td>
+                    <td class="text-end fw-bold text-success">{{ item.total_price | format_currency }}</td>
+                </tr>
+                {% endfor %}
+                </tbody><tfoot class="table-secondary"><tr><th colspan="5" class="text-end fs-5">TOTAL DO PROJETO:</th><th class="text-end fs-5 text-success">{{ total_orcamento | format_currency }}</th></tr></tfoot></table></div>
+            </div>
+        </form>
+    </div>
     
+    <!-- ABA 3: RESUMO -->
     <div class="tab-pane fade" id="resumo">
-        <!-- O conteúdo será preenchido pelo JavaScript -->
-        <div class="card"><div class="card-body p-0"><table class="table table-hover mb-0"><thead class="table-light"><tr><th>Item</th><th>Locais</th><th>Total</th></tr></thead><tbody id="tabela-resumo"></tbody></table></div></div>
+        <div class="card"><div class="card-body p-0"><table class="table table-hover mb-0"><thead class="table-light"><tr><th>Item</th><th>Locais</th><th>Notas/Observações</th><th>Total</th></tr></thead><tbody id="tabela-resumo"></tbody></table></div></div>
     </div>
 </div>
 
 <script>
-    // Mapeamento de Cores em JavaScript (para preview)
-    const SuvinilCoralColors = {
-        {% for name, hex in cores.items() %}
-            "{{ name }}": "{{ hex }}",
-        {% endfor %}
-    };
-    
-    // Função que tenta obter o HEX: prioriza preset, depois verifica HEX livre, senão retorna o nome (para o navegador tentar renderizar)
-    function getHexValue(colorNameOrHex) {
-        if (!colorNameOrHex) return '#F0F0F0';
-        
-        // 1. Tenta preset
-        const presetHex = SuvinilCoralColors[colorNameOrHex];
-        if (presetHex) return presetHex;
-        
-        // 2. Verifica se é um HEX válido (Ex: #FF00AA)
-        if (colorNameOrHex.match(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)) {
-            return colorNameOrHex;
-        }
-        
-        // 3. Retorna o nome da cor (o navegador tentará renderizar se for um nome web como 'red', 'blue', etc.)
-        return colorNameOrHex; 
-    }
-    
-    // Função para atualizar a pré-visualização de cor
-    function updateColorPreview(colorInput, previewElementId) {
-        const colorValue = colorInput.value || colorInput.getAttribute('data-hex') || '#F0F0F0';
-        const hex = getHexValue(colorValue);
-        const previewElement = document.getElementById(previewElementId);
-        if (previewElement) {
-            previewElement.style.backgroundColor = hex;
-        }
-    }
-    
-    // --- FUNÇÕES DE PREENCHIMENTO DE DADOS DENTRO DO MODAL ---
-    
-    // Preenchimento para Ambientes (Chamado pelo evento shown.bs.modal)
-    function fillAmbienteModal(button) {
-        const id = button.getAttribute('data-id');
-        const name = button.getAttribute('data-name');
-        
-        document.getElementById('edit_room_id').value = id;
-        document.getElementById('edit_room_name').value = name;
-    }
-    
-    // Preenchimento para Catálogo (Chamado pelo evento shown.bs.modal)
-    function fillCatalogoModal(button) {
-        const id = button.getAttribute('data-id');
-        const name = button.getAttribute('data-name');
-        const category = button.getAttribute('data-category');
-        const desc = button.getAttribute('data-desc');
-        const tech = button.getAttribute('data-tech');
-        const touch = button.getAttribute('data-touch'); // Valor do modelo do touch
-        
-        document.getElementById('edit_item_id').value = id;
-        document.getElementById('edit_name').value = name;
-        document.getElementById('edit_category').value = category; 
-        document.getElementById('edit_desc').value = desc;
-        document.getElementById('edit_tech').value = tech;
-        
-        // CORREÇÃO AQUI: Garante que o input do modelo do touch seja preenchido
-        const editTouchInput = document.getElementById('edit_model_touch');
-        if (editTouchInput) {
-             editTouchInput.value = touch || ''; // Define o valor, ou string vazia se for nulo
-        }
-    }
-    
-    function prepararExclusaoItemProjeto(itemId, itemName) {
-        document.getElementById('delete_item_id').value = itemId;
-        document.getElementById('delete_item_name_display').textContent = itemName;
-        new bootstrap.Modal(document.getElementById('modalExcluirItemProjeto')).show();
-    }
-
-
-    // Lógica principal de inicialização e LISTENERS
-    document.addEventListener('DOMContentLoaded', () => {
-        
-        // --- 1. FUNÇÃO PRINCIPAL PARA GERENCIAR INPUTS DE COR ---
-        
-        function setupColorInputGroup(presetSelectId, customInputId, submitInputId, previewId) {
-            const presetSelect = document.getElementById(presetSelectId);
-            const customInput = document.getElementById(customInputId);
-            const submitInput = document.getElementById(submitInputId);
-
-            if (!presetSelect || !customInput || !submitInput) return;
-
-            // Função auxiliar para sincronizar o estado
-            function syncColorState() {
-                const selectedValue = presetSelect.value;
-                if (selectedValue === 'custom') {
-                    // Estado Customizado
-                    customInput.style.display = 'block';
-                    // Se o custom input tiver valor, use-o, senão use o valor do hidden para inicializar
-                    customInput.value = customInput.value || submitInput.value;
-                    submitInput.value = customInput.value;
-                } else {
-                    // Estado Preset
-                    customInput.style.display = 'none';
-                    customInput.value = '';
-                    submitInput.value = selectedValue;
-                }
-                updateColorPreview(submitInput, previewId);
-            }
-            
-            // Inicializa o estado com base no valor de submissão salvo
-            syncColorState();
-            
-            // 1.2. Listener: Quando o Preset (dropdown) muda
-            presetSelect.addEventListener('change', syncColorState);
-
-            // 1.3. Listener: Quando o Custom Input (texto livre) muda
-            customInput.addEventListener('input', function() {
-                submitInput.value = this.value; // Atualiza o valor a ser submetido
-                updateColorPreview(submitInput, previewId);
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- PREENCHIMENTO DE MODAIS DE EDIÇÃO ---
+        document.querySelectorAll('.btn-edit-ambiente').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('edit_room_id').value = btn.dataset.id;
+                document.getElementById('edit_room_name').value = btn.dataset.name;
             });
-            
-            // Adiciona um listener para garantir que, se o valor salvo for 'custom' (ou não for um preset), 
-            // o select se ajuste ao abrir o modal.
-            const modalElement = presetSelect.closest('.modal');
-            if(modalElement) {
-                 modalElement.addEventListener('shown.bs.modal', function (event) {
-                    const savedValue = submitInput.value;
-                    let isPreset = SuvinilCoralColors.hasOwnProperty(savedValue);
+        });
 
-                    if (savedValue && !isPreset && savedValue !== 'custom') {
-                        // Não é um preset, força o modo custom
-                        presetSelect.value = 'custom';
-                        customInput.style.display = 'block';
-                        customInput.value = savedValue;
-                    } else {
-                        // É um preset, mantém o select normal
-                        presetSelect.value = savedValue || presetSelect.options[1].value; 
-                        customInput.style.display = 'none';
-                        customInput.value = '';
-                    }
-                    // Força a atualização da prévia com o valor atual do submit input
-                    updateColorPreview(submitInput, previewId);
-                });
-            }
+        document.querySelectorAll('.btn-edit-catalogo').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('edit_cat_id').value = btn.dataset.id;
+                document.getElementById('edit_cat_name').value = btn.dataset.name;
+                document.getElementById('edit_cat_category').value = btn.dataset.category;
+                document.getElementById('edit_cat_desc').value = btn.dataset.desc;
+                document.getElementById('edit_cat_tech').value = btn.dataset.tech;
+                document.getElementById('edit_cat_touch').value = btn.dataset.touch;
+            });
+        });
+
+        const SuvinilColors = { {% for name, hex in cores.items() %}"{{ name }}": "{{ hex }}",{% endfor %} };
+        function updateColorPreview(colorValue, previewId) {
+            const preview = document.getElementById(previewId);
+            if (!preview) return;
+            const hex = SuvinilColors[colorValue] || (colorValue.startsWith('#') ? colorValue : '#F0F0F0');
+            preview.style.backgroundColor = hex;
         }
 
-        // --- 2. CONFIGURA OS GRUPOS DE INPUTS DE COR ---
-        
-        // A. Campo de Adição Principal
-        setupColorInputGroup('item_color_add_preset', 'item_color_add_custom', 'item_color_add_submit', 'color-preview-main');
-        
-        // B. Campos de Edição em Loop (Dentro dos Modais)
-        {% for item in project.items %}
-            setupColorInputGroup(
-                'item_color_edit_preset_{{ item.id }}', 
-                'item_color_edit_custom_{{ item.id }}', 
-                'item_color_edit_submit_{{ item.id }}', 
-                'color-preview-edit-{{ item.id }}'
-            );
-        {% endfor %}
-
-        // --- 3. LISTENERS DO MODAL PARA EDIÇÃO DE AMBIENTE E CATÁLOGO (CORRIGIDO) ---
-        
-        // Listener para o Modal de Edição de Ambiente
-        const modalEditarAmbiente = document.getElementById('modalEditarAmbiente');
-        if (modalEditarAmbiente) {
-            modalEditarAmbiente.addEventListener('shown.bs.modal', function (event) {
-                const button = event.relatedTarget; 
-                fillAmbienteModal(button);
-            });
-        }
-        
-        // Listener para o Modal de Edição de Catálogo
-        const modalEditarItem = document.getElementById('modalEditarItem');
-        if (modalEditarItem) {
-            modalEditarItem.addEventListener('shown.bs.modal', function (event) {
-                const button = event.relatedTarget; 
-                fillCatalogoModal(button);
-            });
-        }
-        
-        // --- 4. ROTAÇÃO DO ÍCONE DE CADASTRO ---
-        const collapseElement = document.getElementById('collapseFormCadastro');
-        const iconElement = document.getElementById('cadastro-icon');
-
-        if (collapseElement && iconElement) {
-            // Adiciona a classe 'collapsed' se estiver fechado
-            collapseElement.addEventListener('hidden.bs.collapse', function () {
-                iconElement.classList.add('collapsed');
-            });
-            // Remove a classe 'collapsed' se estiver aberto
-            collapseElement.addEventListener('shown.bs.collapse', function () {
-                iconElement.classList.remove('collapsed');
-            });
-            // Inicializa a classe, pois o collapse começa 'show'
-             iconElement.classList.remove('collapsed');
-        }
-
-
-        // --- 5. LÓGICA DO RESUMO ---
-        
-        const itens = [{% for item in project.items %}{ name: "{{ item.catalog_item.name }}", room: "{{ item.room_name }}", qty: {{ item.quantity }}, color: "{{ item.item_color | default('Branco Neve Suvinil') }}" },{% endfor %}];
+        // CORREÇÃO: Usar o filtro tojson para evitar erros de sintaxe JS com aspas e caracteres especiais
+        const itens = [
+            {% for item in items %}
+            { 
+                name: {{ item.item_name | tojson }}, 
+                room: {{ item.room_name | tojson }}, 
+                qty: {{ item.quantity }}, 
+                color: {{ item.item_color | tojson }}, 
+                obs: {{ (item.obs | default('')) | tojson }} 
+            },
+            {% endfor %}
+        ];
         
         const resumo = {};
-        
         itens.forEach(item => {
             const key = `${item.name} (${item.color})`;
-            
-            if (!resumo[key]) { 
-                resumo[key] = { 
-                    name: item.name, 
-                    color: item.color, 
-                    total: 0, 
-                    rooms: new Set() 
-                }; 
-            }
+            if (!resumo[key]) { resumo[key] = { name: item.name, color: item.color, total: 0, rooms: new Set(), obs_list: new Set() }; }
             resumo[key].total += item.qty;
             resumo[key].rooms.add(item.room);
+            if (item.obs && item.obs !== 'None') resumo[key].obs_list.add(item.obs);
         });
-        
         const tbody = document.getElementById('tabela-resumo');
-        
         if (tbody) {
-            if (Object.keys(resumo).length === 0) { 
-                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Nenhum dispositivo cadastrado no projeto.</td></tr>'; 
-            } else {
-                tbody.innerHTML = ''; 
-                
-                for (const [key, data] of Object.entries(resumo)) {
-                    tbody.innerHTML += `
-                        <tr>
-                            <td>${data.name} <span class="small text-muted">(${data.color})</span></td>
-                            <td><small class="text-muted">${Array.from(data.rooms).join(', ')}</small></td>
-                            <td class="text-center fw-bold fs-5">${data.total}</td>
-                        </tr>
-                    `;
-                }
+            tbody.innerHTML = '';
+            for (const [key, data] of Object.entries(resumo)) {
+                tbody.innerHTML += `<tr><td>${data.name} <small>(${data.color})</small></td><td><small>${Array.from(data.rooms).join(', ')}</small></td><td><small class="text-muted">${Array.from(data.obs_list).join(' | ')}</small></td><td class="text-center fw-bold">${data.total}</td></tr>`;
             }
+        }
+
+        function setupColorSelector(presetId, customId, submitId, previewId) {
+            const preset = document.getElementById(presetId);
+            const custom = document.getElementById(customId);
+            const submit = document.getElementById(submitId);
+            if (!preset || !custom || !submit) return;
+            const updateState = () => {
+                let val = "";
+                if (preset.value === 'custom') { custom.style.display = 'block'; val = custom.value; }
+                else { custom.style.display = 'none'; val = preset.value; }
+                submit.value = val;
+                updateColorPreview(val, previewId);
+            };
+            preset.addEventListener('change', updateState);
+            custom.addEventListener('input', updateState);
+            updateState();
+        }
+
+        setupColorSelector('item_color_add_preset', 'item_color_add_custom', 'item_color_add_submit', 'color-preview-add');
+        {% for item in items %}setupColorSelector('item_color_edit_preset_{{ item.id }}', 'item_color_edit_custom_{{ item.id }}', 'item_color_edit_submit_{{ item.id }}', 'color-preview-edit-{{ item.id }}');{% endfor %}
+
+        const collapseCadastro = document.getElementById('collapseFormCadastro');
+        const iconCadastro = document.querySelector('.collapse-icon');
+        if (collapseCadastro && iconCadastro) {
+            collapseCadastro.addEventListener('hidden.bs.collapse', () => iconCadastro.classList.add('collapsed'));
+            collapseCadastro.addEventListener('shown.bs.collapse', () => iconCadastro.classList.remove('collapsed'));
         }
     });
 </script>
 
-</div> <!-- FIM DO CONTAINER-FLUID -->
+</div>
 {% endblock %}

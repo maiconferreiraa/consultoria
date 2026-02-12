@@ -1,4 +1,9 @@
 flask
 firebase-admin
-weasyprint
 gunicorn
+Pillow
+Jinja2
+requests
+WeasyPrint==54.3
+pydyf==0.1.2
+cffi==1.15.1

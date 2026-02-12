@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Proposta Comercial - {{ app_title_custom }}</title>
+    <style>
+        /* Configurações de Página e Margens */
+        @page { 
+            size: A4; 
+            margin: 1.5cm 1cm 1.5cm 1cm; /* Topo, Direita, Baixo, Esquerda */
+            @bottom-right {
+                content: "Página " counter(page) " de " counter(pages);
+                font-size: 8pt;
+                color: #888;
+            }
+        }
+        
+        * { box-sizing: border-box; }
+
+        body { 
+            font-family: Arial, Helvetica, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            font-size: 10pt; 
+            color: #333; 
+            width: 100%;
+        }
+        
+        .container { width: 100%; }
+
+        /* --- CABEÇALHO COM TABELA (MAIS ESTÁVEL) --- */
+        .header-table {
+            width: 100%;
+            border-bottom: 2px solid #0056b3;
+            margin-bottom: 20px;
+            table-layout: fixed;
+        }
+
+        .header-table td { vertical-align: middle; padding-bottom: 10px; }
+
+        .logo-box { width: 120px; text-align: left; }
+        
+        .logo-img { 
+            display: block;
+            width: 100px; /* Tamanho fixo ajuda o WeasyPrint */
+            height: auto;
+        }
+
+        .title-box { text-align: center; }
+        .title-box h1 { margin: 0; font-size: 15pt; color: #000; text-transform: uppercase; }
+        .title-box p { margin: 2px 0 0; font-size: 9pt; color: #666; }
+
+        /* --- SEÇÕES --- */
+        .section-title { 
+            font-size: 11pt; 
+            color: #0056b3; 
+            background-color: #f0f4f8;
+            padding: 5px 10px;
+            margin-top: 20px; 
+            margin-bottom: 10px;
+            font-weight: bold;
+            border-left: 4px solid #0056b3;
+        }
+
+        /* --- DADOS DO CLIENTE --- */
+        .client-table { width: 100%; margin-bottom: 15px; border-collapse: collapse; }
+        .client-table td { padding: 4px; border-bottom: 1px solid #f9f9f9; }
+        .label { color: #777; width: 15%; font-size: 9pt; }
+        .value { font-weight: bold; width: 35%; }
+
+        /* --- TABELA DE ITENS (FIXA PARA NÃO CORTAR) --- */
+        .item-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            table-layout: fixed; /* Força a tabela a respeitar as larguras */
+        }
+        
+        .item-table th { 
+            background-color: #0056b3; 
+            color: white; 
+            padding: 10px 5px; 
+            text-align: left;
+            font-size: 9pt;
+            border: 1px solid #0056b3;
+        }
+        
+        .item-table td { 
+            border: 1px solid #eee; 
+            padding: 8px 5px; 
+            font-size: 9pt;
+            vertical-align: top;
+            word-wrap: break-word; /* Evita que o texto empurre a margem */
+        }
+        
+        .item-table tr { page-break-inside: avoid; }
+
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+
+        /* --- TOTALIZAÇÃO (UMA ÚNICA VEZ) --- */
+        .total-box {
+            margin-top: 10px;
+            width: 100%;
+            background-color: #f8f9fa;
+            border: 1px solid #0056b3;
+            padding: 15px;
+            text-align: right;
+            page-break-inside: avoid; /* Não quebra o total */
+        }
+
+        .total-label { font-size: 11pt; font-weight: normal; margin-right: 15px; }
+        .total-value { font-size: 15pt; font-weight: bold; color: #0056b3; }
+
+        /* --- CONDIÇÕES E ASSINATURA --- */
+        .notes { 
+            margin-top: 30px; 
+            font-size: 8.5pt; 
+            color: #555; 
+            padding: 10px; 
+            border: 1px dashed #ccc;
+            page-break-inside: avoid;
+        }
+
+        .signature {
+            margin-top: 60px;
+            text-align: center;
+            page-break-inside: avoid;
+        }
+        
+        .line {
+            width: 280px;
+            border-top: 1px solid #333;
+            margin: 0 auto;
+            padding-top: 5px;
+            font-size: 9pt;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <!-- Cabeçalho em Tabela para estabilidade -->
+        <table class="header-table">
+            <tr>
+                <td class="logo-box">
+                    {% if app_logo_url %}
+                        <img src="{{ app_logo_url }}" class="logo-img" alt="Logo">
+                    {% else %}
+                        <div style="width: 100px; height: 40px; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; font-size: 8pt; color: #ccc;">SEM LOGO</div>
+                    {% endif %}
+                </td>
+                <td class="title-box">
+                    <h1>{{ app_title_custom }}</h1>
+                    <p>Orçamento Comercial de Equipamentos | Data: {{ data_hoje }}</p>
+                </td>
+                <td style="width: 120px; text-align: right; font-size: 8pt; color: #999;">
+                    ID: {{ project.id[-6:] | upper }}
+                </td>
+            </tr>
+        </table>
+
+        <!-- Info Cliente -->
+        <div class="section-title">Dados do Projeto</div>
+        <table class="client-table">
+            <tr>
+                <td class="label">Cliente:</td>
+                <td class="value">{{ project.client.name }}</td>
+                <td class="label">Contacto:</td>
+                <td class="value">{{ project.client.phone or 'N/A' }}</td>
+            </tr>
+            <tr>
+                <td class="label">Local:</td>
+                <td class="value" colspan="3">{{ project.client.address }}</td>
+            </tr>
+        </table>
+
+        <!-- Itens -->
+        <div class="section-title">Equipamentos e Dispositivos</div>
+        <table class="item-table">
+            <thead>
+                <tr>
+                    <th style="width: 45%;">Descrição do Produto</th>
+                    <th style="width: 20%;">Ambiente</th>
+                    <th style="width: 8%; text-align: center;">Qtd</th>
+                    <th style="width: 13%; text-align: right;">Unitário</th>
+                    <th style="width: 14%; text-align: right;">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>
+                        <div style="font-weight: bold;">{{ item.item_name }}</div>
+                        {% if item.item_color %}
+                            <div style="font-size: 8pt; color: #666; margin-top: 2px;">Acabamento: {{ item.item_color }}</div>
+                        {% endif %}
+                    </td>
+                    <td>{{ item.room_name }}</td>
+                    <td class="text-center">{{ item.quantity }}</td>
+                    <td class="text-right">{{ item.unit_price | format_currency }}</td>
+                    <td class="text-right" style="font-weight: bold;">{{ item.total_price | format_currency }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- TOTAL GERAL (APARECE APENAS UMA VEZ) -->
+        <div class="total-box">
+            <span class="total-label">INVESTIMENTO TOTAL ESTIMADO:</span>
+            <span class="total-value">{{ total_geral | format_currency }}</span>
+        </div>
+
+        <!-- Notas -->
+        <div class="notes">
+            <div style="font-weight: bold; margin-bottom: 5px;">CONDIÇÕES COMERCIAIS:</div>
+            <ul style="margin: 0; padding-left: 15px;">
+                <li>Proposta válida por 10 dias.</li>
+                <li>Garantia conforme especificações do fabricante.</li>
+                <li>Este documento refere-se apenas ao fornecimento dos materiais listados.</li>
+                <li>Instalação e infraestrutura devem seguir o Relatório Técnico.</li>
+            </ul>
+        </div>
+
+        <!-- Assinaturas -->
+        <div class="signature">
+            <div class="line">
+                <strong>{{ app_title_custom }}</strong><br>
+                Responsável Técnico / Aprovação Cliente
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>
