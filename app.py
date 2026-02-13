@@ -195,6 +195,7 @@ def editar_projeto(project_id):
 @login_required
 def apagar_projeto(project_id):
     db.collection('projects').document(project_id).delete()
+    session['success_message'] = "Projeto excluído com sucesso!"
     return redirect(url_for('index'))
 
 @app.route('/projeto/<project_id>', methods=['GET', 'POST'])
@@ -286,18 +287,21 @@ def gerenciar_projeto(project_id):
 @login_required
 def adicionar_ambiente():
     db.collection('ambientes').add({"name": request.form['name'].strip(), "user_id": get_current_user_id()})
+    session['success_message'] = f"Cômodo '{request.form['name']}' adicionado com sucesso!"
     return redirect(request.referrer)
 
 @app.route('/editar_ambiente', methods=['POST'])
 @login_required
 def editar_ambiente():
     db.collection('ambientes').document(request.form.get('room_id')).update({"name": request.form['name'].strip()})
+    session['success_message'] = "Nome do cômodo atualizado!"
     return redirect(request.referrer)
 
 @app.route('/excluir_ambiente/<room_id>')
 @login_required
 def excluir_ambiente(room_id):
     db.collection('ambientes').document(room_id).delete()
+    session['success_message'] = "Cômodo removido com sucesso!"
     return redirect(request.referrer)
 
 @app.route('/adicionar_item_catalogo', methods=['POST'])
@@ -364,6 +368,7 @@ def editar_item_projeto():
         "item_color": request.form.get('item_color').strip(),
         "logo_inserir": request.form.get('logo_inserir') == 'SIM'
     })
+    session['success_message'] = "Item do projeto atualizado!"
     return redirect(url_for('gerenciar_projeto', project_id=proj_id))
 
 # --- GERAÇÃO DE PDFS (RESTAURAÇÃO DO ORÇAMENTO AGRUPADO) ---
