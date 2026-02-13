@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 {% extends "base.html" %}
 
 {% block content %}
@@ -313,7 +312,7 @@
                             <th style="width: 25%;">Item</th>
                             <th style="width: 5%; text-align: center;">Qtd</th>
                             <th style="width: 15%;">Cor</th> 
-                            <th style="width: 25%;">Obs</th> 
+                            <th style="width: 15%;">Obs</th> 
                             <th style="width: 15%; text-align: center;">Ações</th>
                         </tr>
                     </thead>
@@ -341,12 +340,12 @@
         </div>
     </div>
 
-    <!-- ABA 2: ORÇAMENTO -->
+    <!-- ABA 2: ORÇAMENTO (AGRUPADO) -->
     <div class="tab-pane fade" id="orcamento">
         <form action="{{ url_for('salvar_precos_projeto', project_id=project.id) }}" method="POST">
             <div class="card shadow-sm border-success">
                 <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Gestão de Preços</h5>
+                    <h5 class="mb-0">Gestão de Preços (Itens Agrupados)</h5>
                     <button type="submit" class="btn btn-light btn-sm fw-bold">Salvar Orçamento</button>
                 </div>
                 <div class="table-responsive">
@@ -355,18 +354,20 @@
                             <tr><th>Item</th><th>Locais</th><th class="text-center">Qtd</th><th>Unitário (R$)</th><th class="text-end">Total</th></tr>
                         </thead>
                         <tbody>
-                            {% for item in items %}
+                            {% for group in consolidated_items %}
                             <tr>
-                                <td><strong>{{ item.item_name }}</strong><br><small class="text-muted">{{ item.item_color }}</small></td>
-                                <td><small>{{ item.room_name }}</small></td>
-                                <td class="text-center">{{ item.quantity }}</td>
-                                <td><input type="text" name="price_{{ item.id }}" value="{{ item.unit_price }}" class="form-control form-control-sm text-center input-price"></td>
-                                <td class="text-end fw-bold text-success">{{ item.total_price | format_currency }}</td>
+                                <td><strong>{{ group.item_name }}</strong><br><small class="text-muted">{{ group.item_color }}</small></td>
+                                <td><small>{{ group.room_name }}</small></td>
+                                <td class="text-center">{{ group.quantity }}</td>
+                                <td>
+                                    <input type="text" name="price_group_{{ group.group_id }}" value="{{ group.unit_price }}" class="form-control form-control-sm text-center input-price" style="max-width: 120px; margin: 0 auto;">
+                                </td>
+                                <td class="text-end fw-bold text-success">{{ group.total_price | format_currency }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
                         <tfoot class="table-secondary">
-                            <tr><th colspan="4" class="text-end fs-5">TOTAL:</th><th class="text-end fs-5 text-success">{{ total_orcamento | format_currency }}</th></tr>
+                            <tr><th colspan="4" class="text-end fs-5">TOTAL INVESTIMENTO:</th><th class="text-end fs-5 text-success">{{ total_orcamento | format_currency }}</th></tr>
                         </tfoot>
                     </table>
                 </div>
@@ -374,9 +375,27 @@
         </form>
     </div>
     
-    <!-- ABA 3: RESUMO -->
+    <!-- ABA 3: RESUMO (CONSOLIDADO) -->
     <div class="tab-pane fade" id="resumo">
-        <div class="card"><div class="card-body p-0"><table class="table table-hover mb-0"><thead class="table-light"><tr><th>Item</th><th>Acabamento</th><th>Locais</th><th class="text-center">Total</th></tr></thead><tbody id="tabela-resumo"></tbody></table></div></div>
+        <div class="card">
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr><th>Item</th><th>Acabamento</th><th>Locais</th><th class="text-center">Total</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for group in consolidated_items %}
+                        <tr>
+                            <td><strong>{{ group.item_name }}</strong></td>
+                            <td><small>{{ group.item_color }}</small></td>
+                            <td><small>{{ group.room_name }}</small></td>
+                            <td class="text-center fw-bold fs-5">{{ group.quantity }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -433,23 +452,6 @@
             select.addEventListener('change', syncEdit);
             syncEdit(); // Inicia com a cor salva
         });
-
-        // Resumo Automático (Corrigido)
-        const itensRaw = [{% for item in items %}{ name: {{ item.item_name | tojson }}, color: {{ item.item_color | tojson }}, room: {{ item.room_name | tojson }}, qty: {{ item.quantity }} },{% endfor %}];
-        const resMap = {};
-        itensRaw.forEach(i => {
-            const k = `${i.name}_${i.color}`;
-            if (!resMap[k]) resMap[k] = { name: i.name, color: i.color, total: 0, rooms: new Set() };
-            resMap[k].total += i.qty; resMap[k].rooms.add(i.room);
-        });
-        const tbodyRes = document.getElementById('tabela-resumo');
-        if (tbodyRes) {
-            tbodyRes.innerHTML = '';
-            for (const k in resMap) {
-                const d = resMap[k];
-                tbodyRes.insertAdjacentHTML('beforeend', `<tr><td>${d.name}</td><td><small>${d.color}</small></td><td><small>${Array.from(d.rooms).join(', ')}</small></td><td class="text-center fw-bold">${d.total}</td></tr>`);
-            }
-        }
 
         // Alertas Automáticos
         const alertElement = document.getElementById('success-alert');
