@@ -2,7 +2,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- Bloco de Mensagem de Sucesso (Reforçado e Posicionado para Máxima Visibilidade) -->
+<!-- Bloco de Mensagem de Sucesso -->
 {% if success_message %}
 <div id="success-alert" class="alert alert-success alert-dismissible fade show shadow-lg" role="alert" 
      style="position: fixed; top: 90px; right: 20px; z-index: 10000; min-width: 320px; border-left: 5px solid #198754; background-color: #1e1e1e; color: #fff;">
@@ -25,19 +25,31 @@
     .table-responsive { width: 100%; overflow-x: auto; }
     .container-fluid { padding-left: 10px; padding-right: 10px; }
     .input-price { font-weight: bold; color: #198754 !important; }
-    .color-selector-custom { display: none; }
-    .color-preview-box { 
-        width: 38px; 
-        height: 38px; 
-        border: 1px solid #444; 
-        border-radius: 4px; 
-        background-color: #F0F0F0; 
-        transition: background-color 0.2s;
-        flex-shrink: 0;
-    }
-    .table tbody tr td { vertical-align: middle; }
     
-    /* Garantir que o conteúdo não fique por baixo do rodapé fixo */
+    /* Contentor para colocar o preview "dentro" do campo */
+    .color-input-wrapper {
+        position: relative;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .color-preview-box { 
+        position: absolute;
+        top: 9px;
+        right: 35px; /* Antes da seta do select */
+        width: 20px; 
+        height: 20px; 
+        border: 1px solid #666; 
+        border-radius: 3px; 
+        background-color: #F0F0F0; 
+        z-index: 10;
+        pointer-events: none; /* Garante que o clique passe para o select */
+        box-shadow: inset 0 0 2px rgba(0,0,0,0.5);
+    }
+    
+    .color-selector-custom { display: none; margin-top: 5px; }
+    .table tbody tr td { vertical-align: middle; }
     #main-content-container { margin-bottom: 80px; }
 </style>
 
@@ -65,6 +77,8 @@
                 <div class="modal-body text-white">
                     <div class="mb-3"><label class="small mb-1">Nome do Dispositivo</label><input type="text" name="name" class="form-control" required></div>
                     <div class="mb-3"><label class="small mb-1">Categoria</label><select name="category" class="form-select"><option value="Iluminação">Iluminação</option><option value="Climatização">Climatização</option><option value="Audiovisual">Audiovisual</option><option value="Segurança">Segurança</option><option value="Outros">Outros</option></select></div>
+                    <div class="mb-3"><label class="small mb-1">Descrição Comercial</label><textarea name="description_commercial" class="form-control" rows="2"></textarea></div>
+                    <div class="mb-3"><label class="small mb-1">Requisito Técnico</label><textarea name="tech_requirement" class="form-control" rows="2"></textarea></div>
                     <div class="mb-3"><label class="small mb-1">Modelo Touch Padrão</label><select name="model_touch_new" class="form-select"><option value="quadrado">Quadrado</option><option value="redondo">Redondo</option><option value="horizontal">Horizontal</option></select></div>
                 </div>
                 <div class="modal-footer border-secondary"><button type="submit" class="btn btn-success w-100">Salvar no Catálogo Geral</button></div>
@@ -97,15 +111,104 @@
     </div>
 </div>
 
-<!-- --- CABEÇALHO DO PROJETO --- -->
+<!-- --- MODAIS DE EDIÇÃO DE ITENS NO PROJETO --- -->
+{% for item in items %}
+<div class="modal fade" id="modalEditarItemProjeto-{{ item.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark border-primary shadow-lg">
+            <div class="modal-header border-primary bg-primary bg-opacity-10 text-primary">
+                <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Editar Item no Projeto</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('editar_item_projeto') }}" method="POST">
+                <div class="modal-body text-white">
+                    <input type="hidden" name="project_id" value="{{ project.id }}">
+                    <input type="hidden" name="item_id" value="{{ item.id }}">
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Ambiente</label>
+                        <select name="room_name" class="form-select">
+                            {% for room in ambientes %}
+                                <option value="{{ room.name }}" {% if room.name == item.room_name %}selected{% endif %}>{{ room.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Cor / Acabamento</label>
+                        <div class="color-input-wrapper">
+                            <select name="item_color" class="form-select pe-5 color-edit-select" data-preview-id="preview-edit-{{ item.id }}">
+                                {% for name, hex in cores.items() %}
+                                    <option value="{{ name }}" data-hex="{{ hex }}" {% if name == item.item_color %}selected{% endif %}>{{ name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div id="preview-edit-{{ item.id }}" class="color-preview-box"></div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label small fw-bold">Touch</label>
+                            <select name="model_touch_override" class="form-select">
+                                <option value="quadrado" {% if item.model_touch == 'quadrado' %}selected{% endif %}>Quadrado</option>
+                                <option value="redondo" {% if item.model_touch == 'redondo' %}selected{% endif %}>Redondo</option>
+                                <option value="horizontal" {% if item.model_touch == 'horizontal' %}selected{% endif %}>Horizontal</option>
+                            </select>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label small fw-bold">Logo?</label>
+                            <select name="logo_inserir" class="form-select">
+                                <option value="NAO" {% if not item.logo_inserir %}selected{% endif %}>Não</option>
+                                <option value="SIM" {% if item.logo_inserir %}selected{% endif %}>Sim</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label small fw-bold">Quantidade</label>
+                            <input type="number" name="quantity" class="form-control" value="{{ item.quantity }}" required>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label small fw-bold">Observação</label>
+                            <input type="text" name="obs" class="form-control" value="{{ item.obs }}">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="submit" class="btn btn-primary w-100">Atualizar Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- --- CABEÇALHO E NAVEGAÇÃO --- -->
 <div class="row mb-4 align-items-center"> 
-    <div class="col-12 col-md-7 mb-3 mb-md-0 d-flex align-items-center"><a href="{{ url_for('index') }}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a><div><h3 class="mb-0">{{ project.client.name }}</h3><small class="text-muted">{{ project.client.address }}</small></div></div>
-    <div class="col-12 col-md-5 text-center text-md-end"><div class="dropdown"><button class="btn btn-warning dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-printer"></i> Relatórios</button><ul class="dropdown-menu dropdown-menu-end shadow"><li><a class="dropdown-item" target="_blank" href="{{ url_for('gerar_pdf', project_id=project.id, tipo='memorial') }}">📄 Memorial Descritivo</a></li><li><a class="dropdown-item" target="_blank" href="{{ url_for('gerar_pdf', project_id=project.id, tipo='tecnico') }}">🛠️ Roteiro Técnico</a></li><li><a class="dropdown-item" target="_blank" href="{{ url_for('gerar_levantamento', project_id=project.id) }}">📦 Lista de Compras</a></li><li><hr class="dropdown-divider"></li><li><a class="dropdown-item fw-bold text-primary" target="_blank" href="{{ url_for('gerar_pdf', project_id=project.id, tipo='orcamento') }}">💰 Orçamento</a></li></ul></div></div>
+    <div class="col-12 col-md-7 d-flex align-items-center mb-3 mb-md-0">
+        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
+        <div>
+            <h3 class="mb-0">{{ project.client.name }}</h3>
+            <small class="text-muted">{{ project.client.address }}</small>
+        </div>
+    </div>
+    <div class="col-12 col-md-5 text-md-end">
+        <div class="dropdown">
+            <button class="btn btn-warning dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-printer"></i> Relatórios</button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" target="_blank" href="{{ url_for('gerar_pdf', project_id=project.id, tipo='memorial') }}">📄 Memorial Descritivo</a></li>
+                <li><a class="dropdown-item" target="_blank" href="{{ url_for('gerar_pdf', project_id=project.id, tipo='tecnico') }}">🛠️ Roteiro Técnico</a></li>
+                <li><a class="dropdown-item" target="_blank" href="{{ url_for('gerar_levantamento', project_id=project.id) }}">📦 Lista de Compras</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item fw-bold text-primary" target="_blank" href="{{ url_for('gerar_pdf', project_id=project.id, tipo='orcamento') }}">💰 Orçamento Comercial</a></li>
+            </ul>
+        </div>
+    </div>
 </div>
 
-<!-- ABAS -->
 <ul class="nav nav-tabs mb-3 nav-fill" id="projectTabs" role="tablist">
-    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#cadastro"><i class="bi bi-plus-circle"></i> Itens do Projeto</button></li>
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#cadastro"><i class="bi bi-plus-circle"></i> Itens</button></li>
     <li class="nav-item"><button class="nav-link text-success fw-bold" data-bs-toggle="tab" data-bs-target="#orcamento"><i class="bi bi-currency-dollar"></i> Orçamento</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#resumo"><i class="bi bi-graph-up"></i> Resumo</button></li>
 </ul>
@@ -114,8 +217,8 @@
     
     <!-- ABA 1: CADASTRO -->
     <div class="tab-pane fade show active" id="cadastro">
-        <div class="card mb-4">
-            <div class="card-header bg-dark border-secondary p-3">
+        <div class="card mb-4 border-secondary shadow-sm">
+            <div class="card-header bg-dark p-3">
                 <button class="btn btn-link text-white text-decoration-none w-100 text-start d-flex justify-content-between align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFormCadastro">
                     <h5 class="mb-0 text-white"><i class="bi bi-plus-circle me-2"></i> Adicionar Novos Itens</h5>
                     <i class="bi bi-chevron-down collapse-icon"></i>
@@ -153,20 +256,18 @@
                         
                         <div class="col-12 col-md-6 col-lg-2">
                             <label class="form-label small text-muted fw-bold">Cor / Acabamento</label>
-                            <div class="d-flex gap-2">
-                                <div class="flex-grow-1">
-                                    <div class="input-group">
-                                        <select id="item_color_add_preset" class="form-select color-selector-preset" data-target-id="item_color_add_submit" data-custom-id="item_color_add_custom" data-preview-id="color-preview-add">
-                                            <option value="" disabled selected>Escolha...</option>
-                                            <option value="custom">Outra Cor / HEX</option>
-                                            {% for name, hex in cores.items() %}
-                                                <option value="{{ name }}">{{ name }}</option>
-                                            {% endfor %}
-                                        </select>
-                                        <input type="text" id="item_color_add_custom" class="form-control color-selector-custom" placeholder="#HEX ou Nome">
-                                        <input type="hidden" name="item_color" id="item_color_add_submit">
-                                    </div>
-                                </div>
+                            <div class="color-input-wrapper">
+                                <select id="item_color_add_preset" class="form-select pe-5">
+                                    <option value="Branco Neve Suvinil" data-hex="#F0F0F0" selected>Branco Neve Suvinil</option>
+                                    <option value="custom" data-hex="">Outra Cor / HEX</option>
+                                    {% for name, hex in cores.items() %}
+                                        {% if name != "Branco Neve Suvinil" %}
+                                        <option value="{{ name }}" data-hex="{{ hex }}">{{ name }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                                <input type="text" id="item_color_add_custom" class="form-control color-selector-custom" placeholder="#HEX ou Nome">
+                                <input type="hidden" name="item_color" id="item_color_add_submit">
                                 <div id="color-preview-add" class="color-preview-box"></div>
                             </div>
                         </div>
@@ -196,24 +297,23 @@
                             <button type="submit" class="btn btn-primary">Adicionar</button>
                         </div>
                         <div class="col-12">
-                            <input type="text" name="obs" class="form-control" placeholder="Observação específica para este item...">
+                            <input type="text" name="obs" class="form-control" placeholder="Observação específica...">
                         </div>
                     </form>
                 </div>
             </div>
         </div>
 
-        <div class="card">
+        <div class="card shadow-sm border-secondary">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
+                    <thead class="table-dark">
                         <tr>
                             <th style="width: 15%;">Ambiente</th>
-                            <th style="width: 20%;">Item</th>
+                            <th style="width: 25%;">Item</th>
                             <th style="width: 5%; text-align: center;">Qtd</th>
-                            <th style="width: 12%;">Cor</th> 
-                            <th style="width: 8%; text-align: center;">Touch</th>
-                            <th style="width: 15%;">Observação</th> 
+                            <th style="width: 15%;">Cor</th> 
+                            <th style="width: 25%;">Obs</th> 
                             <th style="width: 15%; text-align: center;">Ações</th>
                         </tr>
                     </thead>
@@ -221,19 +321,17 @@
                         {% for item in items %}
                         <tr>
                             <td class="fw-bold text-primary">{{ item.room_name }}</td>
-                            <td>{{ item.item_name }} {% if item.logo_inserir %}<span class="badge bg-warning text-dark" style="font-size: 0.6rem;">LOGO</span>{% endif %}</td>
-                            <td class="text-center"><span class="badge bg-dark">{{ item.quantity }}</span></td>
+                            <td>{{ item.item_name }} {% if item.logo_inserir %}<span class="badge bg-warning text-dark">LOGO</span>{% endif %}</td>
+                            <td class="text-center"><span class="badge bg-secondary">{{ item.quantity }}</span></td>
                             <td>
                                 {% set color_hex = cores.get(item.item_color, item.item_color if item.item_color and item.item_color.startswith('#') else '#F0F0F0') %}
-                                <span style="display: inline-block; width: 15px; height: 15px; background-color: {{ color_hex }}; border: 1px solid #444; border-radius: 3px; vertical-align: middle; margin-right: 5px;"></span>
+                                <div style="display: inline-block; width: 14px; height: 14px; background-color: {{ color_hex }}; border: 1px solid #666; border-radius: 2px; vertical-align: middle; margin-right: 5px;"></div>
                                 <small>{{ item.item_color }}</small>
                             </td>
+                            <td><small class="text-muted">{{ item.obs | default('N/A') }}</small></td>
                             <td class="text-center">
-                                <span class="badge bg-secondary opacity-75" style="font-size: 0.7rem;">{{ item.model_touch }}</span>
-                            </td>
-                            <td><small class="text-muted">{{ item.obs | default('N/A') }}</small></td> <!-- MUDOU DE LUGAR -->
-                            <td class="text-center">
-                                <form method="POST" style="display:inline;"><input type="hidden" name="delete_item_id" value="{{ item.id }}"><button type="submit" class="btn btn-sm btn-outline-danger border-0" onclick="return confirm('Remover item do projeto?')"><i class="bi bi-trash-fill"></i></button></form>
+                                <button class="btn btn-sm btn-outline-warning border-0" data-bs-toggle="modal" data-bs-target="#modalEditarItemProjeto-{{ item.id }}"><i class="bi bi-pencil-fill"></i></button>
+                                <form method="POST" style="display:inline;"><input type="hidden" name="delete_item_id" value="{{ item.id }}"><button type="submit" class="btn btn-sm btn-outline-danger border-0" onclick="return confirm('Remover item?')"><i class="bi bi-trash-fill"></i></button></form>
                             </td>
                         </tr>
                         {% endfor %}
@@ -247,120 +345,123 @@
     <div class="tab-pane fade" id="orcamento">
         <form action="{{ url_for('salvar_precos_projeto', project_id=project.id) }}" method="POST">
             <div class="card shadow-sm border-success">
-                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center"><h5 class="mb-0"><i class="bi bi-cash-coin"></i> Gestão de Preços</h5><button type="submit" class="btn btn-light btn-sm fw-bold">Salvar Orçamento</button></div>
-                <div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Item / Cor</th><th>Ambientes</th><th class="text-center">Total</th><th>Observações</th><th>Unitário</th><th class="text-end">Subtotal</th></tr></thead><tbody>
-                {% for item in consolidated_items %}
-                <tr>
-                    <td><strong>{{ item.item_name }}</strong><br><small class="text-muted">{{ item.item_color }}</small></td>
-                    <td><small class="text-muted">{{ item.room_name }}</small></td>
-                    <td class="text-center fw-bold">{{ item.quantity }}</td>
-                    <td><small class="text-muted italic">{{ item.obs }}</small></td>
-                    <td><div class="input-group input-group-sm"><span class="input-group-text">R$</span><input type="text" name="price_group_{{ item.item_name }}_{{ item.item_color }}" value="{{ item.unit_price }}" class="form-control input-price"></div></td>
-                    <td class="text-end fw-bold text-success">{{ item.total_price | format_currency }}</td>
-                </tr>
-                {% endfor %}
-                </tbody><tfoot class="table-secondary"><tr><th colspan="5" class="text-end fs-5">TOTAL ESTIMADO:</th><th class="text-end fs-5 text-success">{{ total_orcamento | format_currency }}</th></tr></tfoot></table></div>
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Gestão de Preços</h5>
+                    <button type="submit" class="btn btn-light btn-sm fw-bold">Salvar Orçamento</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr><th>Item</th><th>Locais</th><th class="text-center">Qtd</th><th>Unitário (R$)</th><th class="text-end">Total</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items %}
+                            <tr>
+                                <td><strong>{{ item.item_name }}</strong><br><small class="text-muted">{{ item.item_color }}</small></td>
+                                <td><small>{{ item.room_name }}</small></td>
+                                <td class="text-center">{{ item.quantity }}</td>
+                                <td><input type="text" name="price_{{ item.id }}" value="{{ item.unit_price }}" class="form-control form-control-sm text-center input-price"></td>
+                                <td class="text-end fw-bold text-success">{{ item.total_price | format_currency }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-secondary">
+                            <tr><th colspan="4" class="text-end fs-5">TOTAL:</th><th class="text-end fs-5 text-success">{{ total_orcamento | format_currency }}</th></tr>
+                        </tfoot>
+                    </table>
+                </div>
             </div>
         </form>
     </div>
     
     <!-- ABA 3: RESUMO -->
     <div class="tab-pane fade" id="resumo">
-        <div class="card"><div class="card-body p-0"><table class="table table-hover mb-0"><thead class="table-light"><tr><th>Item</th><th>Locais</th><th>Notas</th><th class="text-center">Total</th></tr></thead><tbody id="tabela-resumo"></tbody></table></div></div>
+        <div class="card"><div class="card-body p-0"><table class="table table-hover mb-0"><thead class="table-light"><tr><th>Item</th><th>Acabamento</th><th>Locais</th><th class="text-center">Total</th></tr></thead><tbody id="tabela-resumo"></tbody></table></div></div>
     </div>
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // --- LÓGICA DE ALERTA AUTOMÁTICO (REFORÇADA) ---
-        const alertElement = document.getElementById('success-alert');
-        if (alertElement && typeof bootstrap !== 'undefined') {
-            setTimeout(function() {
-                try {
-                    const bsAlert = bootstrap.Alert.getOrCreateInstance(alertElement);
-                    bsAlert.close();
-                } catch (err) {
-                    alertElement.style.display = 'none';
-                }
-            }, 4000);
+        // Mapeamento Centralizado
+        const SuvinilColors = { {% for name, hex in cores.items() %}{{ name | tojson }}: {{ hex | tojson }},{% endfor %} };
+        
+        function updateColorPreview(colorName, colorHex, previewId) {
+            const preview = document.getElementById(previewId);
+            if (!preview) return;
+            
+            let finalHex = colorHex;
+            if (!finalHex || finalHex === "") {
+                if (colorName && colorName.startsWith('#')) finalHex = colorName;
+                else if (colorName && /^[0-9A-F]{6}$/i.test(colorName)) finalHex = '#' + colorName;
+                else finalHex = SuvinilColors[colorName] || '#F0F0F0';
+            }
+            preview.style.backgroundColor = finalHex;
         }
 
-        // --- GESTÃO DE MODAIS ---
+        // Lógica de Cadastro (Preset + Custom + Hidden Submit)
+        const presetAdd = document.getElementById('item_color_add_preset');
+        const customAdd = document.getElementById('item_color_add_custom');
+        const submitAdd = document.getElementById('item_color_add_submit');
+        const previewAddId = 'color-preview-add';
+
+        if (presetAdd && customAdd && submitAdd) {
+            const syncColorAdd = () => {
+                const isCustom = presetAdd.value === 'custom';
+                customAdd.style.display = isCustom ? 'block' : 'none';
+                
+                const selectedOption = presetAdd.options[presetAdd.selectedIndex];
+                const hexFromData = isCustom ? "" : selectedOption.dataset.hex;
+                const finalValue = isCustom ? customAdd.value : presetAdd.value;
+                
+                // CRUCIAL: Atualiza o campo que o servidor recebe
+                submitAdd.value = finalValue;
+                updateColorPreview(finalValue, hexFromData, previewAddId);
+            };
+
+            presetAdd.addEventListener('change', syncColorAdd);
+            customAdd.addEventListener('input', syncColorAdd);
+            syncColorAdd(); // Força atualização inicial (evita erro de Branco Neve padrão)
+        }
+
+        // Lógica de Edição (Modais)
+        document.querySelectorAll('.color-edit-select').forEach(select => {
+            const pid = select.dataset.previewId;
+            const syncEdit = () => {
+                const selectedOption = select.options[select.selectedIndex];
+                updateColorPreview(select.value, selectedOption.dataset.hex, pid);
+            };
+            select.addEventListener('change', syncEdit);
+            syncEdit(); // Inicia com a cor salva
+        });
+
+        // Resumo Automático (Corrigido)
+        const itensRaw = [{% for item in items %}{ name: {{ item.item_name | tojson }}, color: {{ item.item_color | tojson }}, room: {{ item.room_name | tojson }}, qty: {{ item.quantity }} },{% endfor %}];
+        const resMap = {};
+        itensRaw.forEach(i => {
+            const k = `${i.name}_${i.color}`;
+            if (!resMap[k]) resMap[k] = { name: i.name, color: i.color, total: 0, rooms: new Set() };
+            resMap[k].total += i.qty; resMap[k].rooms.add(i.room);
+        });
+        const tbodyRes = document.getElementById('tabela-resumo');
+        if (tbodyRes) {
+            tbodyRes.innerHTML = '';
+            for (const k in resMap) {
+                const d = resMap[k];
+                tbodyRes.insertAdjacentHTML('beforeend', `<tr><td>${d.name}</td><td><small>${d.color}</small></td><td><small>${Array.from(d.rooms).join(', ')}</small></td><td class="text-center fw-bold">${d.total}</td></tr>`);
+            }
+        }
+
+        // Alertas Automáticos
+        const alertElement = document.getElementById('success-alert');
+        if (alertElement) setTimeout(() => { try { bootstrap.Alert.getOrCreateInstance(alertElement).close(); } catch(e) { alertElement.style.display = 'none'; } }, 2500);
+
+        // Gestão de Edição de Ambiente
         document.querySelectorAll('.btn-edit-ambiente').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.getElementById('edit_room_id').value = btn.dataset.id;
                 document.getElementById('edit_room_name').value = btn.dataset.name;
             });
         });
-
-        // --- PREVISÃO DE CORES ---
-        const SuvinilColors = { {% for name, hex in cores.items() %}"{{ name }}": "{{ hex }}",{% endfor %} };
-        
-        function updateColorPreview(colorValue, previewId) {
-            const preview = document.getElementById(previewId);
-            if (!preview) return;
-            const hex = SuvinilColors[colorValue] || (colorValue && colorValue.startsWith('#') ? colorValue : '#F0F0F0');
-            preview.style.backgroundColor = hex;
-        }
-
-        function setupColorSelector(presetId, customId, submitId, previewId) {
-            const preset = document.getElementById(presetId);
-            const custom = document.getElementById(customId);
-            const submit = document.getElementById(submitId);
-            if (!preset || !custom || !submit) return;
-            
-            const updateState = () => {
-                let val = preset.value === 'custom' ? custom.value : preset.value;
-                custom.style.display = preset.value === 'custom' ? 'block' : 'none';
-                submit.value = val;
-                updateColorPreview(val, previewId);
-            };
-            
-            preset.addEventListener('change', updateState);
-            custom.addEventListener('input', updateState);
-            updateState();
-        }
-
-        setupColorSelector('item_color_add_preset', 'item_color_add_custom', 'item_color_add_submit', 'color-preview-add');
-
-        // --- RESUMO AUTOMÁTICO ---
-        const itensRaw = [
-            {% for item in items %}
-            { 
-                name: {{ item.item_name | tojson if item.item_name else '""' }}, 
-                room: {{ item.room_name | tojson if item.room_name else '""' }}, 
-                qty: {{ item.quantity if item.quantity else 0 }}, 
-                color: {{ item.item_color | tojson if item.item_color else '""' }}, 
-                obs: {{ item.obs | tojson if item.obs else '""' }} 
-            },
-            {% endfor %}
-        ];
-        
-        const resMap = {};
-        itensRaw.forEach(i => {
-            const key = `${i.name}_${i.color}`;
-            if (!resMap[key]) resMap[key] = { name: i.name, color: i.color, total: 0, rooms: new Set(), obs: new Set() };
-            resMap[key].total += i.qty;
-            if (i.room) resMap[key].rooms.add(i.room);
-            if (i.obs && i.obs !== 'N/A') resMap[key].obs.add(i.obs);
-        });
-        
-        const tbody = document.getElementById('tabela-resumo');
-        if (tbody) {
-            tbody.innerHTML = '';
-            for (const k in resMap) {
-                const d = resMap[k];
-                tbody.innerHTML += `<tr><td>${d.name} <small class="text-muted">(${d.color})</small></td><td><small>${Array.from(d.rooms).join(', ')}</small></td><td><small class="text-muted italic">${Array.from(d.obs).join(' | ')}</small></td><td class="text-center fw-bold">${d.total}</td></tr>`;
-            }
-        }
-        
-        // --- MANUTENÇÃO DOS ÍCONES DE COLAPSO ---
-        const collapseCadastro = document.getElementById('collapseFormCadastro');
-        const iconCadastro = document.querySelector('.collapse-icon');
-        if (collapseCadastro && iconCadastro) {
-            collapseCadastro.addEventListener('hidden.bs.collapse', () => iconCadastro.classList.add('collapsed'));
-            collapseCadastro.addEventListener('shown.bs.collapse', () => iconCadastro.classList.remove('collapsed'));
-        }
     });
 </script>
 
