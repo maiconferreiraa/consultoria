@@ -101,21 +101,64 @@ def inject_user_settings():
             if b64 and mime: app_logo_url = f"data:{mime};base64,{b64}"
     return dict(app_title_custom=app_title_custom, app_logo_url=app_logo_url, now=datetime.now()) 
 
-# --- GERAÇÃO DE NARRATIVA AUTOMÁTICA ---
+# --- GERAÇÃO DE NARRATIVA AUTOMÁTICA (RESTAURADA E MELHORADA) ---
 def gerar_narrativa_ambiente(itens):
+    if not itens: return ""
+    
     circuitos_luz = 0
-    integracoes = []
+    clima = False
+    audio_video = False
+    cortinas = False
+    seguranca = False
+    
     for item in itens:
         nome = item.item_name.lower()
-        qtd = int(item.quantity or 0)
-        if "tecla" in nome:
+        qtd = int(item.quantity or 1)
+        
+        # Lógica de Iluminação (Teclas)
+        if "tecla" in nome or "interruptor" in nome:
             match = re.search(r'(\d+)\s*tecla', nome)
             circuitos_luz += (int(match.group(1)) if match else 1) * qtd
-        if "ar condicionado" in nome: integracoes.append("climatização")
-        if "tv" in nome or "cinema" in nome: integracoes.append("audiovisual")
+            
+        # Lógica de Climatização
+        if any(x in nome for x in ["ar condicionado", "climatização", "ir zigbee", "infravermelho"]):
+            clima = True
+            
+        # Lógica de Áudio e Vídeo
+        if any(x in nome for x in ["tv", "cinema", "som", "caixa", "receiver", "amplificador"]):
+            audio_video = True
+            
+        # Lógica de Persianas/Cortinas
+        if any(x in nome for x in ["persiana", "cortina", "motor"]):
+            cortinas = True
+
+        # Lógica de Segurança/Sensores
+        if any(x in nome for x in ["sensor", "presença", "abertura", "fumaça"]):
+            seguranca = True
+
     frases = []
-    if circuitos_luz > 0: frases.append(f"O ambiente conta com {circuitos_luz} pontos de iluminação inteligente.")
-    if integracoes: frases.append(f"Inclui integração de {', '.join(set(integracoes))}.")
+    
+    # Montagem do texto de Iluminação
+    if circuitos_luz > 0:
+        frases.append(f"Este ambiente contará com um sistema de <strong>iluminação inteligente</strong> totalmente automatizado, controlando {circuitos_luz} circuitos distintos para criação de cenas e maior conforto visual.")
+    
+    # Montagem das integrações adicionais
+    extras = []
+    if clima: extras.append("climatização (Ar-Condicionado)")
+    if audio_video: extras.append("entretenimento audiovisual")
+    if cortinas: extras.append("motorização de persianas/cortinas")
+    if seguranca: extras.append("segurança e monitoramento por sensores")
+    
+    if extras:
+        if len(extras) == 1:
+            frases.append(f"O projeto contempla também a integração total da {extras[0]}, permitindo o controle centralizado via aplicativo ou comandos de voz.")
+        else:
+            lista_extras = ", ".join(extras[:-1]) + " e " + extras[-1]
+            frases.append(f"Além disso, haverá integração completa de {lista_extras}, unificando todos os sistemas em uma única plataforma de gestão.")
+            
+    if not frases:
+        return "Ambiente configurado com dispositivos de automação e tecnologia de ponta conforme detalhamento abaixo."
+        
     return " ".join(frases)
 
 # --- ROTAS DE AUTENTICAÇÃO ---
@@ -170,6 +213,12 @@ def index():
 @login_required
 def novo_projeto():
     if request.method == 'POST':
+        # --- LÓGICA DE ID NUMÉRICO SEQUENCIAL ---
+        # Contamos quantos projetos existem no total para definir o próximo número
+        all_projects = db.collection('projects').get()
+        next_number = len(all_projects) + 1
+        project_id = f"{next_number:02d}" # Formata como 01, 02, 03...
+        
         data = {
             "client_name": request.form['cliente'], 
             "client_address": request.form['endereco'],
@@ -177,9 +226,12 @@ def novo_projeto():
             "created_at": datetime.now(timezone.utc),
             "user_id": get_current_user_id()
         }
-        _, ref = db.collection('projects').add(data)
-        session['success_message'] = "Projeto criado com sucesso!"
-        return redirect(url_for('gerenciar_projeto', project_id=ref.id))
+        
+        # Salvamos usando o ID numérico como identificador do documento
+        db.collection('projects').document(project_id).set(data)
+        
+        session['success_message'] = f"Projeto {project_id} criado com sucesso!"
+        return redirect(url_for('gerenciar_projeto', project_id=project_id))
     return render_template('nova_consultoria.html')
 
 @app.route('/editar_projeto/<project_id>', methods=['GET', 'POST'])
@@ -245,9 +297,11 @@ def gerenciar_projeto(project_id):
         for d in items_stream:
             data = d.to_dict()
             if not data.get('user_id') or data.get('user_id') == user_id: res.append(DictObj(data, id=d.id))
-        return sorted(res, key=lambda x: x.name)
+        return sorted(res, key=lambda x: getattr(x, 'name', ''))
 
     catalogo, ambientes = get_list('catalogo'), get_list('ambientes')
+    modelos_touch = get_list('modelos_touch')
+    
     items_ref = proj_ref.collection('items').stream()
     project_items = []
     resumo_consolidado = {}
@@ -292,28 +346,43 @@ def gerenciar_projeto(project_id):
     project_obj.client = DictObj({"name": proj_data.get('client_name'), "address": proj_data.get('client_address'), "phone": proj_data.get('client_phone')})
     
     msg = session.pop('success_message', None)
-    return render_template('gerenciar_projeto.html', project=project_obj, items=project_items, consolidated_items=consolidated_items, total_orcamento=total_orcamento_calculado, catalogo=catalogo, ambientes=ambientes, cores=SUVINIL_CORAL_COLORS, success_message=msg)
+    return render_template('gerenciar_projeto.html', project=project_obj, items=project_items, consolidated_items=consolidated_items, total_orcamento=total_orcamento_calculado, catalogo=catalogo, ambientes=ambientes, modelos_touch=modelos_touch, cores=SUVINIL_CORAL_COLORS, success_message=msg)
 
-# --- ROTAS DE AMBIENTES E CATÁLOGO ---
+# --- ROTAS DE AMBIENTES E MODELOS TOUCH ---
 @app.route('/adicionar_ambiente', methods=['POST'])
 @login_required
 def adicionar_ambiente():
     db.collection('ambientes').add({"name": request.form['name'].strip(), "user_id": get_current_user_id()})
-    session['success_message'] = f"Cômodo '{request.form['name']}' adicionado com sucesso!"
     return redirect(request.referrer)
 
 @app.route('/editar_ambiente', methods=['POST'])
 @login_required
 def editar_ambiente():
     db.collection('ambientes').document(request.form.get('room_id')).update({"name": request.form['name'].strip()})
-    session['success_message'] = "Nome do cômodo atualizado!"
     return redirect(request.referrer)
 
 @app.route('/excluir_ambiente/<room_id>')
 @login_required
 def excluir_ambiente(room_id):
     db.collection('ambientes').document(room_id).delete()
-    session['success_message'] = "Cômodo removido com sucesso!"
+    return redirect(request.referrer)
+
+@app.route('/adicionar_modelo_touch', methods=['POST'])
+@login_required
+def adicionar_modelo_touch():
+    db.collection('modelos_touch').add({"name": request.form['name'].strip(), "user_id": get_current_user_id()})
+    return redirect(request.referrer)
+
+@app.route('/editar_modelo_touch', methods=['POST'])
+@login_required
+def editar_modelo_touch():
+    db.collection('modelos_touch').document(request.form.get('model_id')).update({"name": request.form['name'].strip()})
+    return redirect(request.referrer)
+
+@app.route('/excluir_modelo_touch/<model_id>')
+@login_required
+def excluir_modelo_touch(model_id):
+    db.collection('modelos_touch').document(model_id).delete()
     return redirect(request.referrer)
 
 @app.route('/adicionar_item_catalogo', methods=['POST'])
@@ -335,42 +404,6 @@ def excluir_item_catalogo(item_id):
     db.collection('catalogo').document(item_id).delete()
     session['success_message'] = "Item removido do catálogo."
     return redirect(request.referrer)
-
-# --- ROTAS DE SALVAMENTO DE PREÇOS ---
-@app.route('/salvar_precos_projeto/<project_id>', methods=['POST'])
-@login_required
-def salvar_precos_projeto(project_id):
-    proj_ref = db.collection('projects').document(project_id)
-    items_ref = proj_ref.collection('items').stream()
-    novos_precos = {}
-    for key, value in request.form.items():
-        if key.startswith('price_group_'):
-            group_key = key.replace('price_group_', '')
-            try: novos_precos[group_key] = float(value.replace(',', '.'))
-            except: continue
-
-    for doc in items_ref:
-        d = doc.to_dict()
-        item_key = f"{str(d.get('item_name', '')).strip()}:::{str(d.get('item_color', '')).strip()}"
-        if item_key in novos_precos:
-            proj_ref.collection('items').document(doc.id).update({"unit_price": novos_precos[item_key]})
-            
-    session['success_message'] = "Preços do orçamento atualizados!"
-    return redirect(url_for('gerenciar_projeto', project_id=project_id))
-
-@app.route('/editar_item_projeto', methods=['POST'])
-@login_required
-def editar_item_projeto():
-    proj_id = request.form.get('project_id')
-    db.collection('projects').document(proj_id).collection('items').document(request.form.get('item_id')).update({
-        "quantity": int(request.form['quantity']), 
-        "obs": request.form['obs'].strip(),
-        "room_name": request.form.get('room_name').strip(), 
-        "item_color": request.form.get('item_color').strip(),
-        "logo_inserir": request.form.get('logo_inserir') == 'SIM'
-    })
-    session['success_message'] = "Item do projeto atualizado!"
-    return redirect(url_for('gerenciar_projeto', project_id=proj_id))
 
 # --- GERAÇÃO DE PDFS ---
 @app.route('/projeto/<project_id>/pdf/<tipo>')
@@ -403,7 +436,9 @@ def gerar_pdf(project_id, tipo):
             it = DictObj(d, id=doc.id)
             it.unit_price, it.quantity = float(d.get('unit_price', 0)), int(d.get('quantity', 1))
             it.total_price = it.unit_price * it.quantity
-            it.color_hex = SUVINIL_CORAL_COLORS.get(it.item_color, '#F0F0F0')
+            it.color_name = it.item_color
+            it.color_hex = SUVINIL_CORAL_COLORS.get(it.item_color, it.item_color if it.item_color.startswith('#') else '#F0F0F0')
+            
             it.catalog_item = DictObj({"name": it.item_name, "description_commercial": d.get('description_commercial', ''), "tech_requirement": d.get('tech_requirement', '')})
             total_geral += it.total_price
             itens_para_template.append(it)
@@ -443,6 +478,40 @@ def gerar_levantamento(project_id):
     response = make_response(pdf)
     response.headers['Content-Type'] = 'application/pdf'
     return response
+
+@app.route('/salvar_precos_projeto/<project_id>', methods=['POST'])
+@login_required
+def salvar_precos_projeto(project_id):
+    proj_ref = db.collection('projects').document(project_id)
+    items_ref = proj_ref.collection('items').stream()
+    novos_precos = {}
+    for key, value in request.form.items():
+        if key.startswith('price_group_'):
+            group_key = key.replace('price_group_', '')
+            try: novos_precos[group_key] = float(value.replace(',', '.'))
+            except: continue
+    for doc in items_ref:
+        d = doc.to_dict()
+        item_key = f"{str(d.get('item_name', '')).strip()}:::{str(d.get('item_color', '')).strip()}"
+        if item_key in novos_precos:
+            proj_ref.collection('items').document(doc.id).update({"unit_price": novos_precos[item_key]})
+    session['success_message'] = "Preços do orçamento atualizados!"
+    return redirect(url_for('gerenciar_projeto', project_id=project_id))
+
+@app.route('/editar_item_projeto', methods=['POST'])
+@login_required
+def editar_item_projeto():
+    proj_id = request.form.get('project_id')
+    db.collection('projects').document(proj_id).collection('items').document(request.form.get('item_id')).update({
+        "quantity": int(request.form['quantity']), 
+        "obs": request.form['obs'].strip(),
+        "room_name": request.form.get('room_name').strip(), 
+        "item_color": request.form.get('item_color').strip(),
+        "model_touch": request.form.get('model_touch_override'),
+        "logo_inserir": request.form.get('logo_inserir') == 'SIM'
+    })
+    session['success_message'] = "Item do projeto atualizado!"
+    return redirect(url_for('gerenciar_projeto', project_id=proj_id))
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)

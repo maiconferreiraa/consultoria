@@ -23,9 +23,8 @@
     .collapse-icon.collapsed { transform: rotate(-90deg); }
     .table-responsive { width: 100%; overflow-x: auto; }
     .container-fluid { padding-left: 10px; padding-right: 10px; }
-    .input-price { font-weight: bold; color: #198754 !important; }
+    .input-price { font-weight: bold; color: #198754 !important; border-color: #198754 !important; }
     
-    /* Contentor para colocar o preview "dentro" do campo */
     .color-input-wrapper {
         position: relative;
         width: 100%;
@@ -36,14 +35,14 @@
     .color-preview-box { 
         position: absolute;
         top: 9px;
-        right: 35px; /* Antes da seta do select */
+        right: 35px; 
         width: 20px; 
         height: 20px; 
         border: 1px solid #666; 
         border-radius: 3px; 
         background-color: #F0F0F0; 
         z-index: 10;
-        pointer-events: none; /* Garante que o clique passe para o select */
+        pointer-events: none; 
         box-shadow: inset 0 0 2px rgba(0,0,0,0.5);
     }
     
@@ -56,7 +55,7 @@
 
 <!-- --- MODAIS DE GESTÃO DE AMBIENTES --- -->
 <div class="modal fade" id="modalNovoAmbiente" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog"><div class="modal-content bg-dark border-secondary"><div class="modal-header border-secondary"><h5 class="modal-title text-white">Novo Cômodo</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><form action="{{ url_for('adicionar_ambiente') }}" method="POST"><div class="modal-body"><input type="hidden" name="project_id_redirect" value="{{ project.id }}"><label class="text-white small mb-1">Nome do Cômodo</label><input type="text" name="name" class="form-control" placeholder="Ex: Suíte Master" required></div><div class="modal-footer border-secondary"><button type="submit" class="btn btn-success w-100">Salvar Cômodo</button></div></form></div></div>
+    <div class="modal-dialog"><div class="modal-content bg-dark border-secondary"><div class="modal-header border-secondary"><h5 class="modal-title text-white">Novo Cômodo</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><form action="{{ url_for('adicionar_ambiente') }}" method="POST"><div class="modal-body"><label class="text-white small mb-1">Nome do Cômodo</label><input type="text" name="name" class="form-control" placeholder="Ex: Suíte Master" required></div><div class="modal-footer border-secondary"><button type="submit" class="btn btn-success w-100">Salvar Cômodo</button></div></form></div></div>
 </div>
 
 <div class="modal fade" id="modalGerenciarAmbientes" tabindex="-1" aria-hidden="true">
@@ -65,6 +64,19 @@
 
 <div class="modal fade" id="modalEditarAmbiente" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog"><div class="modal-content bg-dark border-warning"><div class="modal-header border-warning bg-warning text-dark"><h5 class="modal-title">Editar Nome</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><form action="{{ url_for('editar_ambiente') }}" method="POST"><div class="modal-body text-white"><input type="hidden" name="room_id" id="edit_room_id"><label class="small mb-1">Novo Nome</label><input type="text" name="name" id="edit_room_name" class="form-control" required></div><div class="modal-footer border-secondary"><button type="submit" class="btn btn-warning">Salvar Alteração</button></div></form></div></div>
+</div>
+
+<!-- --- MODAIS DE GESTÃO DE MODELOS TOUCH --- -->
+<div class="modal fade" id="modalNovoModeloTouch" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content bg-dark border-secondary"><div class="modal-header border-secondary"><h5 class="modal-title text-white">Novo Modelo de Tecla</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><form action="{{ url_for('adicionar_modelo_touch') }}" method="POST"><div class="modal-body"><label class="text-white small mb-1">Nome do Modelo</label><input type="text" name="name" class="form-control" placeholder="Ex: Risquinho" required></div><div class="modal-footer border-secondary"><button type="submit" class="btn btn-success w-100">Salvar Modelo</button></div></form></div></div>
+</div>
+
+<div class="modal fade" id="modalGerenciarModelosTouch" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable"><div class="modal-content bg-dark border-secondary"><div class="modal-header border-secondary"><h5 class="modal-title text-white">Gerenciar Modelos Touch</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body p-0"><table class="table table-dark table-striped mb-0"><thead><tr><th>Modelo</th><th class="text-end">Ações</th></tr></thead><tbody>{% for model in modelos_touch %}<tr><td>{{ model.name }}</td><td class="text-end"><button class="btn btn-sm btn-outline-warning border-0 btn-edit-modelo" data-id="{{ model.id }}" data-name="{{ model.name }}" data-bs-toggle="modal" data-bs-target="#modalEditarModeloTouch"><i class="bi bi-pencil-fill"></i></button><a href="{{ url_for('excluir_modelo_touch', model_id=model.id) }}" class="btn btn-sm btn-outline-danger border-0" onclick="return confirm('Excluir este modelo permanentemente?')"><i class="bi bi-trash-fill"></i></a></td></tr>{% else %}<tr><td colspan="2" class="text-center text-muted small py-3">Nenhum modelo cadastrado.</td></tr>{% endfor %}</tbody></table></div></div></div>
+</div>
+
+<div class="modal fade" id="modalEditarModeloTouch" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content bg-dark border-warning"><div class="modal-header border-warning bg-warning text-dark"><h5 class="modal-title">Editar Modelo</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><form action="{{ url_for('editar_modelo_touch') }}" method="POST"><div class="modal-body text-white"><input type="hidden" name="model_id" id="edit_model_id"><label class="small mb-1">Novo Nome</label><input type="text" name="name" id="edit_model_name" class="form-control" required></div><div class="modal-footer border-secondary"><button type="submit" class="btn btn-warning">Salvar Alteração</button></div></form></div></div>
 </div>
 
 <!-- --- MODAIS DE GESTÃO DE CATÁLOGO --- -->
@@ -78,7 +90,7 @@
                     <div class="mb-3"><label class="small mb-1">Categoria</label><select name="category" class="form-select"><option value="Iluminação">Iluminação</option><option value="Climatização">Climatização</option><option value="Audiovisual">Audiovisual</option><option value="Segurança">Segurança</option><option value="Outros">Outros</option></select></div>
                     <div class="mb-3"><label class="small mb-1">Descrição Comercial</label><textarea name="description_commercial" class="form-control" rows="2"></textarea></div>
                     <div class="mb-3"><label class="small mb-1">Requisito Técnico</label><textarea name="tech_requirement" class="form-control" rows="2"></textarea></div>
-                    <div class="mb-3"><label class="small mb-1">Modelo Touch Padrão</label><select name="model_touch_new" class="form-select"><option value="quadrado">Quadrado</option><option value="redondo">Redondo</option><option value="horizontal">Horizontal</option></select></div>
+                    <div class="mb-3"><label class="small mb-1">Modelo Touch Padrão</label><select name="model_touch_new" class="form-select">{% for model in modelos_touch %}<option value="{{ model.name }}">{{ model.name }}</option>{% else %}<option value="quadrado">Quadrado</option><option value="redondo">Redondo</option><option value="risquinho">Risquinho</option>{% endfor %}</select></div>
                 </div>
                 <div class="modal-footer border-secondary"><button type="submit" class="btn btn-success w-100">Salvar no Catálogo Geral</button></div>
             </form>
@@ -149,9 +161,13 @@
                         <div class="col-6 mb-3">
                             <label class="form-label small fw-bold">Touch</label>
                             <select name="model_touch_override" class="form-select">
-                                <option value="quadrado" {% if item.model_touch == 'quadrado' %}selected{% endif %}>Quadrado</option>
-                                <option value="redondo" {% if item.model_touch == 'redondo' %}selected{% endif %}>Redondo</option>
-                                <option value="horizontal" {% if item.model_touch == 'horizontal' %}selected{% endif %}>Horizontal</option>
+                                {% for model in modelos_touch %}
+                                    <option value="{{ model.name }}" {% if item.model_touch == model.name %}selected{% endif %}>{{ model.name }}</option>
+                                {% else %}
+                                    <option value="quadrado" {% if item.model_touch == 'quadrado' %}selected{% endif %}>Quadrado</option>
+                                    <option value="redondo" {% if item.model_touch == 'redondo' %}selected{% endif %}>Redondo</option>
+                                    <option value="risquinho" {% if item.model_touch == 'risquinho' %}selected{% endif %}>Risquinho</option>
+                                {% endfor %}
                             </select>
                         </div>
                         <div class="col-6 mb-3">
@@ -198,7 +214,7 @@
             <ul class="dropdown-menu dropdown-menu-end">
                 <li><a class="dropdown-item" target="_blank" href="{{ url_for('gerar_pdf', project_id=project.id, tipo='memorial') }}">📄 Memorial Descritivo</a></li>
                 <li><a class="dropdown-item" target="_blank" href="{{ url_for('gerar_pdf', project_id=project.id, tipo='tecnico') }}">🛠️ Roteiro Técnico</a></li>
-                <li><a class="dropdown-item" target="_blank" href="{{ url_for('gerar_levantamento', project_id=project.id) }}">📦 Lista de Compras</a></li>
+                <li><a class="dropdown-item" target="_blank" href="{{ url_for('gerar_pdf', project_id=project.id, tipo='levantamento') }}">📦 Lista de Compras</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item fw-bold text-primary" target="_blank" href="{{ url_for('gerar_pdf', project_id=project.id, tipo='orcamento') }}">💰 Orçamento Comercial</a></li>
             </ul>
@@ -273,11 +289,19 @@
 
                         <div class="col-6 col-md-6 col-lg-2">
                             <label class="form-label small text-muted fw-bold">Modelo Touch</label>
-                            <select name="model_touch_override" class="form-select">
-                                <option value="quadrado">Quadrado</option>
-                                <option value="redondo">Redondo</option>
-                                <option value="horizontal">Horizontal</option>
-                            </select>
+                            <div class="input-group">
+                                <select name="model_touch_override" class="form-select">
+                                    {% for model in modelos_touch %}
+                                        <option value="{{ model.name }}">{{ model.name }}</option>
+                                    {% else %}
+                                        <option value="quadrado">Quadrado</option>
+                                        <option value="redondo">Redondo</option>
+                                        <option value="risquinho">Risquinho</option>
+                                    {% endfor %}
+                                </select>
+                                <button class="btn btn-outline-success" type="button" data-bs-toggle="modal" data-bs-target="#modalNovoModeloTouch" title="Novo Modelo"><i class="bi bi-plus-lg"></i></button>
+                                <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#modalGerenciarModelosTouch" title="Gerenciar Modelos"><i class="bi bi-gear-fill"></i></button>
+                            </div>
                         </div>
 
                         <div class="col-6 col-md-6 col-lg-1">
@@ -401,7 +425,7 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Mapeamento Centralizado
+        // Mapeamento Centralizado de Cores
         const SuvinilColors = { {% for name, hex in cores.items() %}{{ name | tojson }}: {{ hex | tojson }},{% endfor %} };
         
         function updateColorPreview(colorName, colorHex, previewId) {
@@ -432,14 +456,14 @@
                 const hexFromData = isCustom ? "" : selectedOption.dataset.hex;
                 const finalValue = isCustom ? customAdd.value : presetAdd.value;
                 
-                // CRUCIAL: Atualiza o campo que o servidor recebe
+                // Atualiza o campo que o servidor recebe
                 submitAdd.value = finalValue;
                 updateColorPreview(finalValue, hexFromData, previewAddId);
             };
 
             presetAdd.addEventListener('change', syncColorAdd);
             customAdd.addEventListener('input', syncColorAdd);
-            syncColorAdd(); // Força atualização inicial (evita erro de Branco Neve padrão)
+            syncColorAdd(); 
         }
 
         // Lógica de Edição (Modais)
@@ -450,18 +474,34 @@
                 updateColorPreview(select.value, selectedOption.dataset.hex, pid);
             };
             select.addEventListener('change', syncEdit);
-            syncEdit(); // Inicia com a cor salva
+            syncEdit(); 
         });
 
         // Alertas Automáticos
         const alertElement = document.getElementById('success-alert');
-        if (alertElement) setTimeout(() => { try { bootstrap.Alert.getOrCreateInstance(alertElement).close(); } catch(e) { alertElement.style.display = 'none'; } }, 2500);
+        if (alertElement) {
+            setTimeout(() => { 
+                try { 
+                    bootstrap.Alert.getOrCreateInstance(alertElement).close(); 
+                } catch(e) { 
+                    alertElement.style.display = 'none'; 
+                } 
+            }, 2500);
+        }
 
         // Gestão de Edição de Ambiente
         document.querySelectorAll('.btn-edit-ambiente').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.getElementById('edit_room_id').value = btn.dataset.id;
                 document.getElementById('edit_room_name').value = btn.dataset.name;
+            });
+        });
+
+        // Gestão de Edição de Modelo Touch
+        document.querySelectorAll('.btn-edit-modelo').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('edit_model_id').value = btn.dataset.id;
+                document.getElementById('edit_model_name').value = btn.dataset.name;
             });
         });
     });
