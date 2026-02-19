@@ -101,48 +101,25 @@ def inject_user_settings():
             if b64 and mime: app_logo_url = f"data:{mime};base64,{b64}"
     return dict(app_title_custom=app_title_custom, app_logo_url=app_logo_url, now=datetime.now()) 
 
-# --- GERAÇÃO DE NARRATIVA AUTOMÁTICA (RESTAURADA E MELHORADA) ---
+# --- GERAÇÃO DE NARRATIVA AUTOMÁTICA ---
 def gerar_narrativa_ambiente(itens):
     if not itens: return ""
-    
-    circuitos_luz = 0
-    clima = False
-    audio_video = False
-    cortinas = False
-    seguranca = False
-    
+    circuitos_luz, clima, audio_video, cortinas, seguranca = 0, False, False, False, False
     for item in itens:
         nome = item.item_name.lower()
         qtd = int(item.quantity or 1)
-        
-        # Lógica de Iluminação (Teclas)
         if "tecla" in nome or "interruptor" in nome:
             match = re.search(r'(\d+)\s*tecla', nome)
             circuitos_luz += (int(match.group(1)) if match else 1) * qtd
-            
-        # Lógica de Climatização
-        if any(x in nome for x in ["ar condicionado", "climatização", "ir zigbee", "infravermelho"]):
-            clima = True
-            
-        # Lógica de Áudio e Vídeo
-        if any(x in nome for x in ["tv", "cinema", "som", "caixa", "receiver", "amplificador"]):
-            audio_video = True
-            
-        # Lógica de Persianas/Cortinas
-        if any(x in nome for x in ["persiana", "cortina", "motor"]):
-            cortinas = True
-
-        # Lógica de Segurança/Sensores
-        if any(x in nome for x in ["sensor", "presença", "abertura", "fumaça"]):
-            seguranca = True
+        if any(x in nome for x in ["ar condicionado", "climatização", "ir zigbee", "infravermelho"]): clima = True
+        if any(x in nome for x in ["tv", "cinema", "som", "caixa", "receiver", "amplificador"]): audio_video = True
+        if any(x in nome for x in ["persiana", "cortina", "motor"]): cortinas = True
+        if any(x in nome for x in ["sensor", "presença", "abertura", "fumaça"]): seguranca = True
 
     frases = []
-    
-    # Montagem do texto de Iluminação
     if circuitos_luz > 0:
         frases.append(f"Este ambiente contará com um sistema de <strong>iluminação inteligente</strong> totalmente automatizado, controlando {circuitos_luz} circuitos distintos para criação de cenas e maior conforto visual.")
     
-    # Montagem das integrações adicionais
     extras = []
     if clima: extras.append("climatização (Ar-Condicionado)")
     if audio_video: extras.append("entretenimento audiovisual")
@@ -150,16 +127,12 @@ def gerar_narrativa_ambiente(itens):
     if seguranca: extras.append("segurança e monitoramento por sensores")
     
     if extras:
-        if len(extras) == 1:
-            frases.append(f"O projeto contempla também a integração total da {extras[0]}, permitindo o controle centralizado via aplicativo ou comandos de voz.")
+        if len(extras) == 1: frases.append(f"O projeto contempla também a integração total da {extras[0]}, permitindo o controle centralizado via aplicativo ou comandos de voz.")
         else:
             lista_extras = ", ".join(extras[:-1]) + " e " + extras[-1]
             frases.append(f"Além disso, haverá integração completa de {lista_extras}, unificando todos os sistemas em uma única plataforma de gestão.")
             
-    if not frases:
-        return "Ambiente configurado com dispositivos de automação e tecnologia de ponta conforme detalhamento abaixo."
-        
-    return " ".join(frases)
+    return " ".join(frases) if frases else "Ambiente configurado com dispositivos de automação e tecnologia de ponta conforme detalhamento abaixo."
 
 # --- ROTAS DE AUTENTICAÇÃO ---
 @app.route('/login', methods=['GET', 'POST'])
@@ -213,12 +186,6 @@ def index():
 @login_required
 def novo_projeto():
     if request.method == 'POST':
-        # --- LÓGICA DE ID NUMÉRICO SEQUENCIAL ---
-        # Contamos quantos projetos existem no total para definir o próximo número
-        all_projects = db.collection('projects').get()
-        next_number = len(all_projects) + 1
-        project_id = f"{next_number:02d}" # Formata como 01, 02, 03...
-        
         data = {
             "client_name": request.form['cliente'], 
             "client_address": request.form['endereco'],
@@ -226,12 +193,9 @@ def novo_projeto():
             "created_at": datetime.now(timezone.utc),
             "user_id": get_current_user_id()
         }
-        
-        # Salvamos usando o ID numérico como identificador do documento
-        db.collection('projects').document(project_id).set(data)
-        
-        session['success_message'] = f"Projeto {project_id} criado com sucesso!"
-        return redirect(url_for('gerenciar_projeto', project_id=project_id))
+        _, ref = db.collection('projects').add(data)
+        session['success_message'] = "Projeto criado com sucesso!"
+        return redirect(url_for('gerenciar_projeto', project_id=ref.id))
     return render_template('nova_consultoria.html')
 
 @app.route('/editar_projeto/<project_id>', methods=['GET', 'POST'])
@@ -254,10 +218,9 @@ def editar_projeto(project_id):
 @login_required
 def apagar_projeto(project_id):
     db.collection('projects').document(project_id).delete()
-    session['success_message'] = "Projeto excluído com sucesso!"
+    session['success_message'] = "Projeto excluído!"
     return redirect(url_for('index'))
 
-# --- GESTÃO DO PROJETO ---
 @app.route('/projeto/<project_id>', methods=['GET', 'POST'])
 @login_required 
 def gerenciar_projeto(project_id):
@@ -269,7 +232,6 @@ def gerenciar_projeto(project_id):
     if request.method == 'POST':
         if 'delete_item_id' in request.form:
             proj_ref.collection('items').document(request.form['delete_item_id']).delete()
-            session['success_message'] = "Item removido do projeto."
         else:
             cat_id = request.form['catalog_item_id']
             cat_doc = db.collection('catalogo').document(cat_id).get().to_dict()
@@ -288,7 +250,6 @@ def gerenciar_projeto(project_id):
                 "created_at": datetime.now(timezone.utc)
             }
             proj_ref.collection('items').add(item_data)
-            session['success_message'] = f"Item '{cat_doc['name']}' adicionado!"
         return redirect(url_for('gerenciar_projeto', project_id=project_id))
 
     def get_list(coll):
@@ -299,56 +260,39 @@ def gerenciar_projeto(project_id):
             if not data.get('user_id') or data.get('user_id') == user_id: res.append(DictObj(data, id=d.id))
         return sorted(res, key=lambda x: getattr(x, 'name', ''))
 
-    catalogo, ambientes = get_list('catalogo'), get_list('ambientes')
-    modelos_touch = get_list('modelos_touch')
-    
+    catalogo, ambientes, modelos_touch = get_list('catalogo'), get_list('ambientes'), get_list('modelos_touch')
     items_ref = proj_ref.collection('items').stream()
-    project_items = []
-    resumo_consolidado = {}
+    project_items, resumo_consolidado = [], {}
     
     for doc in items_ref:
         d = doc.to_dict()
         it = DictObj(d, id=doc.id)
-        
-        it.item_name = str(d.get('item_name', 'Sem Nome')).strip()
-        it.room_name = str(d.get('room_name', 'Indefinido')).strip()
-        it.quantity = int(d.get('quantity', 1))
         it.unit_price = float(d.get('unit_price', 0))
-        it.obs = str(d.get('obs', '')).strip()
+        it.quantity = int(d.get('quantity', 1))
         it.total_price = it.unit_price * it.quantity
-        it.item_color = str(d.get('item_color', '')).strip()
-        
         project_items.append(it)
         
-        # Consolidação para Orçamento e Resumo
         key = f"{it.item_name}:::{it.item_color}"
         if key not in resumo_consolidado:
-            resumo_consolidado[key] = {
-                'item_name': it.item_name, 'item_color': it.item_color, 'quantity': 0, 'unit_price': it.unit_price, 
-                'rooms': set(), 'obs_list': set(), 'group_id': key
-            }
+            resumo_consolidado[key] = {'item_name': it.item_name, 'item_color': it.item_color, 'quantity': 0, 'unit_price': it.unit_price, 'rooms': set(), 'obs_list': set(), 'group_id': key}
         resumo_consolidado[key]['quantity'] += it.quantity
-        resumo_consolidado[key]['rooms'].add(it.room_name)
+        resumo_consolidado[key]['rooms'].add(d.get('room_name', 'Indefinido'))
         if it.unit_price > resumo_consolidado[key]['unit_price']: resumo_consolidado[key]['unit_price'] = it.unit_price
-        if it.obs and it.obs != 'N/A': resumo_consolidado[key]['obs_list'].add(it.obs)
 
-    consolidated_items = []
-    total_orcamento_calculado = 0
-    for k, v in resumo_consolidado.items():
+    consolidated_items, total_orcamento_calculado = [], 0
+    for v in resumo_consolidado.values():
         v['room_name'] = ", ".join(sorted(list(v['rooms'])))
-        v['obs'] = " | ".join(sorted(list(v['obs_list'])))
         v['total_price'] = v['quantity'] * v['unit_price']
         total_orcamento_calculado += v['total_price']
         consolidated_items.append(DictObj(v))
 
-    proj_data = proj_doc.to_dict()
-    project_obj = DictObj(proj_data, id=proj_doc.id)
-    project_obj.client = DictObj({"name": proj_data.get('client_name'), "address": proj_data.get('client_address'), "phone": proj_data.get('client_phone')})
+    p_data = proj_doc.to_dict()
+    project_obj = DictObj(p_data, id=proj_doc.id)
+    project_obj.client = DictObj({"name": p_data.get('client_name'), "address": p_data.get('client_address'), "phone": p_data.get('client_phone')})
     
-    msg = session.pop('success_message', None)
-    return render_template('gerenciar_projeto.html', project=project_obj, items=project_items, consolidated_items=consolidated_items, total_orcamento=total_orcamento_calculado, catalogo=catalogo, ambientes=ambientes, modelos_touch=modelos_touch, cores=SUVINIL_CORAL_COLORS, success_message=msg)
+    return render_template('gerenciar_projeto.html', project=project_obj, items=project_items, consolidated_items=consolidated_items, total_orcamento=total_orcamento_calculado, catalogo=catalogo, ambientes=ambientes, modelos_touch=modelos_touch, cores=SUVINIL_CORAL_COLORS, success_message=session.pop('success_message', None))
 
-# --- ROTAS DE AMBIENTES E MODELOS TOUCH ---
+# --- GESTÃO DE AMBIENTES ---
 @app.route('/adicionar_ambiente', methods=['POST'])
 @login_required
 def adicionar_ambiente():
@@ -367,6 +311,7 @@ def excluir_ambiente(room_id):
     db.collection('ambientes').document(room_id).delete()
     return redirect(request.referrer)
 
+# --- GESTÃO DE MODELOS TOUCH ---
 @app.route('/adicionar_modelo_touch', methods=['POST'])
 @login_required
 def adicionar_modelo_touch():
@@ -385,6 +330,7 @@ def excluir_modelo_touch(model_id):
     db.collection('modelos_touch').document(model_id).delete()
     return redirect(request.referrer)
 
+# --- GESTÃO DE CATÁLOGO ---
 @app.route('/adicionar_item_catalogo', methods=['POST'])
 @login_required
 def adicionar_item_catalogo():
@@ -396,6 +342,20 @@ def adicionar_item_catalogo():
         "user_id": get_current_user_id()
     })
     session['success_message'] = "Item adicionado ao catálogo!"
+    return redirect(request.referrer)
+
+@app.route('/editar_item_catalogo', methods=['POST'])
+@login_required
+def editar_item_catalogo():
+    item_id = request.form.get('item_id')
+    db.collection('catalogo').document(item_id).update({
+        "name": request.form['name'].strip(),
+        "category": request.form['category'],
+        "description_commercial": request.form['description_commercial'].strip(),
+        "tech_requirement": request.form['tech_requirement'].strip(),
+        "model_touch": request.form.get('model_touch_new', 'quadrado')
+    })
+    session['success_message'] = "Item do catálogo atualizado!"
     return redirect(request.referrer)
 
 @app.route('/excluir_item_catalogo/<item_id>')
@@ -414,40 +374,23 @@ def gerar_pdf(project_id, tipo):
     items_ref = proj_ref.collection('items').stream()
     itens_para_template, itens_por_ambiente, total_geral = [], {}, 0
 
-    if tipo == 'orcamento':
-        resumo = {}
-        for doc in items_ref:
-            d = doc.to_dict()
-            name, color = str(d.get('item_name', '')).strip(), str(d.get('item_color', '')).strip()
-            key = f"{name}:::{color}"
-            p, q = float(d.get('unit_price', 0)), int(d.get('quantity', 1))
-            if key not in resumo:
-                resumo[key] = {'item_name': name, 'item_color': color, 'color_hex': SUVINIL_CORAL_COLORS.get(color, '#F0F0F0'), 'quantity': 0, 'unit_price': p, 'rooms': set()}
-            resumo[key]['quantity'] += q
-            resumo[key]['rooms'].add(d.get('room_name', '').strip())
-        for v in resumo.values():
-            v['room_name'] = ", ".join(sorted(list(v['rooms'])))
-            v['total_price'] = v['quantity'] * v['unit_price']
-            total_geral += v['total_price']
-            itens_para_template.append(DictObj(v))
-    else:
-        for doc in items_ref:
-            d = doc.to_dict()
-            it = DictObj(d, id=doc.id)
-            it.unit_price, it.quantity = float(d.get('unit_price', 0)), int(d.get('quantity', 1))
-            it.total_price = it.unit_price * it.quantity
-            it.color_name = it.item_color
-            it.color_hex = SUVINIL_CORAL_COLORS.get(it.item_color, it.item_color if it.item_color.startswith('#') else '#F0F0F0')
-            
-            it.catalog_item = DictObj({"name": it.item_name, "description_commercial": d.get('description_commercial', ''), "tech_requirement": d.get('tech_requirement', '')})
-            total_geral += it.total_price
-            itens_para_template.append(it)
-            room = str(d.get('room_name', 'Sem Ambiente')).strip()
-            if room not in itens_por_ambiente: itens_por_ambiente[room] = []
-            itens_por_ambiente[room].append(it)
+    for doc in items_ref:
+        d = doc.to_dict()
+        it = DictObj(d, id=doc.id)
+        it.unit_price, it.quantity = float(d.get('unit_price', 0)), int(d.get('quantity', 1))
+        it.total_price = it.unit_price * it.quantity
+        it.color_name = it.item_color
+        it.color_hex = SUVINIL_CORAL_COLORS.get(it.item_color, it.item_color if it.item_color.startswith('#') else '#F0F0F0')
+        it.catalog_item = DictObj({"name": it.item_name, "description_commercial": d.get('description_commercial', ''), "tech_requirement": d.get('tech_requirement', '')})
+        total_geral += it.total_price
+        itens_para_template.append(it)
+        room = str(d.get('room_name', 'Sem Ambiente')).strip()
+        if room not in itens_por_ambiente: itens_por_ambiente[room] = []
+        itens_por_ambiente[room].append(it)
 
     p_obj = DictObj(proj_data, id=project_id)
     p_obj.client = DictObj({"name": proj_data.get('client_name'), "address": proj_data.get('client_address'), "phone": proj_data.get('client_phone')})
+    
     html = render_template(f'relatorios/{tipo}.html', project=p_obj, items=itens_para_template, itens_por_ambiente=itens_por_ambiente, narrativas={r: gerar_narrativa_ambiente(its) for r, its in itens_por_ambiente.items()} if tipo != 'orcamento' else {}, total_geral=total_geral, data_hoje=datetime.now(timezone.utc).strftime("%d/%m/%Y"), cores=SUVINIL_CORAL_COLORS)
     pdf = HTML(string=html).write_pdf()
     response = make_response(pdf)
@@ -483,19 +426,17 @@ def gerar_levantamento(project_id):
 @login_required
 def salvar_precos_projeto(project_id):
     proj_ref = db.collection('projects').document(project_id)
-    items_ref = proj_ref.collection('items').stream()
-    novos_precos = {}
+    items_ref = proj_ref.collection('items')
     for key, value in request.form.items():
         if key.startswith('price_group_'):
             group_key = key.replace('price_group_', '')
-            try: novos_precos[group_key] = float(value.replace(',', '.'))
-            except: continue
-    for doc in items_ref:
-        d = doc.to_dict()
-        item_key = f"{str(d.get('item_name', '')).strip()}:::{str(d.get('item_color', '')).strip()}"
-        if item_key in novos_precos:
-            proj_ref.collection('items').document(doc.id).update({"unit_price": novos_precos[item_key]})
-    session['success_message'] = "Preços do orçamento atualizados!"
+            if ':::' in group_key:
+                name, color = group_key.split(':::')
+                try:
+                    price = float(value.replace(',', '.'))
+                    matches = items_ref.where('item_name', '==', name).where('item_color', '==', color).get()
+                    for m in matches: items_ref.document(m.id).update({"unit_price": price})
+                except: continue
     return redirect(url_for('gerenciar_projeto', project_id=project_id))
 
 @app.route('/editar_item_projeto', methods=['POST'])
@@ -503,14 +444,10 @@ def salvar_precos_projeto(project_id):
 def editar_item_projeto():
     proj_id = request.form.get('project_id')
     db.collection('projects').document(proj_id).collection('items').document(request.form.get('item_id')).update({
-        "quantity": int(request.form['quantity']), 
-        "obs": request.form['obs'].strip(),
-        "room_name": request.form.get('room_name').strip(), 
-        "item_color": request.form.get('item_color').strip(),
-        "model_touch": request.form.get('model_touch_override'),
-        "logo_inserir": request.form.get('logo_inserir') == 'SIM'
+        "quantity": int(request.form['quantity']), "obs": request.form['obs'].strip(),
+        "room_name": request.form.get('room_name').strip(), "item_color": request.form.get('item_color').strip(),
+        "model_touch": request.form.get('model_touch_override'), "logo_inserir": request.form.get('logo_inserir') == 'SIM'
     })
-    session['success_message'] = "Item do projeto atualizado!"
     return redirect(url_for('gerenciar_projeto', project_id=proj_id))
 
 if __name__ == '__main__':
