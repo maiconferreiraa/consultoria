@@ -384,7 +384,6 @@ def gerar_pdf(project_id, tipo):
     itens_para_template, itens_por_ambiente, total_geral = [], {}, 0
 
     if tipo == 'orcamento':
-        # --- LÓGICA DE AGRUPAMENTO PARA ORÇAMENTO COMERCIAL ---
         resumo = {}
         for doc in items_ref:
             d = doc.to_dict()
@@ -396,13 +395,7 @@ def gerar_pdf(project_id, tipo):
             room = str(d.get('room_name', 'Indefinido')).strip()
             
             if key not in resumo:
-                resumo[key] = {
-                    'item_name': name,
-                    'item_color': color,
-                    'quantity': 0,
-                    'unit_price': p,
-                    'rooms': set()
-                }
+                resumo[key] = {'item_name': name, 'item_color': color, 'quantity': 0, 'unit_price': p, 'rooms': set()}
             resumo[key]['quantity'] += q
             resumo[key]['rooms'].add(room)
             if p > resumo[key]['unit_price']: resumo[key]['unit_price'] = p
@@ -459,6 +452,88 @@ def gerar_levantamento(project_id):
     pdf = HTML(string=html).write_pdf()
     response = make_response(pdf)
     response.headers['Content-Type'] = 'application/pdf'
+    return response
+
+@app.route('/projeto/<project_id>/pdf/completo')
+@login_required 
+def gerar_pdf_completo(project_id):
+    """Gera um PDF único contendo todos os relatórios disponíveis."""
+    proj_ref = db.collection('projects').document(project_id)
+    proj_data = proj_ref.get().to_dict()
+    items_ref = list(proj_ref.collection('items').stream())
+    
+    # Preparação de Dados Comuns
+    p_obj = DictObj(proj_data, id=project_id)
+    p_obj.client = DictObj({"name": proj_data.get('client_name'), "address": proj_data.get('client_address'), "phone": proj_data.get('client_phone')})
+    data_hoje = datetime.now(timezone.utc).strftime("%d/%m/%Y")
+    
+    # --- 1. MEMORIAL E TÉCNICO ---
+    itens_para_template = []
+    itens_por_ambiente = {}
+    total_tecnico = 0
+    for doc in items_ref:
+        d = doc.to_dict()
+        it = DictObj(d, id=doc.id)
+        it.unit_price, it.quantity = float(d.get('unit_price', 0)), int(d.get('quantity', 1))
+        it.total_price = it.unit_price * it.quantity
+        it.color_name = it.item_color
+        it.color_hex = SUVINIL_CORAL_COLORS.get(it.item_color, '#F0F0F0')
+        it.catalog_item = DictObj({"name": it.item_name, "description_commercial": d.get('description_commercial', ''), "tech_requirement": d.get('tech_requirement', '')})
+        total_tecnico += it.total_price
+        itens_para_template.append(it)
+        room = str(d.get('room_name', 'Sem Ambiente')).strip()
+        if room not in itens_por_ambiente: itens_por_ambiente[room] = []
+        itens_por_ambiente[room].append(it)
+    
+    narrativas = {r: gerar_narrativa_ambiente(its) for r, its in itens_por_ambiente.items()}
+
+    # --- 2. LEVANTAMENTO ---
+    resumo_lev = {}
+    for doc in items_ref:
+        d = doc.to_dict()
+        key = f"{str(d.get('item_name', '')).strip()}:::{str(d.get('item_color', '')).strip()}"
+        if key not in resumo_lev: resumo_lev[key] = {'nome': d.get('item_name'), 'total': 0, 'locais': set(), 'color_name': d.get('item_color'), 'color_hex': SUVINIL_CORAL_COLORS.get(d.get('item_color'), '#F0F0F0'), 'logo_inserir': d.get('logo_inserir', False), 'model_touch': d.get('model_touch', 'quadrado')}
+        resumo_lev[key]['total'] += int(d.get('quantity', 1))
+        resumo_lev[key]['locais'].add(d.get('room_name', 'Indefinido'))
+    resumo_levantamento_final = []
+    for v in resumo_lev.values():
+        v['locais_str'] = ", ".join(sorted(list(v['locais'])))
+        resumo_levantamento_final.append(v)
+
+    # --- 3. ORÇAMENTO ---
+    resumo_orc = {}
+    total_orcamento = 0
+    itens_orcamento_template = []
+    for doc in items_ref:
+        d = doc.to_dict()
+        name, color = str(d.get('item_name', '')).strip(), str(d.get('item_color', '')).strip()
+        key = f"{name}:::{color}"
+        p, q = float(d.get('unit_price', 0)), int(d.get('quantity', 1))
+        if key not in resumo_orc: resumo_orc[key] = {'item_name': name, 'item_color': color, 'quantity': 0, 'unit_price': p, 'rooms': set()}
+        resumo_orc[key]['quantity'] += q
+        resumo_orc[key]['rooms'].add(d.get('room_name', 'Indefinido'))
+        if p > resumo_orc[key]['unit_price']: resumo_orc[key]['unit_price'] = p
+    for v in resumo_orc.values():
+        v['room_name'] = ", ".join(sorted(list(v['rooms'])))
+        v['total_price'] = v['quantity'] * v['unit_price']
+        total_orcamento += v['total_price']
+        itens_orcamento_template.append(DictObj(v))
+
+    # --- RENDERIZAÇÃO E CONCATENAÇÃO ---
+    html_parts = [
+        render_template('relatorios/memorial.html', project=p_obj, items=itens_para_template, itens_por_ambiente=itens_por_ambiente, narrativas=narrativas, data_hoje=data_hoje, cores=SUVINIL_CORAL_COLORS),
+        render_template('relatorios/tecnico.html', project=p_obj, items=itens_para_template, itens_por_ambiente=itens_por_ambiente, data_hoje=data_hoje, cores=SUVINIL_CORAL_COLORS),
+        render_template('relatorios/levantamento.html', project=p_obj, itens_resumidos=resumo_levantamento_final, data_hoje=data_hoje, cores=SUVINIL_CORAL_COLORS),
+        render_template('relatorios/orcamento.html', project=p_obj, items=itens_orcamento_template, total_geral=total_orcamento, data_hoje=data_hoje, cores=SUVINIL_CORAL_COLORS)
+    ]
+    
+    # Juntamos os HTMLs com uma quebra de página explícita entre eles
+    combined_html = '<div style="page-break-after: always;"></div>'.join(html_parts)
+    pdf = HTML(string=combined_html).write_pdf()
+    
+    response = make_response(pdf)
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'inline; filename=PROJETO_COMPLETO_{project_id}.pdf'
     return response
 
 @app.route('/salvar_precos_projeto/<project_id>', methods=['POST'])

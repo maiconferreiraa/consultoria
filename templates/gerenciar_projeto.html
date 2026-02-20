@@ -111,7 +111,6 @@
                             <td>{{ c_item.name }}</td>
                             <td><span class="badge bg-secondary">{{ c_item.category }}</span></td>
                             <td class="text-end">
-                                <!-- BOTÃO DE EDIÇÃO RESTAURADO -->
                                 <button class="btn btn-sm btn-outline-warning border-0 btn-edit-catalogo" 
                                         data-id="{{ c_item.id }}" 
                                         data-name="{{ c_item.name }}" 
@@ -133,7 +132,6 @@
     </div>
 </div>
 
-<!-- NOVO MODAL: EDIÇÃO DO CATÁLOGO -->
 <div class="modal fade" id="modalEditarItemCatalogo" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content bg-dark border-warning">
@@ -236,7 +234,6 @@
         <a href="{{ url_for('index') }}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
         <div>
             <h3 class="mb-0">
-                <span class="badge bg-primary me-2">{{ project.display_id }}</span>
                 {{ project.client.name }}
             </h3>
             <small class="text-muted">{{ project.client.address }}</small>
@@ -246,6 +243,8 @@
         <div class="dropdown">
             <button class="btn btn-warning dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-printer"></i> Relatórios</button>
             <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item fw-bold text-dark bg-warning" target="_blank" href="{{ url_for('gerar_pdf_completo', project_id=project.id) }}"><i class="bi bi-file-earmark-pdf-fill"></i> PDF COMPLETO</a></li>
+                <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item" target="_blank" href="{{ url_for('gerar_pdf', project_id=project.id, tipo='memorial') }}">📄 Memorial Descritivo</a></li>
                 <li><a class="dropdown-item" target="_blank" href="{{ url_for('gerar_pdf', project_id=project.id, tipo='tecnico') }}">🛠️ Roteiro Técnico</a></li>
                 <li><a class="dropdown-item" target="_blank" href="{{ url_for('gerar_pdf', project_id=project.id, tipo='levantamento') }}">📦 Lista de Compras</a></li>
@@ -370,7 +369,7 @@
                             <th style="width: 25%;">Item</th>
                             <th style="width: 5%; text-align: center;">Qtd</th>
                             <th style="width: 15%;">Cor</th> 
-                            <th style="width: 13%;">Obs</th> 
+                            <th style="width: 25%;">Obs</th> 
                             <th style="width: 15%; text-align: center;">Ações</th>
                         </tr>
                     </thead>
@@ -539,7 +538,7 @@
             });
         });
 
-        // Gestão de Edição de Item do Catálogo (RESTORED)
+        // Gestão de Edição de Item do Catálogo
         document.querySelectorAll('.btn-edit-catalogo').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.getElementById('edit_cat_item_id').value = btn.dataset.id;
