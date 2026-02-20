@@ -164,6 +164,7 @@ def editar_titulo():
         update_data['logo_mime_type'] = logo_file.mimetype 
     if new_title: update_data['app_title'] = new_title
     if update_data: db.collection('user_settings').document(user_id).set(update_data, merge=True)
+    session['success_message'] = "Configurações da empresa atualizadas!"
     return redirect(request.referrer or url_for('index'))
 
 # --- ROTAS DE PROJETOS ---
@@ -218,7 +219,7 @@ def editar_projeto(project_id):
 @login_required
 def apagar_projeto(project_id):
     db.collection('projects').document(project_id).delete()
-    session['success_message'] = "Projeto excluído!"
+    session['success_message'] = "Projeto excluído com sucesso!"
     return redirect(url_for('index'))
 
 @app.route('/projeto/<project_id>', methods=['GET', 'POST'])
@@ -232,6 +233,7 @@ def gerenciar_projeto(project_id):
     if request.method == 'POST':
         if 'delete_item_id' in request.form:
             proj_ref.collection('items').document(request.form['delete_item_id']).delete()
+            session['success_message'] = "Dispositivo removido do projeto."
         else:
             cat_id = request.form['catalog_item_id']
             cat_doc = db.collection('catalogo').document(cat_id).get().to_dict()
@@ -250,6 +252,7 @@ def gerenciar_projeto(project_id):
                 "created_at": datetime.now(timezone.utc)
             }
             proj_ref.collection('items').add(item_data)
+            session['success_message'] = f"Item '{cat_doc['name']}' adicionado ao projeto!"
         return redirect(url_for('gerenciar_projeto', project_id=project_id))
 
     def get_list(coll):
@@ -297,18 +300,21 @@ def gerenciar_projeto(project_id):
 @login_required
 def adicionar_ambiente():
     db.collection('ambientes').add({"name": request.form['name'].strip(), "user_id": get_current_user_id()})
+    session['success_message'] = "Cômodo adicionado com sucesso!"
     return redirect(request.referrer)
 
 @app.route('/editar_ambiente', methods=['POST'])
 @login_required
 def editar_ambiente():
     db.collection('ambientes').document(request.form.get('room_id')).update({"name": request.form['name'].strip()})
+    session['success_message'] = "Cômodo atualizado!"
     return redirect(request.referrer)
 
 @app.route('/excluir_ambiente/<room_id>')
 @login_required
 def excluir_ambiente(room_id):
     db.collection('ambientes').document(room_id).delete()
+    session['success_message'] = "Cômodo removido permanentemente!"
     return redirect(request.referrer)
 
 # --- GESTÃO DE MODELOS TOUCH ---
@@ -316,18 +322,21 @@ def excluir_ambiente(room_id):
 @login_required
 def adicionar_modelo_touch():
     db.collection('modelos_touch').add({"name": request.form['name'].strip(), "user_id": get_current_user_id()})
+    session['success_message'] = "Novo modelo de tecla adicionado!"
     return redirect(request.referrer)
 
 @app.route('/editar_modelo_touch', methods=['POST'])
 @login_required
 def editar_modelo_touch():
     db.collection('modelos_touch').document(request.form.get('model_id')).update({"name": request.form['name'].strip()})
+    session['success_message'] = "Modelo de tecla atualizado!"
     return redirect(request.referrer)
 
 @app.route('/excluir_modelo_touch/<model_id>')
 @login_required
 def excluir_modelo_touch(model_id):
     db.collection('modelos_touch').document(model_id).delete()
+    session['success_message'] = "Modelo de tecla removido!"
     return redirect(request.referrer)
 
 # --- GESTÃO DE CATÁLOGO ---
@@ -341,7 +350,7 @@ def adicionar_item_catalogo():
         "model_touch": request.form.get('model_touch_new', 'quadrado'),
         "user_id": get_current_user_id()
     })
-    session['success_message'] = "Item adicionado ao catálogo!"
+    session['success_message'] = "Item adicionado ao catálogo geral!"
     return redirect(request.referrer)
 
 @app.route('/editar_item_catalogo', methods=['POST'])
@@ -355,14 +364,14 @@ def editar_item_catalogo():
         "tech_requirement": request.form['tech_requirement'].strip(),
         "model_touch": request.form.get('model_touch_new', 'quadrado')
     })
-    session['success_message'] = "Item do catálogo atualizado!"
+    session['success_message'] = "Item do catálogo atualizado com sucesso!"
     return redirect(request.referrer)
 
 @app.route('/excluir_item_catalogo/<item_id>')
 @login_required
 def excluir_item_catalogo(item_id):
     db.collection('catalogo').document(item_id).delete()
-    session['success_message'] = "Item removido do catálogo."
+    session['success_message'] = "Item removido do catálogo geral."
     return redirect(request.referrer)
 
 # --- GERAÇÃO DE PDFS ---
@@ -374,19 +383,49 @@ def gerar_pdf(project_id, tipo):
     items_ref = proj_ref.collection('items').stream()
     itens_para_template, itens_por_ambiente, total_geral = [], {}, 0
 
-    for doc in items_ref:
-        d = doc.to_dict()
-        it = DictObj(d, id=doc.id)
-        it.unit_price, it.quantity = float(d.get('unit_price', 0)), int(d.get('quantity', 1))
-        it.total_price = it.unit_price * it.quantity
-        it.color_name = it.item_color
-        it.color_hex = SUVINIL_CORAL_COLORS.get(it.item_color, it.item_color if it.item_color.startswith('#') else '#F0F0F0')
-        it.catalog_item = DictObj({"name": it.item_name, "description_commercial": d.get('description_commercial', ''), "tech_requirement": d.get('tech_requirement', '')})
-        total_geral += it.total_price
-        itens_para_template.append(it)
-        room = str(d.get('room_name', 'Sem Ambiente')).strip()
-        if room not in itens_por_ambiente: itens_por_ambiente[room] = []
-        itens_por_ambiente[room].append(it)
+    if tipo == 'orcamento':
+        # --- LÓGICA DE AGRUPAMENTO PARA ORÇAMENTO COMERCIAL ---
+        resumo = {}
+        for doc in items_ref:
+            d = doc.to_dict()
+            name = str(d.get('item_name', '')).strip()
+            color = str(d.get('item_color', '')).strip()
+            key = f"{name}:::{color}"
+            p = float(d.get('unit_price', 0))
+            q = int(d.get('quantity', 1))
+            room = str(d.get('room_name', 'Indefinido')).strip()
+            
+            if key not in resumo:
+                resumo[key] = {
+                    'item_name': name,
+                    'item_color': color,
+                    'quantity': 0,
+                    'unit_price': p,
+                    'rooms': set()
+                }
+            resumo[key]['quantity'] += q
+            resumo[key]['rooms'].add(room)
+            if p > resumo[key]['unit_price']: resumo[key]['unit_price'] = p
+        
+        for v in resumo.values():
+            v['room_name'] = ", ".join(sorted(list(v['rooms'])))
+            v['total_price'] = v['quantity'] * v['unit_price']
+            total_geral += v['total_price']
+            itens_para_template.append(DictObj(v))
+    else:
+        for doc in items_ref:
+            d = doc.to_dict()
+            it = DictObj(d, id=doc.id)
+            it.unit_price, it.quantity = float(d.get('unit_price', 0)), int(d.get('quantity', 1))
+            it.total_price = it.unit_price * it.quantity
+            it.color_name = it.item_color
+            it.color_hex = SUVINIL_CORAL_COLORS.get(it.item_color, it.item_color if it.item_color.startswith('#') else '#F0F0F0')
+            it.catalog_item = DictObj({"name": it.item_name, "description_commercial": d.get('description_commercial', ''), "tech_requirement": d.get('tech_requirement', '')})
+            total_geral += it.total_price
+            itens_para_template.append(it)
+            room = str(d.get('room_name', 'Sem Ambiente')).strip()
+            if room not in itens_por_ambiente: itens_por_ambiente[room] = []
+            itens_por_ambiente[room].append(it)
 
     p_obj = DictObj(proj_data, id=project_id)
     p_obj.client = DictObj({"name": proj_data.get('client_name'), "address": proj_data.get('client_address'), "phone": proj_data.get('client_phone')})
@@ -437,6 +476,7 @@ def salvar_precos_projeto(project_id):
                     matches = items_ref.where('item_name', '==', name).where('item_color', '==', color).get()
                     for m in matches: items_ref.document(m.id).update({"unit_price": price})
                 except: continue
+    session['success_message'] = "Preços do orçamento atualizados com sucesso!"
     return redirect(url_for('gerenciar_projeto', project_id=project_id))
 
 @app.route('/editar_item_projeto', methods=['POST'])
@@ -448,6 +488,7 @@ def editar_item_projeto():
         "room_name": request.form.get('room_name').strip(), "item_color": request.form.get('item_color').strip(),
         "model_touch": request.form.get('model_touch_override'), "logo_inserir": request.form.get('logo_inserir') == 'SIM'
     })
+    session['success_message'] = "Dispositivo editado no projeto!"
     return redirect(url_for('gerenciar_projeto', project_id=proj_id))
 
 if __name__ == '__main__':
